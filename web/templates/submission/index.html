@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+.btn-file input[type=file] {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    font-size: 999px;
+    text-align: right;
+    filter: alpha(opacity=0);
+    opacity: 0;
+    background: red;
+    cursor: inherit;
+    display: block;
+}
+input[readonly] {
+    background-color: white !important;
+    cursor: text !important;
+}
+</style>
+<script type='text/javascript'>
+$(document)
+    .on('change', '.btn-file :file', function() {
+        var input = $(this),
+        numFiles = input.get(0).files ? input.get(0).files.length : 1,
+        label = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+        input.trigger('fileselect', [numFiles, label]);
+});
+
+$(document).ready( function() {
+    $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
+
+        var input = $(this).parents('.input-group').find(':text'),
+            log = numFiles > 1 ? numFiles + ' files selected' : label;
+
+        if( input.length ) {
+            input.val(log);
+        } else {
+            if( log ) alert(log);
+        }
+
+    });
+    $('.nav-tabs a').on('show.bs.tab', function (event) {
+        var tabname = $(event.target).text()
+        if (tabname == " PCAP") {
+            document.getElementById('non-pcap-1').style.display = "none";
+            document.getElementById('non-pcap-2').style.display = "none";
+        } else {
+            document.getElementById('non-pcap-1').style.display = "block";
+            document.getElementById('non-pcap-2').style.display = "block";
+        }
+    });
+});
+</script>
+<div class="row">
+    <div class="col-md-6 col-md-offset-3 center">
+        <p style="margin-bottom: 10px;"><img src="{{ STATIC_URL }}graphic/cape.png" /></p>
+
+        <form role="form" action="" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="tabbable">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a href="#file" data-toggle="tab"><span class="glyphicon glyphicon-file"></span> File</a></li>
+                    <li><a href="#quarantine" data-toggle="tab"><span class="glyphicon glyphicon-fire"></span> Quarantine File</a></li>
+                    <li><a href="#url" data-toggle="tab"><span class="glyphicon glyphicon-globe"></span> URL</a></li>
+                    {% if config.vt %}
+                    <li><a href="#vtdl" data-toggle="tab"><span class="glyphicon glyphicon-cloud-download"></span> VirusTotal Download</a></li>
+                    {% endif %}
+                    <li><a href="#pcap" data-toggle="tab"><span class="glyphicon glyphicon-transfer"></span> PCAP</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade in active" id="file">
+                        <div class="input-group col-md-6">
+                            <span class="input-group-btn">
+                                <input type="text" class="form-control" readonly>
+                                <span class="btn btn-primary btn-file">
+                                    Select <input type="file" name="sample" multiple="multiple">
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="quarantine">
+                        <div class="input-group col-md-6">
+                            <span class="input-group-btn">
+                                <input type="text" class="form-control" readonly>
+                                <span class="btn btn-primary btn-file">
+                                    Select <input type="file" name="quarantine" multiple="multiple">
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="url">
+                        <div class="input-group col-md-12">
+                            <label class="sr-only" form="form_url">URL</label>
+                            <input type="text" class="form-control" id="form_url" name="url" placeholder="URL" />
+                        </div>
+                    </div>
+                    {% if config.vt %}
+                    <div class="tab-pane fade" id="vtdl">
+                        <div class="input-group col-md-12">
+                            <label class="sr-only" form="form_vtdl">VirusTotal Download</label>
+                            <input type="text" class="form-control" id="form_vtdl" name="vtdl" placeholder="Enter Hash Here" />
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="tab-pane fade" id="pcap">
+                        <div class="input-group col-md-6">
+                            <span class="input-group-btn">
+                                <input type="text" class="form-control" readonly>
+                                <span class="btn btn-primary btn-file">
+                                    Select <input type="file" name="pcap" multiple="multiple">
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel" id="accordion" style="margin-top: 20px;">
+                <div class="panel panel-default" style="margin-bottom: 0px;">
+                    <div class="panel-heading">
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#options"><i class="icon icon-cog"></i> Advanced Options</a>
+                    </div>
+                    <div id="options" class="panel-collapse collapse in" style="text-align: left;">
+                        <div class="panel-body">
+                            <div id="non-pcap-1">
+                                <div class="form-group">
+                                    <label for="form_package">Analysis Package</label>
+                                    <select class="form-control" id="form_package" name="package">
+                                        <option value="" active>Detect Automatically</option>
+                                        {% for package in packages %}
+                                        <option value="{{package}}">{{package}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="form_machine">Machine</label>
+                                    <select class="form-control" id="form_machine" name="machine">
+                                        {% for id,label in machines %}
+                                        <option value="{{id}}">{{label}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% if config.tags %}
+                                <div class="form-group">
+                                    <label for="form_tags">Machine Tags</label>
+                                    <input type="text" class="form-control" id="form_tags" name="tags" />
+                                </div>
+                                {% endif %}
+                                {% if config.gateways %}
+                                <div class="form-group">
+                                    <label for="form_gateway">Gateway</label>
+                                    <select class="form-control" id="form_gateway" name="gateway">
+                                        <option value="" active>Default</option>
+                                        <option value="All">All</option>
+                                        {% for k,v in gateways.items %}
+                                        <option value="{{k}}">{{k}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                {% endif %}
+                                <div class="form-group">
+                                    <label for="form_timeout">Timeout</label>
+                                    <input type="text" class="form-control" id="form_timeout" name="timeout" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="form_options">Options (<a href="#optionhelp" data-toggle="collapse">help</a>)</label>
+                                    <div id="optionhelp" class="collapse">
+                                        <p class="text-muted" style="margin-top: 10px;">Syntax is option1=val1,option2=val2,option3=val3, etc.</p>
+                                        <table class="table table-striped table-centered">
+                                            <thead>
+                                                <tr>
+                                                    <th style="text-align: center;">Option</th>
+                                                    <th style="text-align: center;">Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><code>force-sleepskip</code></td>
+                                                    <td>Override default sleep skipping behavior:  0 disables all sleep skipping, 1 skips all sleeps.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>full-logs</code></td>
+                                                    <td>By default, logs prior to network activity for URL analyses and prior to access of the file in question for non-executable formats are suppressed.  Set to 1 to disable log suppression.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>force-flush</code></td>
+                                                    <td>For performance reasons, logs are buffered before being sent back to the result server.  We make every attempt to flush the buffer at critical points including when exceptions occur, but in some rare termination scenarios, logs may be lost.  Set to 1 to force flushing of the log buffers after any non-duplicate API is called, set to 2 to force flushing of every log.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>no-stealth</code></td>
+                                                    <td>Set to 1 to disable anti-anti-VM/sandbox code enabled by default.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>buffer-max</code></td>
+                                                    <td>When set to an integer of your choice, changes the maximum number of bytes that can be logged for most API buffers.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>large-buffer-max</code></td>
+                                                    <td>Some hooked APIs permit larger buffers to be logged.  To change the limit for this, set this to an integer of your choice.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>norefer</code></td>
+                                                    <td>Disables use of a fake referrer when performing URL analyses</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>file</code></td>
+                                                    <td>When using the zip or rar package, set the name of the file to execute</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>password</code></td>
+                                                    <td>When using the zip or rar package, set the password to use for extraction</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>function</code></td>
+                                                    <td>When using the dll package, set the name of the exported function to execute</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>loader</code></td>
+                                                    <td>When using the dll package, set the name of the process loading the DLL (defaults to rundll32.exe).</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>arguments</code></td>
+                                                    <td>When using the dll, exe, or python packages, set the arguments to be passed to the executable or exported function.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>appdata</code></td>
+                                                    <td>When using the exe package, set to 1 to run the executable out of the Application Data path instead of the Temp directory.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>startbrowser</code></td>
+                                                    <td>Setting this option to 1 will launch a browser 30 seconds into the analysis (useful for some banking trojans).</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>browserdelay</code></td>
+                                                    <td>Sets the number of seconds to wait before starting the browser with the startbrowser option.  Defaults to 30 seconds.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>url</code></td>
+                                                    <td>When used with the startbrowser option, this will determine the URL the started browser will access.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>debug</code></td>
+                                                    <td>Set to 1 to enable reporting of critical exceptions occurring during analysis, set to 2 to enable reporting of all exceptions.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>disable_hook_content</code></td>
+                                                    <td>Set to 1 to remove functionality of all hooks except those critical for monitoring other processes.  Set to 2 to apply to all hooks.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>hook-type</code></td>
+                                                    <td>Valid for 32-bit analyses only.  Specifies the hook type to use: direct, indirect, or safe.  Safe attempts a Detours-style hook.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>serial</code></td>
+                                                    <td>Spoof the serial of the system volume as the provided hex value</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>exclude-apis</code></td>
+                                                    <td>Exclude the colon-separated list of APIs from being hooked</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>exclude-dlls</code></td>
+                                                    <td>Exclude the colon-separated list of DLLs from being hooked</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>referrer</code></td>
+                                                    <td>Specify the referrer to be used for URL tasks, overriding the default Google referrer</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <input type="text" class="form-control" id="form_options" name="options" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="form_priority">Priority</label>
+                                <select class="form-control" id="form_priority" name="priority">
+                                    <option value="1">Low</option>
+                                    <option value="2">Medium</option>
+                                    <option value="3">High</option>
+                                </select>
+                            </div>
+                            <div id="non-pcap-2">
+                            <div class="form-group">
+                                <label for="form_custom">Clock</label>
+                                <div class='input-group date' id='datetimepicker1'>
+                                    <input type='text' class="form-control" name="clock" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <script type="text/javascript">
+                                $(function () {
+                                    $('#datetimepicker1').datetimepicker({
+                                        format: 'MM-DD-YYYY HH:mm:00'
+                                    });
+                                });
+                            </script>
+                            <div class="form-group">
+                                <label for="form_custom">Custom</label>
+                                <input type="text" class="form-control" id="form_custom" name="custom" />
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="free" /> No Injection <span class="text-muted"><small>(disable behavioral analysis)</small></span>
+                                </label>
+                            </div>
+                            {% if config.gateways %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="all_gw_in_group" /> Submit a job for each gateway in group
+                                </label>
+                            </div>
+                            {% endif %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="norefer" /> No Fake Referrer for URL Tasks
+                                </label>
+                            </div>
+                            {% if config.tor %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="tor" /> Enable Tor transparent proxy
+                                </label>
+                            </div>
+                            {% endif %}
+                            {% if config.kernel %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="kernel_analysis" /> Enable zer0m0n kernel-based behavioral analysis
+                                </label>
+                            </div>
+                            {% endif %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="nohuman" /> Disable automated interaction
+                                </label>
+                            </div>
+                            {% if config.procmemory %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="process_memory" /> Process Memory Dump
+                                </label>
+                            </div>
+                            {% endif %}
+                            {% if config.memory %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="memory" /> Full Memory Dump <span class="text-muted"><small>(if the "memory" processing module is enabled, will launch a Volatility analysis)</small></span>
+                                </label>
+                            </div>
+                            {% endif %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="enforce_timeout" /> Enforce Timeout
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <div style="margin-top: 20px;"><button type="submit" class="btn btn-primary btn-lg">Analyze</button></div>
+        </form>
+    </div>
+</div>
+{% endblock %}

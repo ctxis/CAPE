@@ -1,0 +1,28 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:             suricata 
+# Required-Start:       $remote_fs $syslog
+# Required-Stop:        $remote_fs $syslog
+# Default-Start:        2 3 4 5
+# Default-Stop:         
+# Short-Description:    suricata
+### END INIT INFO
+
+case "$1" in
+  start)
+    #/etc/init.d/openvswitch-switch restart
+    su cuckoo -c "/usr/local/suricata/bin/suricata -c /usr/local/suricata/etc/suricata.yaml --unix-socket -D"
+;;
+  stop)
+    kill `cat /usr/local/suricata/var/run/suricata.pid`
+;;
+
+ restart)
+   $0 stop
+   sleep 30
+   $0 start
+   ;;
+
+esac
+exit 0
+

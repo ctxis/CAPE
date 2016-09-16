@@ -1,0 +1,315 @@
+%YAML 1.1
+---
+runmode: single 
+default-log-dir: /usr/local/suricata/var/log/
+outputs:
+  - fast:
+      enabled: yes
+      filename: alert 
+      append: yes
+  - unified2-alert:
+      enabled: yes
+      filename: unified2.alert
+  - http-log:
+      enabled: yes
+      filename: http.log
+      append: yes
+      extended: yes
+  - pcap-info:
+      enabled: yes 
+  - alert-debug:
+      enabled: no
+      filename: alert-debug.log
+      append: yes
+  - stats:
+      enabled: no 
+      filename: stats.log
+      interval: 8
+  - file-store:
+      enabled: yes       # set to yes to enable
+      log-dir: files    # directory to store the files
+      force-magic: yes   # force logging magic on all stored files
+      force-md5: yes     # force logging of md5 checksums
+  - file-log:
+      enabled: yes
+      filename: files-json.log
+      append: yes
+      force-magic: yes   # force logging magic on all logged files
+      force-md5: yes     # force logging of md5 checksums
+  - tls-log:
+      enabled: yes  # Log TLS connections.
+      filename: tls.log # File to store TLS logs.
+      extended: yes # Log extended information like fingerprint
+
+magic-file: /usr/share/file/magic
+af-packet:
+  - interface: eth0
+    threads: 1
+    cluster-id: 99
+    cluster-type: cluster_round_robin
+    defrag: yes
+    use-mmap: yes
+  - interface: eth1
+    threads: 1
+    cluster-id: 98
+    cluster-type: cluster_round_robin
+    defrag: yes
+
+detect-engine:
+  - profile: medium
+  - custom-values:
+      toclient-src-groups: 2
+      toclient-dst-groups: 2
+      toclient-sp-groups: 2
+      toclient-dp-groups: 3
+      toserver-src-groups: 2
+      toserver-dst-groups: 4
+      toserver-sp-groups: 2
+      toserver-dp-groups: 25
+  - sgh-mpm-context: auto
+  - inspection-recursion-limit: 3000
+
+threading:
+  set-cpu-affinity: no
+  cpu-affinity:
+    - management-cpu-set:
+        cpu: [ 0 ]  # include only these cpus in affinity settings
+    - receive-cpu-set:
+        cpu: [ 0 ]  # include only these cpus in affinity settings
+    - decode-cpu-set:
+        cpu: [ 0, 1 ]
+        mode: "balanced"
+    - stream-cpu-set:
+        cpu: [ "0-1" ]
+    - detect-cpu-set:
+        cpu: [ "all" ]
+        mode: "exclusive" # run detect threads in these cpus
+        prio:
+          low: [ 0 ]
+          medium: [ "1-2" ]
+          high: [ 3 ]
+          default: "medium"
+    - verdict-cpu-set:
+        cpu: [ 0 ]
+        prio:
+          default: "high"
+    - reject-cpu-set:
+        cpu: [ 0 ]
+        prio:
+          default: "low"
+    - output-cpu-set:
+        cpu: [ "all" ]
+        prio:
+           default: "medium"
+  detect-thread-ratio: 1.5
+
+cuda:
+  - mpm:
+      packet-buffer-limit: 2400
+      packet-size-limit: 1500
+      packet-buffers: 10
+      batching-timeout: 1
+      page-locked: enabled
+      device-id: 0
+      cuda-streams: 2
+
+mpm-algo: ac
+pattern-matcher:
+  - b2gc:
+      search-algo: B2gSearchBNDMq
+      hash-size: low
+      bf-size: medium
+  - b2gm:
+      search-algo: B2gSearchBNDMq
+      hash-size: low
+      bf-size: medium
+  - b2g:
+      search-algo: B2gSearchBNDMq
+      hash-size: low
+      bf-size: medium
+  - b3g:
+      search-algo: B3gSearchBNDMq
+      hash-size: low
+      bf-size: medium
+  - wumanber:
+      hash-size: low
+      bf-size: medium
+
+defrag:
+  max-frags: 65535
+  prealloc: yes
+  timeout: 60
+
+flow:
+  memcap: 32mb
+  hash-size: 65536
+  prealloc: 10000
+  emergency-recovery: 30
+  prune-flows: 5
+
+flow-timeouts:
+  default:
+    new: 30
+    established: 300
+    closed: 0
+    emergency-new: 10
+    emergency-established: 100
+    emergency-closed: 0
+  tcp:
+    new: 60
+    established: 3600
+    closed: 120
+    emergency-new: 10
+    emergency-established: 300
+    emergency-closed: 20
+  udp:
+    new: 30
+    established: 300
+    emergency-new: 10
+    emergency-established: 100
+  icmp:
+    new: 30
+    established: 300
+    emergency-new: 10
+    emergency-established: 100
+
+stream:
+  memcap: 32mb
+  checksum-validation: no      # reject wrong csums
+  inline: no                    # no inline mode
+  reassembly:
+    memcap: 64mb
+    depth: 0                  # reassemble 1mb into a stream
+    toserver-chunk-size: 2560
+    toclient-chunk-size: 2560
+
+host:
+  hash-size: 4096
+  prealloc: 1000
+  memcap: 16777216
+
+logging:
+  default-log-level: info
+  default-output-filter:
+  outputs:
+  - console:
+      enabled: yes
+
+pfring:
+  - interface: eth0
+    threads: 1
+    interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_round_robin
+pcap:
+  - interface: eth0
+
+classification-file: /usr/local/suricata/etc/classification.config
+reference-config-file: /usr/local/suricata/etc/reference.config
+
+vars:
+  address-groups:
+    HOME_NET: "[192.168.1.0/24]"
+    EXTERNAL_NET: "any"
+    HTTP_SERVERS: "$HOME_NET"
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "$HOME_NET"
+    DNS_SERVERS: "$HOME_NET"
+    TELNET_SERVERS: "$HOME_NET"
+    AIM_SERVERS: "$EXTERNAL_NET"
+  port-groups:
+    HTTP_PORTS: "80"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS: 1521
+    SSH_PORTS: 22
+
+action-order:
+  - pass
+  - drop
+  - reject
+  - alert
+
+host-os-policy:
+  windows: [0.0.0.0/0]
+  bsd: []
+  bsd-right: []
+  old-linux: []
+  linux: []
+  old-solaris: []
+  solaris: []
+  hpux10: []
+  hpux11: []
+  irix: []
+  macos: []
+  vista: []
+  windows2k3: []
+
+asn1-max-frames: 256
+
+engine-analysis:
+  rules-fast-pattern: yes
+  rules: yes
+
+pcre:
+  match-limit: 3500
+  match-limit-recursion: 1500
+
+libhtp:
+   default-config:
+     personality: IDS
+     request-body-limit: 0 
+     response-body-limit: 0
+
+     # inspection limits
+     request-body-minimal-inspect-size: 16kb
+     request-body-inspect-window: 16kb
+     response-body-minimal-inspect-size: 1024kb
+     response-body-inspect-window: 32kb
+
+profiling:
+  rules:
+    enabled: yes
+    filename: perf.txt
+    append: yes
+    sort: avgticks
+  packets:
+    enabled: no 
+    filename: packet_stats.log
+    append: yes
+  locks:
+    enabled: no
+    filename: lock_stats.log
+    append: yes
+
+coredump:
+  max-dump: unlimited
+default-rule-path: /usr/local/suricata/etc/etpro/
+rule-files:
+ - ET-ftp.rules
+ - ET-policy.rules
+ - ET-trojan.rules
+ - ET-user_agents.rules
+ - ET-activex.rules
+ - ET-attack_response.rules
+ - ET-scan.rules
+ - ET-info.rules
+ - ET-shellcode.rules
+ - ET-web_client.rules
+ - ET-current_events.rules
+ - ET-malware.rules
+ - ET-worm.rules
+ - ET-dns.rules
+ - ET-misc.rules
+ - ET-dos.rules
+ - ET-exploit.rules
+ - ET-tftp.rules
+ - ET-botcc.rules
+ - ET-compromised.rules
+ - ET-drop.rules
+ - ET-dshield.rules
+ - ET-rbn.rules
+ - ET-rbn-malvertisers.rules
+ - ET-ciarmy.rules
+ - luajit.rules
+ - files.rules
+ - local.rules

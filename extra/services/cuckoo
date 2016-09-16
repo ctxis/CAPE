@@ -1,0 +1,30 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:             Cuckoo 
+# Required-Start:       $remote_fs $syslog
+# Required-Stop:        $remote_fs $syslog
+# Default-Start:        2 3 4 5
+# Default-Stop:         
+# Short-Description:    Cuckoo
+### END INIT INFO
+
+case "$1" in
+  start)
+	 su kev -c "vmrun -T ws revertToSnapshot /data/vms/remnux/REMnuxV5.vmx Base"
+    su kev -c "cd /data/cuckoo/ && screen -d -m ./cuckoo.py -d"    su cuckoo -c "cd /data/cuckoo/ && screen -d -m ./cuckoo.py -d"
+    su kev -c "cd /data/cuckoo/web && screen -d -m python manage.py runserver 0.0.0.0:8000"
+;;
+  stop)
+	 su kev -c "vmrun -T ws stop /data/vms/remnux/REMnuxV5.vmx hard"
+    pkill -f "SCREEN -d -m ./cuckoo.py -d"
+    pkill -f "SCREEN -d -m python manage.py runserver 0.0.0.0:8000"
+;;
+
+ restart)
+   $0 stop
+   sleep 30
+   $0 start
+   ;;
+
+esac
+exit 0
