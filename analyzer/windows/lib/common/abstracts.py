@@ -168,7 +168,7 @@ class Package(object):
             raise CuckooPackageError("Unable to execute the initial process, "
                                      "analysis aborted.")
 
-        p.debug_inject(dll, INJECT_QUEUEUSERAPC, interest)
+        p.debug_inject(dll, interest, childprocess=False)
         p.resume()
         p.close()
         

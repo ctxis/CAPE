@@ -224,14 +224,14 @@ class SubmitCAPE(Report):
             
         if package:
             task_id = db.add_path(file_path=self.task["target"],
-                                    package=package,
-                                    timeout=0,	# this doesn't work
+                                    package=dumper,
+                                    timeout=self.task["timeout"],
                                     options=self.task_options,
-                                    priority=1,
+                                    priority=self.task["priority"]+1,   # increase priority to expedite related submission
                                     machine=self.task["machine"],
                                     platform=self.task["platform"],
-                                    memory=False,
-                                    enforce_timeout=True,
+                                    memory=self.task["memory"],
+                                    enforce_timeout=self.task["enforce_timeout"],
                                     clock=None,
                                     tags=None)
             if task_id:
@@ -246,13 +246,13 @@ class SubmitCAPE(Report):
                     continue
                 task_id = db.add_path(file_path=self.task["target"],
                                 package=dumper,
-                                timeout=0,	# this doesn't work
+                                timeout=self.task["timeout"],
                                 options=self.task_options,
-                                priority=1,
+                                priority=self.task["priority"]+1,   # increase priority to expedite related submission
                                 machine=self.task["machine"],
                                 platform=self.task["platform"],
-                                memory=False,
-                                enforce_timeout=True,
+                                memory=self.task["memory"],
+                                enforce_timeout=self.task["enforce_timeout"],
                                 clock=None,
                                 tags=None)
                 if task_id:

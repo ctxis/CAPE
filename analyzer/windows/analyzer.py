@@ -674,6 +674,68 @@ class PipeHandler(Thread):
                     # Once we're done operating on the processes list, we release
                     # the lock.
                     PROCESS_LOCK.release()
+                elif command.startswith("DEBUGGER:"):
+                    # We acquire the process lock in order to prevent the analyzer
+                    # to terminate the analysis while we are operating on the new
+                    # process.
+                    PROCESS_LOCK.acquire()
+
+                    # Set the current DLL to the default one provided
+                    # at submission.
+                    dll = DEFAULT_DLL
+                    dll_64 = DEFAULT_DLL_64
+                    suspended = True
+                    # We parse the process ID.
+                    data = command[9:]
+                    process_id = thread_id = None
+                    if "," not in data:
+                        if data.isdigit():
+                            process_id = int(data)
+                    elif data.count(",") == 1:
+                        process_id, param = data.split(",")
+                        thread_id = None
+                        if process_id.isdigit():
+                            process_id = int(process_id)
+                        else:
+                            process_id = None
+                        if param.isdigit():
+                            thread_id = int(param)
+                            
+                    if process_id:
+                        if process_id not in (PID, PPID):
+                            # We inject the process only if it's not being
+                            # monitored already, otherwise we would generate
+                            # polluted logs.
+                            if process_id not in PROCESS_LIST:
+                                # Open the process and inject the DLL.
+                                proc = Process(pid=process_id,
+                                               thread_id=thread_id,
+                                               suspended=suspended)
+
+                                interest = proc.get_filepath()
+                                is_64bit = proc.is_64bit()
+                                filename = os.path.basename(interest)
+
+                                log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
+
+                                if is_64bit:
+                                    if not in_protected_path(filename):
+                                        res = proc.debug_inject(dll_64, interest, childprocess=True)
+                                        log.info("Injected 64-bit process %s with 64-bit debugger dll: %s", filename, dll_64)
+                                        LASTINJECT_TIME = datetime.now()
+                                else:
+                                    if not in_protected_path(filename):
+                                        res = proc.debug_inject(dll, interest, childprocess=True)
+                                        log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
+                                        LASTINJECT_TIME = datetime.now()
+                                proc.close()
+                        else:
+                            log.warning("Received request to inject Cuckoo "
+                                        "process with pid %d, skip", process_id)
+
+                    # Once we're done operating on the processes list, we release
+                    # the lock.
+                    PROCESS_LOCK.release()
                 # In case of FILE_NEW, the client is trying to notify the creation
                 # of a new file.
                 elif command.startswith("FILE_NEW:"):

@@ -652,11 +652,10 @@ class Process:
             log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to analyze %s binaries.", os.path.basename(bin_name), bit_str)
             return False
 
-    def debug_inject(self, dll=None, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
-        """Cuckoo DLL debugger injection.
-        @param dll: Cuckoo DLL debugger path.
+    def debug_inject(self, dll=None, interest=None, childprocess=False, nosleepskip=False):
+        """CAPE DLL debugger injection.
+        @param dll: CAPE DLL debugger path.
         @param interest: path to file of interest, handed to cuckoomon config
-        @param apc: APC use.
         """
         global LOGSERVER_POOL
 
@@ -675,7 +674,7 @@ class Process:
 
         is_64bit = self.is_64bit()
         if not dll:
-            log.debug("No DLL has been specified for injection")
+            log.debug("No debugger DLL has been specified for injection")
             if is_64bit:
                 dll = CUCKOOMON64_NAME
             else:
@@ -757,8 +756,14 @@ class Process:
 
         bin_name = os.path.join(os.getcwd(), orig_bin_name)
 
-        if os.path.exists(bin_name):
-            ret = subprocess.call([bin_name, "debug", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
+        if os.path.exists(bin_name) == False:
+            log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to debug %s binaries.", os.path.basename(bin_name), bit_str)
+            return False
+        else:
+            if childprocess == False:
+                ret = subprocess.call([bin_name, "debug_load", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
+            else:
+                ret = subprocess.call([bin_name, "debug", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
             if ret != 0:
                 if ret == 1:
                     log.info("Injected debugger DLL into suspended %s process with pid %d", bit_str, self.pid)
@@ -767,9 +772,6 @@ class Process:
                 return False
             else:
                 return True
-        else:
-            log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to debug %s binaries.", os.path.basename(bin_name), bit_str)
-            return False
 
     def dump_memory(self):
         """Dump process memory.
