@@ -95,7 +95,7 @@ class SubmitCAPE(Report):
                         if parent_package=='dll':
                             detections.add('CAPE_Injection_dll')    
                             continue
-                    detections.add('CAPE_Injection')
+                        detections.add('CAPE_Injection')
                 
                 elif entry["name"] == "allocation_rwx":
                     if report["info"].has_key("package"):
@@ -108,7 +108,7 @@ class SubmitCAPE(Report):
                         if parent_package=='dll':
                             detections.add('CAPE_Extraction_dll')    
                             continue
-                    detections.add('CAPE_Extraction')
+                        detections.add('CAPE_Extraction')
                 
                 elif entry["name"] == "CAPE Compression":
                     if report["info"].has_key("package"):
@@ -121,7 +121,7 @@ class SubmitCAPE(Report):
                         if parent_package=='doc':
                             detections.add('CAPE_Compression_doc')    
                             continue                            
-                    detections.add('CAPE_Compression')
+                        detections.add('CAPE_Compression')
                     
         ##### Malware families
         #####
@@ -143,7 +143,7 @@ class SubmitCAPE(Report):
                         if parent_package=='dll':
                             detections.add('CAPE_PlugX_dll')    
                             continue
-                    detections.add('CAPE_PlugX')
+                        detections.add('CAPE_PlugX')
 
                 elif entry["name"] == "CAPE PlugX fuzzy":
                     if report["info"].has_key("package"):
@@ -162,21 +162,21 @@ class SubmitCAPE(Report):
                         if parent_package=='dll':
                             detections.add('CAPE_PlugX_fuzzy_dll')                              
                             continue
-                    detections.add('CAPE_PlugX_fuzzy')    
+                        detections.add('CAPE_PlugX_fuzzy')    
                                             
                 elif entry["name"] == "CAPE Derusbi":
                     if report["info"].has_key("package"):
                         parent_package = report["info"].get("package")
                         if parent_package.startswith('CAPE'):
                             continue
-                    detections.add('CAPE_Derusbi')
+                        detections.add('CAPE_Derusbi')
                     
                 elif entry["name"] == "CAPE EvilGrab":
                     if report["info"].has_key("package"):
                         parent_package = report["info"].get("package")
                         if parent_package.startswith('CAPE'):
                             continue
-                    detections.add('CAPE_EvilGrab')
+                        detections.add('CAPE_EvilGrab')
         
         # We only want to submit a single job if we have a
         # malware detection. A given package should do 
