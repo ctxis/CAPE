@@ -32,7 +32,7 @@ from lib.common.defines import SYSTEM_PROCESS_INFORMATION
 from lib.common.defines import EVENT_MODIFY_STATE, SECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES, SYSTEMTIME
 from lib.common.exceptions import CuckooError, CuckooPackageError
 from lib.common.hashing import hash_file
-from lib.common.results import upload_to_host
+from lib.common.results import upload_to_host, upload_to_host_with_metadata
 from lib.core.config import Config
 from lib.core.packages import choose_package
 from lib.core.privileges import grant_debug_privilege
@@ -49,6 +49,7 @@ FILES_LIST_LOCK = Lock()
 FILES_LIST = []
 DUMPED_LIST = []
 CAPE_DUMPED_LIST = []
+PROC_DUMPED_LIST = []
 UPLOADPATH_LIST = []
 PROCESS_LIST = []
 PROTECTED_PATH_LIST = []
@@ -205,14 +206,69 @@ def cape_file(file_path):
         upload_path = CAPE_DUMPED_LIST[idx]
     else:
         upload_path = os.path.join("CAPE", sha256)
+        
+    if os.path.exists(file_path + "_info.txt"):
+        metadata = [line.strip() for line in open(file_path + "_info.txt")]
+        metastring = ""
+        for line in metadata:
+            metastring = metastring + line + ','
+    else:
+        log.warning("No metadata file for CAPE dump at path \"%s\"", file_path.encode("utf-8", "replace"))
+        metastring = file_path   
+        
     try:
-        upload_to_host(file_path, upload_path, duplicate)
+        upload_to_host_with_metadata(file_path, upload_path, metastring)
         if not duplicate:
             CAPE_DUMPED_LIST.append(sha256)
             CAPE_DUMPED_LIST.append(upload_path)
             log.info("Added new CAPE file to list with path: %s", unicode(file_path).encode("utf-8", "replace"))
     except (IOError, socket.error) as e:
         log.error("Unable to upload CAPE file at path \"%s\": %s",
+                  file_path.encode("utf-8", "replace"), e)
+
+def proc_dump(file_path):
+    """Create a copy of the given process dump file path."""
+    duplicate = False
+    try:
+        if os.path.exists(file_path):
+            sha256 = hash_file(hashlib.sha256, file_path)
+            if sha256 in PROC_DUMPED_LIST:
+                # The file was already dumped, just upload the alternate name for it.
+                duplicate = True
+        else:
+            log.warning("Process dump at path \"%s\" does not exist, skip.",
+                        file_path.encode("utf-8", "replace"))
+            return
+    except IOError as e:
+        log.warning("Unable to access process dump at path \"%s\"", file_path.encode("utf-8", "replace"))
+        return
+
+    if os.path.isdir(file_path):
+        return
+    file_name = os.path.basename(file_path)
+    if duplicate:
+        idx = PROC_DUMPED_LIST.index(sha256)
+        upload_path = PROC_DUMPED_LIST[idx]
+    else:
+        upload_path = os.path.join("procdump", sha256)
+        
+    if os.path.exists(file_path + "_info.txt"):
+        metadata = [line.strip() for line in open(file_path + "_info.txt")]
+        metastring = ""
+        for line in metadata:
+            metastring = metastring + line + ','
+    else:
+        log.warning("No metadata file for process dump at path \"%s\": %s", file_path.encode("utf-8", "replace"), e)
+        metastring = file_path 
+        
+    try:
+        upload_to_host_with_metadata(file_path, upload_path, metastring)
+        if not duplicate:
+            CAPE_DUMPED_LIST.append(sha256)
+            CAPE_DUMPED_LIST.append(upload_path)
+            log.info("Added new CAPE file to list with path: %s", unicode(file_path).encode("utf-8", "replace"))
+    except (IOError, socket.error) as e:
+        log.error("Unable to upload process dump at path \"%s\": %s",
                   file_path.encode("utf-8", "replace"), e)
 
 def del_file(fname):
@@ -557,9 +613,10 @@ class PipeHandler(Thread):
                         if event_handle:
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
-                            if self.options.get("procmemdump"):
-                                p = Process(pid=process_id)
-                                p.dump_memory()
+                            # Process dumping is now handled in-process (CAPE)
+                            #if self.options.get("procmemdump"):
+                            #    p = Process(pid=process_id)
+                            #    p.dump_memory()
                             dump_files()
                     PROCESS_LOCK.release()
                 # Handle case of malware terminating a process -- notify the target
@@ -577,9 +634,9 @@ class PipeHandler(Thread):
                         else:
                             log.info("Notified of termination of process with pid %u.", process_id)
                             # dump the memory of exiting processes
-                            if self.options.get("procmemdump"):
-                                p = Process(pid=process_id)
-                                p.dump_memory()
+                            #if self.options.get("procmemdump"):
+                            #    p = Process(pid=process_id)
+                            #    p.dump_memory()
                             # make sure process is aware of the termination
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
@@ -750,6 +807,11 @@ class PipeHandler(Thread):
                     file_path = unicode(command[10:].decode("utf-8"))
                     # We dump immediately.
                     cape_file(file_path)
+                elif command.startswith("FILE_DUMP:"):
+                    # We extract the file path.
+                    file_path = unicode(command[10:].decode("utf-8"))
+                    # We dump immediately.
+                    proc_dump(file_path)
                 # In case of FILE_DEL, the client is trying to notify an ongoing
                 # deletion of an existing file, therefore we need to dump it
                 # straight away.

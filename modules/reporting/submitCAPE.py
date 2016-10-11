@@ -224,7 +224,7 @@ class SubmitCAPE(Report):
             
         if package:
             task_id = db.add_path(file_path=self.task["target"],
-                                    package=dumper,
+                                    package=package,
                                     timeout=self.task["timeout"],
                                     options=self.task_options,
                                     priority=self.task["priority"]+1,   # increase priority to expedite related submission

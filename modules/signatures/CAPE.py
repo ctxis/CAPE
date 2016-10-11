@@ -74,12 +74,6 @@ class CAPE_PlugX_fuzzy(Signature):
             if "MZ" in buf:
                 self.compressed_binary = True
 
-        #if call["api"] == "memcpy":
-            #count = self.get_raw_argument(call, "count")
-            #if (count > 0xa00)  and \
-               #(count < 0x5000):
-                #self.config_copy = True
-
     def on_complete(self):
         if self.config_copy == True and self.compressed_binary == True:
             self.plugx = True
@@ -179,4 +173,26 @@ class CAPE_EvilGrab(Signature):
         else:
             return False
             
+class AllocationX(Signature):
+    name = "allocation_rwx"
+    description = "CAPE detection: Extraction"
+    severity = 1
+    categories = ["allocation"]
+    authors = ["Context"]
+    minimum = "1.2"
+    evented = True
 
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["NtAllocateVirtualMemory"])
+
+    def on_call(self, call, process):
+        if call["api"] == "NtAllocateVirtualMemory":
+            protection = self.get_argument(call, "Protection")
+            regionsize = int(self.get_raw_argument(call, "RegionSize"), 0)
+            # PAGE_EXECUTE_READWRITE
+            if protection == "0x00000040" and regionsize > 0x2000:
+                return True
+            else:
+                return False

@@ -35,11 +35,14 @@ $(function() {
         <li><a href="#dropped" data-toggle="tab">Dropped Files</a></li>
     {% endif %}
     {% endif %}
-    {% if analysis.CAPE|length %}
-        <li><a href="#CAPE" data-toggle="tab">CAPE ({{analysis.CAPE|length}})</a></li>
-    {% endif %}
     {% if analysis.procmemory %}<li><a href="#procmemory" data-toggle="tab">Process Memory</a></li>{% endif %}
     {% if analysis.memory %}<li><a href="#memory" data-toggle="tab">Memory Analysis</a></li>{% endif %}
+    {% if analysis.procdump|length %}
+        <li><a href="#procdump" data-toggle="tab">Process Dumps ({{analysis.procdump|length}})</a></li>
+    {% endif %}    
+    {% if analysis.CAPE|length %}
+        <li><a href="#CAPE" data-toggle="tab">CAPE ({{analysis.CAPE|length}})</a></li>
+    {% endif %}    
     {% if config.malheur %}
     {% if analysis.info.category == "file" or analysis.info.category == "url" %}
     {% if similar|length %}
@@ -85,6 +88,9 @@ $(function() {
     </div>
     <div class="tab-pane fade" id="CAPE">
         {% include "analysis/CAPE/index.html" %}
+    </div>
+    <div class="tab-pane fade" id="procdump">
+        {% include "analysis/procdump/index.html" %}
     </div>
     {% if analysis.procmemory %}
     <div class="tab-pane fade" id="procmemory">

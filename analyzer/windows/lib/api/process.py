@@ -621,6 +621,10 @@ class Process:
                 if optname in cfgoptions:
                     config.write("{0}={1}\n".format(optname, cfgoptions[optname]))
 
+            if "procmemdump" in cfgoptions:
+                config.write("procmemdump={0}\n".format(cfgoptions["procmemdump"]))
+            if "import_reconstruction" in cfgoptions:
+                config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
             if "breakpoint" in cfgoptions:
                 config.write("breakpoint={0}\n".format(cfgoptions["breakpoint"]))
                 
@@ -742,6 +746,10 @@ class Process:
             if firstproc:
                 Process.first_process = False
 
+            if "procmemdump" in cfgoptions:
+                config.write("procmemdump={0}\n".format(cfgoptions["procmemdump"]))
+            if "import_reconstruction" in cfgoptions:
+                config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
             if "breakpoint" in cfgoptions:
                 config.write("breakpoint={0}\n".format(cfgoptions["breakpoint"]))
                 

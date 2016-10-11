@@ -861,6 +861,19 @@ def file(request, category, task_id, dlfile):
         else:
             path = buf
             file_name += ".bin"            
+    elif category == "procdump":
+        buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
+                           task_id, "procdump", file_name)
+        if os.path.isdir(buf):
+            # Backward compat for when each dropped file was in a separate dir
+            # Grab smaller file name as we store guest paths in the
+            # [orig file name]_info.exe
+            dfile = min(os.listdir(buf), key=len)
+            path = os.path.join(buf, dfile)
+            file_name = dfile + ".bin"
+        else:
+            path = buf
+            file_name += ".bin"
     elif category == "CAPE":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "CAPE", file_name)

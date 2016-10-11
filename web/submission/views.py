@@ -98,7 +98,16 @@ def index(request):
         if request.POST.get("process_memory"):
             if options:
                 options += ","
-            options += "procmemdump=yes"
+            options += "procmemdump=0"
+        else:
+            if options:
+                options += ","
+            options += "procmemdump=1"
+        
+        if request.POST.get("import_reconstruction"):
+            if options:
+                options += ","
+            options += "import_reconstruction=1"
 
         if request.POST.get("kernel_analysis"):
             if options:

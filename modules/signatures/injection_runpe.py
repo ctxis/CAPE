@@ -16,7 +16,7 @@ from lib.cuckoo.common.abstracts import Signature
 
 class InjectionRUNPE(Signature):
     name = "injection_runpe"
-    description = "RunPE or Process Hollowing detected"
+    description = "CAPE detection: Injection (Process Hollowing)"
     severity = 3
     categories = ["injection"]
     authors = ["glysbaysb", "Accuvant"]

@@ -307,6 +307,30 @@ $(document).ready( function() {
                                 <label for="form_custom">Custom</label>
                                 <input type="text" class="form-control" id="form_custom" name="custom" />
                             </div>
+                            {% if config.procmemory %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="process_memory" /> Disable dump of all processes
+                                </label>
+                            </div>
+                            {% endif %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="import_reconstruction" /> Enable process dump import reconstruction <span class="text-muted"><small>(slow)</small>
+                                </label>
+                            </div>
+                            {% if config.memory %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="memory" /> Full Memory Dump <span class="text-muted"><small>(if the "memory" processing module is enabled, will launch a Volatility analysis)</small></span>
+                                </label>
+                            </div>
+                            {% endif %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="enforce_timeout" /> Enforce Timeout
+                                </label>
+                            </div>
                             <div class="checkbox">
                                 <label>
                                     <input type="checkbox" name="free" /> No Injection <span class="text-muted"><small>(disable behavioral analysis)</small></span>
@@ -324,6 +348,11 @@ $(document).ready( function() {
                                     <input type="checkbox" name="norefer" /> No Fake Referrer for URL Tasks
                                 </label>
                             </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="nohuman" /> Disable automated interaction
+                                </label>
+                            </div>
                             {% if config.tor %}
                             <div class="checkbox">
                                 <label>
@@ -338,30 +367,6 @@ $(document).ready( function() {
                                 </label>
                             </div>
                             {% endif %}
-                            <div class="checkbox">
-                                <label>
-                                    <input type="checkbox" name="nohuman" /> Disable automated interaction
-                                </label>
-                            </div>
-                            {% if config.procmemory %}
-                            <div class="checkbox">
-                                <label>
-                                    <input type="checkbox" name="process_memory" /> Process Memory Dump
-                                </label>
-                            </div>
-                            {% endif %}
-                            {% if config.memory %}
-                            <div class="checkbox">
-                                <label>
-                                    <input type="checkbox" name="memory" /> Full Memory Dump <span class="text-muted"><small>(if the "memory" processing module is enabled, will launch a Volatility analysis)</small></span>
-                                </label>
-                            </div>
-                            {% endif %}
-                            <div class="checkbox">
-                                <label>
-                                    <input type="checkbox" name="enforce_timeout" /> Enforce Timeout
-                                </label>
-                            </div>
                         </div>
                     </div>
                 </div>
