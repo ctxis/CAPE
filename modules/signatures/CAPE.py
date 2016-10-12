@@ -173,8 +173,8 @@ class CAPE_EvilGrab(Signature):
         else:
             return False
             
-class AllocationX(Signature):
-    name = "allocation_rwx"
+class ExtractionRWX(Signature):
+    name = "extraction_rwx"
     description = "CAPE detection: Extraction"
     severity = 1
     categories = ["allocation"]
@@ -185,7 +185,7 @@ class AllocationX(Signature):
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
 
-    filter_apinames = set(["NtAllocateVirtualMemory"])
+    filter_apinames = set(["NtAllocateVirtualMemory","NtProtectVirtualMemory","VirtualProtectEx"])
 
     def on_call(self, call, process):
         if call["api"] == "NtAllocateVirtualMemory":
@@ -194,5 +194,14 @@ class AllocationX(Signature):
             # PAGE_EXECUTE_READWRITE
             if protection == "0x00000040" and regionsize > 0x2000:
                 return True
-            else:
-                return False
+        if call["api"] == "VirtualProtectEx":
+            protection = self.get_argument(call, "Protection")
+            size = int(self.get_raw_argument(call, "Size"), 0)
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle == "0xffffffff" and protection == "0x00000040" and size > 0x2000:
+                return True
+        elif call["api"] == "NtProtectVirtualMemory":
+            protection = self.get_argument(call, "NewAccessProtection")
+            size = int(self.get_raw_argument(call, "NumberOfBytesProtected"), 0)
+            if protection == "0x00000040" and size > 0x2000:
+                return True

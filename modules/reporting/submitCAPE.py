@@ -97,13 +97,16 @@ class SubmitCAPE(Report):
                             continue
                         detections.add('CAPE_Injection')
                 
-                elif entry["name"] == "allocation_rwx":
+                elif entry["name"] == "extraction_rwx":
                     if report["info"].has_key("package"):
                         parent_package = report["info"].get("package")
                         if parent_package.startswith('CAPE'):
                             continue
                         if parent_package=='doc':
                             detections.add('CAPE_Extraction_doc')    
+                            continue
+                        if parent_package=='zip':
+                            detections.add('CAPE_Extraction_zip')    
                             continue
                         if parent_package=='dll':
                             detections.add('CAPE_Extraction_dll')    
