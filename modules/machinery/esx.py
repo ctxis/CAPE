@@ -38,7 +38,7 @@ class ESX(LibVirtMachinery):
 
         return 0
     
-    def _connect(self):     
+    def _connect(self, label=None):     
         """
         return the already-connected single connection handle if set, otherwise set it.
         """  

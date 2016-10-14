@@ -332,12 +332,15 @@ class vSphere(Machinery):
             response = requests.get(url, params=params, headers=headers,
                                     verify=False, stream=True)
 
+            response.raise_for_status()
+
             with open(path, "wb") as localfile:
                 for chunk in response.iter_content(16*1024):
                     localfile.write(chunk)
-        except:
-            raise CuckooMachineError("Error downloading memory dump {0}"
-                                     .format(filespec))
+
+        except Exception as e:
+            raise CuckooMachineError("Error downloading memory dump {0}: {1}"
+                                     .format(filespec, e))
 
     def _stop_virtual_machine(self, vm):
         """Power off a virtual machine"""
