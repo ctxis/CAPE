@@ -24,4 +24,13 @@ class CAPE_Extraction(Package):
         self.options["dll"] = "CAPE_Extraction.dll"
         arguments = self.options.get("arguments")
         
+        # If the file doesn't have an extension, add .exe
+        # See CWinApp::SetCurrentHandles(), it will throw
+        # an exception that will crash the app if it does
+        # not find an extension on the main exe's filename
+        if "." not in os.path.basename(path):
+            new_path = path + ".exe"
+            os.rename(path, new_path)
+            path = new_path
+        
         return self.debug(path, arguments, path)
