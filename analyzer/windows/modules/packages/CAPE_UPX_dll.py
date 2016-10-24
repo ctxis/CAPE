@@ -45,5 +45,5 @@ class CAPE_UPX_dll(Package):
             shutil.copy(rundll32, newname)
             rundll32 = newname
 
-        return self.execute(rundll32, args, path)
+        return self.debug(rundll32, args, path)
         

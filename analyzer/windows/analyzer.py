@@ -183,13 +183,12 @@ def dump_file(file_path):
 
 def cape_file(file_path):
     """Create a copy of the given CAPE file path."""
-    duplicate = False
     try:
         if os.path.exists(file_path):
             sha256 = hash_file(hashlib.sha256, file_path)
             if sha256 in CAPE_DUMPED_LIST:
-                # The file was already dumped, just upload the alternate name for it.
-                duplicate = True
+                # The file was already uploaded, forget it
+                return
         else:
             log.warning("CAPE file at path \"%s\" does not exist, skip.",
                         file_path.encode("utf-8", "replace"))
@@ -201,11 +200,7 @@ def cape_file(file_path):
     if os.path.isdir(file_path):
         return
     file_name = os.path.basename(file_path)
-    if duplicate:
-        idx = CAPE_DUMPED_LIST.index(sha256)
-        upload_path = CAPE_DUMPED_LIST[idx]
-    else:
-        upload_path = os.path.join("CAPE", sha256)
+    upload_path = os.path.join("CAPE", sha256)
         
     if os.path.exists(file_path + "_info.txt"):
         metadata = [line.strip() for line in open(file_path + "_info.txt")]
@@ -218,23 +213,21 @@ def cape_file(file_path):
         
     try:
         upload_to_host_with_metadata(file_path, upload_path, metastring)
-        if not duplicate:
-            CAPE_DUMPED_LIST.append(sha256)
-            CAPE_DUMPED_LIST.append(upload_path)
-            log.info("Added new CAPE file to list with path: %s", unicode(file_path).encode("utf-8", "replace"))
+        CAPE_DUMPED_LIST.append(sha256)
+        CAPE_DUMPED_LIST.append(upload_path)
+        log.info("Added new CAPE file to list with path: %s", unicode(file_path).encode("utf-8", "replace"))
     except (IOError, socket.error) as e:
         log.error("Unable to upload CAPE file at path \"%s\": %s",
                   file_path.encode("utf-8", "replace"), e)
 
 def proc_dump(file_path):
     """Create a copy of the given process dump file path."""
-    duplicate = False
     try:
         if os.path.exists(file_path):
             sha256 = hash_file(hashlib.sha256, file_path)
             if sha256 in PROC_DUMPED_LIST:
-                # The file was already dumped, just upload the alternate name for it.
-                duplicate = True
+                # The file was already uploaded, forget it
+                return
         else:
             log.warning("Process dump at path \"%s\" does not exist, skip.",
                         file_path.encode("utf-8", "replace"))
@@ -246,11 +239,7 @@ def proc_dump(file_path):
     if os.path.isdir(file_path):
         return
     file_name = os.path.basename(file_path)
-    if duplicate:
-        idx = PROC_DUMPED_LIST.index(sha256)
-        upload_path = PROC_DUMPED_LIST[idx]
-    else:
-        upload_path = os.path.join("procdump", sha256)
+    upload_path = os.path.join("procdump", sha256)
         
     if os.path.exists(file_path + "_info.txt"):
         metadata = [line.strip() for line in open(file_path + "_info.txt")]
@@ -263,10 +252,9 @@ def proc_dump(file_path):
         
     try:
         upload_to_host_with_metadata(file_path, upload_path, metastring)
-        if not duplicate:
-            CAPE_DUMPED_LIST.append(sha256)
-            CAPE_DUMPED_LIST.append(upload_path)
-            log.info("Added new CAPE file to list with path: %s", unicode(file_path).encode("utf-8", "replace"))
+        CAPE_DUMPED_LIST.append(sha256)
+        CAPE_DUMPED_LIST.append(upload_path)
+        log.info("Added new CAPE file to list with path: %s", unicode(file_path).encode("utf-8", "replace"))
     except (IOError, socket.error) as e:
         log.error("Unable to upload process dump at path \"%s\": %s",
                   file_path.encode("utf-8", "replace"), e)
