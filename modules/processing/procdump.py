@@ -37,6 +37,20 @@ class ProcDump(Processing):
             file_info["module_path"] = metastrings[3]
             file_info["process_name"] = file_info["process_path"].split("\\")[-1]
             file_info["pid"] = metastrings[1]
+            file_info["cape_type"] = "PE image"
+            type_strings = file_info["type"].split()
+            if type_strings[0] == ("PE32+"):
+                file_info["cape_type"] += ": 64-bit "
+                if type_strings[2] == ("(DLL)"):
+                    file_info["cape_type"] += "DLL"
+                else:
+                    file_info["cape_type"] += "executable"
+            if type_strings[0] == ("PE32"):
+                file_info["cape_type"] += ": 32-bit "
+                if type_strings[2] == ("(DLL)"):
+                    file_info["cape_type"] += "DLL"
+                else:
+                    file_info["cape_type"] += "executable"
             texttypes = [
                 "ASCII",
                 "Windows Registry text",
@@ -55,7 +69,7 @@ class ProcDump(Processing):
                     file_info["data"] = convert_to_printable(filedata[:buf] + " <truncated>")
                 else:
                     file_info["data"] = convert_to_printable(filedata)
-
+                
             procdump_files.append(file_info)
 
         return procdump_files

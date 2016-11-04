@@ -103,13 +103,16 @@ class SubmitCAPE(Report):
                         if parent_package.startswith('CAPE'):
                             continue
                         if parent_package=='doc':
-                            detections.add('CAPE_Extraction_doc')    
+                        #    detections.add('CAPE_Extraction_doc')    
                             continue
                         if parent_package=='zip':
                             detections.add('CAPE_Extraction_zip')    
                             continue
                         if parent_package=='dll':
                             detections.add('CAPE_Extraction_dll')    
+                            continue
+                        if parent_package=='regsvr':
+                            detections.add('CAPE_Extraction_regsvr')    
                             continue
                         detections.add('CAPE_Extraction')
                 

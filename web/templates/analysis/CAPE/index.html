@@ -37,17 +37,13 @@
         <div class="panel panel-default">
             <table class="table table-striped" style="table-layout: fixed;">
                 <tr>
-                    <th style="border-top: 0; width: 15%;">File name</th>
-                    <td style="border-top: 0; word-wrap: break-word;"><b>{{file.name}}</b></td>
-                </tr>
-                <tr>
                     <th style="border-top: 0; width: 15%;">Type</th>
                     <td style="border-top: 0; word-wrap: break-word;"><b>PlugX Config</b></td>
                 </tr>                
                 {% for key, value in file.plugx_config.items %}
                     <tr>
-                        <th style="border-top: 0; width: 15%;"><b>{{key}}</b></th>
-                        <td style="border-top: 0; word-wrap: break-word;">{{value}}</td>
+                        <th><b>{{key}}</b></th>
+                        <td>{{value}}</td>
                     </tr>
                 {% endfor %}
                 {% if file.object_id or file.dropdir %}
@@ -69,25 +65,58 @@
         <div class="panel panel-default">
             <table class="table table-striped" style="table-layout: fixed;">
                 <tr>
-                    <th style="border-top: 0; width: 15%;">File name</th>
-                    <td style="border-top: 0; word-wrap: break-word;"><b>{{file.name}}</b></td>
-                </tr>
+                    <th style="border-top: 0; width: 15%;">Type</th>
+                    <td style="border-top: 0; word-wrap: break-word;"><b>{{file.cape_type}}</b></td>
+                </tr>                
                 <tr>
-                    <th>Associated Filenames</th>
-                    <td>
-                        {% for path in file.guest_paths %}
-                            <div>{{path}}</div>
-                        {% endfor %}
-                    </td>
-                </tr>
-                <tr>
-                    <th>File Size</th>
+                    <th>Size</th>
                     <td>{{file.size}} bytes</td>
                 </tr>
+                {% if file.cape_type_code == 8 or file.cape_type_code == 9 %}
                 <tr>
-                    <th>File Type</th>
-                    <td style="word-wrap: break-word;">{{file.type}}</td>
+                    <th>Virtual Address</th>
+                    <td>{{file.virtual_address}}</td>
+                </tr>                
+                {% endif %}
+                {% if file.cape_type_code == 3 or file.cape_type_code == 4 %}
+                <tr>
+                    <th>Target Process</th>
+                    <td>{{file.target_process}}</td>
                 </tr>
+                <tr>
+                    <th>Target PID</th>
+                    <td>{{file.target_pid}}</td>
+                </tr>                
+                <tr>
+                    <th>Target Path</th>
+                    <td>{{file.target_path}}</td>
+                </tr>                
+                <tr>
+                    <th>Injecting Process</th>
+                    <td>{{file.process_name}}</td>
+                </tr>
+                <tr>
+                    <th>Injecting PID</th>
+                    <td>{{file.pid}}</td>
+                </tr>                
+                <tr>
+                    <th>Path</th>
+                    <td>{{file.process_path}}</td>
+                </tr>                
+                {% else %}
+                <tr>
+                    <th>Process</th>
+                    <td>{{file.process_name}}</td>
+                </tr>
+                <tr>
+                    <th>PID</th>
+                    <td>{{file.pid}}</td>
+                </tr>
+                <tr>
+                    <th>Path</th>
+                    <td>{{file.process_path}}</td>
+                </tr>                
+                {% endif %}
                 <tr>
                     <th>MD5</th>
                     <td style="word-wrap: break-word;">{{file.md5}}</td>
@@ -109,11 +138,6 @@
                     <td style="word-wrap: break-word;">{{file.ssdeep}}</td>
                 </tr>
                 <tr>
-                <tr>
-                    <th>ClamAV</th>
-                    <td>{{file.clamav}}</td>
-                </tr>
-
                     <th>Yara</th>
                     <td>
                     {% if file.yara %}
@@ -126,10 +150,6 @@
                         None matched
                     {% endif %}
                     </td>
-                </tr>
-                <tr>
-                    <th>VirusTotal</th>
-                    <td><a href="https://www.virustotal.com/en/file/{{file.sha256}}/analysis/">Search for Analysis</a></td>
                 </tr>
                 {% if file.dropdir %}
                 <tr>
@@ -144,8 +164,7 @@
                         <a href="{% url "file" "CAPE" analysis.info.id file.sha256 %}" class="btn btn-primary btn-small">Download</a>
                     </td>
                 </tr>
-                {% endif %}                
-            </table>
+                {% endif %}            </table>
         </div>
         
         {% endif %}        

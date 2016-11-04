@@ -20,8 +20,8 @@
                     <td>{{file.module_path}}</td>
                 </tr>
                 <tr>
-                    <th>PE Type</th>
-                    <td style="word-wrap: break-word;">{{file.type}}</td>
+                    <th>Type</th>
+                    <td style="word-wrap: break-word;">{{file.cape_type}}</td>
                 </tr>
                 <tr>
                     <th>MD5</th>
@@ -44,11 +44,10 @@
                     <td style="word-wrap: break-word;">{{file.ssdeep}}</td>
                 </tr>
                 <tr>
-                <tr>
                     <th>ClamAV</th>
                     <td>{{file.clamav}}</td>
                 </tr>
-
+                <tr>
                     <th>Yara</th>
                     <td>
                     {% if file.yara %}
@@ -79,7 +78,7 @@
                         <a href="{% url "file" "procdump" analysis.info.id file.sha256 %}" class="btn btn-primary btn-small">Download</a>
                     </td>
                 </tr>
-                {% endif %}                
+                {% endif %}
             </table>
         </div>
     {% endfor %}

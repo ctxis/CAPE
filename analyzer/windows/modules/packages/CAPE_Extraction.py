@@ -19,9 +19,11 @@ class CAPE_Extraction(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "CAPE_Extraction.dll"
+        self.options["procmemdump"] = '0'
 
     def start(self, path):
         self.options["dll"] = "CAPE_Extraction.dll"
+        self.options["procmemdump"] = '0'
         arguments = self.options.get("arguments")
         
         # If the file doesn't have an extension, add .exe
