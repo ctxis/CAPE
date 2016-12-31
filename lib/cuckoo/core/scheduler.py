@@ -304,6 +304,7 @@ class AnalysisManager(threading.Thread):
             guest = GuestManager(self.machine.name, self.machine.ip,
                                  self.machine.platform)
 
+            options["clock"] = self.db.update_clock(self.task.id)
             # Start the analysis.
             guest.start_analysis(options)
 

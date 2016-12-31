@@ -3,7 +3,7 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import logging
-from _winreg import (OpenKey, SetValueEx, CloseKey, QueryInfoKey, EnumKey,
+from _winreg import (OpenKey, CreateKeyEx, SetValueEx, CloseKey, QueryInfoKey, EnumKey,
         EnumValue, HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, KEY_SET_VALUE, KEY_READ,
         REG_SZ, REG_DWORD)
 from random import randint
@@ -70,9 +70,16 @@ class Disguise(Auxiliary):
         for oVersion in installedVersions:
             for software in extensions:
                 values = list()
-                mruKeyPath = r"{0}\{1}\{2}\File MRU".format(baseOfficeKeyPath, oVersion, software)
+                mruKeyPath = ""
+                productPath = r"{0}\{1}\{2}".format(baseOfficeKeyPath, oVersion, software)
                 try:
-                    mruKey = OpenKey(HKEY_CURRENT_USER, mruKeyPath, 0, KEY_READ)
+                    productKey = OpenKey(HKEY_CURRENT_USER, productPath, 0, KEY_READ)
+                    CloseKey(productKey)
+                    mruKeyPath = r"{0}\File MRU".format(productPath)
+                    try:
+                        mruKey = OpenKey(HKEY_CURRENT_USER, mruKeyPath, 0, KEY_READ)
+                    except WindowsError:
+                        mruKey = CreateKeyEx(HKEY_CURRENT_USER, mruKeyPath, 0, KEY_READ)
                     displayValue = False
                     for mruKeyInfo in xrange(0, QueryInfoKey(mruKey)[1]):
                         currentValue = EnumValue(mruKey, mruKeyInfo)
@@ -80,7 +87,6 @@ class Disguise(Auxiliary):
                             displayValue = True
                         values.append(currentValue)
                     CloseKey(mruKey)
-
                 except WindowsError:
                     # An Office version was found in the registry but the
                     # software (Word/Excel/PowerPoint) was not installed.

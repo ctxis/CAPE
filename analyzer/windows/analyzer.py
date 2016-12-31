@@ -347,7 +347,6 @@ class PipeHandler(Thread):
         global MONITORED_BITS
         global LASTINJECT_TIME
         global NUM_INJECTED
-
         try:
             data = ""
             response = "OK"
@@ -543,8 +542,8 @@ class PipeHandler(Thread):
 
                         bits_pid = pid_from_service_name("BITS")
                         if bits_pid:
-                            add_critical_pid(bits_pid)
                             servproc = Process(pid=bits_pid,suspended=False)
+                            servproc.set_critical()
                             filepath = servproc.get_filepath()
                             servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
@@ -704,12 +703,10 @@ class PipeHandler(Thread):
                                 if is_64bit:
                                     if not in_protected_path(filename):
                                         res = proc.inject(dll_64, INJECT_QUEUEUSERAPC, interest)
-                                        log.info("Injected 64-bit process %s with 64-bit dll: %s", filename, dll_64)
                                         LASTINJECT_TIME = datetime.now()
                                 else:
                                     if not in_protected_path(filename):
                                         res = proc.inject(dll, INJECT_QUEUEUSERAPC, interest)
-                                        log.info("Injected 32-bit process %s with 32-bit dll: %s", filename, dll)
                                         LASTINJECT_TIME = datetime.now()
                                 proc.close()
                         else:
@@ -1343,9 +1340,11 @@ if __name__ == "__main__":
     try:
         # Initialize the main analyzer class.
         analyzer = Analyzer()
+        analyzer.prepare()
+        completion_key = analyzer.get_completion_key()
+        
         # Run it and wait for the response.
         success = analyzer.run()
-        completion_key = analyzer.get_completion_key()
 
     # This is not likely to happen.
     except KeyboardInterrupt:

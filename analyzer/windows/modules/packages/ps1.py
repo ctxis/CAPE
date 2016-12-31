@@ -2,6 +2,8 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+import os
+
 from lib.common.abstracts import Package
 
 # Originally proposed by David Maciejak.
@@ -14,5 +16,10 @@ class PS1(Package):
 
     def start(self, path):
         powershell = self.get_path_glob("PowerShell")
-        args = "-NoProfile -ExecutionPolicy unrestricted -File \"{0}\"".format(path)
+
+        if not path.endswith(".ps1"):
+            os.rename(path, path + ".ps1")
+            path += ".ps1"
+
+        args = "-NoProfile -ExecutionPolicy bypass -File \"{0}\"".format(path)
         return self.execute(powershell, args, path)

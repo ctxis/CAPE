@@ -1,0 +1,127 @@
+
+One of the primary goals of DC3-MWCP is to standardize malware configuration
+parser output. To this end, DC3-MWCP enforces a set of predefined fields for
+parser output. These fields, including their descriptions and examples can be
+viewed by using the -k option of the mwcp.py utility or by viewing 
+fields.json. Below is an example of parser output using these definitions.
+
+To ensure data portability, values are encoded as strings. Also, since many
+items can have multiple values, most items are specified as lists. Lists are
+used to implement tuples which consist of atomic values which are necessarily,
+connected. For example, a credential consists of a username and password. In
+these tuples, order must be maintained. 
+
+It will be noted that some values are duplicated. For example, the address in a
+socketaddress is also stored alone as an address. The framework performs this
+duplication to ensure that the data can be used flexibly. This duplication
+is allowed to ensure all cases are covered accurately. For example, a password
+may be used in malware without an associated or explicit username. In other
+cases there may be multiple credentials such that it is necessary to have the
+usernames associated with their respective passwords. In cases where all the
+data for a composite data type is not known, and the tuple provides no
+meaningful association of data, typically the less specific type is used. If an
+incomplete tuple provides a meaningful connection in multiple data items, then
+it should be used. Ex. in the case of a password used without a username, just
+the password field would be populated. However, in cases where the servicename
+and servicedisplayname are known, they would be combined into an incomplete
+tuple to maintain the link between these two items. When possible, the most
+comprehensive type is used. If not all values for a tuple are known, the empty
+string, "", is used.
+
+The standardized fields used here seek to encompass the most common
+malware configuration items. The goal of this field set is to facilitate
+generation of metadata that is comparable between different backdoors. These
+fields are necessarily abstract and backdoor parser authors should seek to
+follow the descriptions as well as possible. When in doubt, the data should be
+included in the standardized fields if it is of the correct data type. For 
+example, if a domain is used for a domain lookup based port calculation, this
+address should be included in the address field. Due to the heavy focus on
+malware parameters that are typically mitigated, the c2_address, c2_url,
+and c2_socketadress fields are included. These are duplicative of their 
+respective general counterparts. It is recognized that these special c2 tagged
+items warrant special attention as they are used frequently as mitigation
+candidates. A c2_address is an address that known to be is used for command and
+control. It will be repeated as an address. It should be clear, however, that
+malware configuration does not become intelligence or even a collection of
+actionable indicators without vetting.
+
+While the abstraction provided by these fields helps make the configuration of
+different backdoors more easily comparable, there is no intention to dumb down
+the parser output to fully remove backdoor specific context. The point of the
+"other" field is to contain backdoor specific key value pairs. These keys are
+arbitrary to permit flexibility in describing the peculiarities of individual
+malware families. It is through use of these "other" fields that an analyst can
+determine how a specific abstract item is used. For example, this allows one to
+determine if an address is used for a proxy, for a 
+connectivity check, for a lookup based port calculation, etc. Hence, it is
+common for much or all of the data in the standardized fields to be duplicated
+in the "other" field.
+
+
+Example config parser output:
+
+{
+    "address": [
+        "10.1.1.1",
+        "192.168.1.1"
+    ],
+    "c2_address": [
+        "10.1.1.1",
+        "192.168.1.1"
+    ],
+    "debug": [
+        "Config Offset: 0x5000",
+        "Tertiary C2 not found"
+    ],
+    "interval": [
+        "30"
+    ],
+    "missionid": [
+        "orgA201502"
+    ],
+    "mutex": [
+        "ghurlrat94839d"
+    ],
+    "other": {
+        "C2 password": "MMMMchicken8#@",
+        "Campaign Marker": "orgA201502",
+        "Enable Keylogger": "True",
+        "Primary C2": "10.1.1.1|443",
+        "Secondary C2": "192.168.1.1|443",
+        "Sleep Timer": "30"
+    },
+    "password": [
+        "MMMMchicken8#@"
+    ],
+    "port": [
+        [
+            "443",
+            "tcp"
+        ]
+    ],
+    "socketaddress": [
+        [
+            "10.1.1.1",
+            "443",
+            "tcp"
+        ],
+        [
+            "192.168.1.1",
+            "443",
+            "tcp"
+        ]
+    ],
+    "c2_socketaddress": [
+        [
+            "10.1.1.1",
+            "443",
+            "tcp"
+        ],
+        [
+            "192.168.1.1",
+            "443",
+            "tcp"
+        ]
+    ]
+}
+

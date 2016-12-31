@@ -23,6 +23,7 @@ from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.utils import to_unicode
 from lib.cuckoo.core.database import Database
 from lib.cuckoo.common.config import Config
+from lib.cuckoo.common.exceptions import CuckooDemuxError
 
 def main():
     parser = argparse.ArgumentParser()
@@ -250,7 +251,8 @@ def main():
                     return False
 
                 json = response.json()
-                task_ids = [ json["task_id"] ]
+                task_ids = [ json.get("task_ids",None) ]
+
             else:
                 if args.unique:
                     sha256 = File(file_path).get_sha256()
@@ -260,9 +262,13 @@ def main():
                             print(bold(yellow("Duplicate")) + msg)
                         continue
 
-                task_ids = db.demux_sample_and_add_to_db(file_path=file_path, package=args.package, timeout=sane_timeout, options=args.options,
-                                                         priority=args.priority, machine=args.machine, platform=args.platform, memory=args.memory,
-                                                         custom=args.custom, enforce_timeout=args.enforce_timeout, clock=args.clock, tags=args.tags)
+                try:
+                    task_ids = db.demux_sample_and_add_to_db(file_path=file_path, package=args.package, timeout=sane_timeout, options=args.options,
+                            priority=args.priority, machine=args.machine, platform=args.platform, memory=args.memory,
+                            custom=args.custom, enforce_timeout=args.enforce_timeout, clock=args.clock, tags=args.tags)
+                except CuckooDemuxError as e:
+                    task_ids = []
+                    print(bold(red("Error")) + ": {0}".format(e))
 
             tasks_count = len(task_ids)
             if tasks_count > 1:

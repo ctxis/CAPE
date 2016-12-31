@@ -3,6 +3,7 @@ rule CAPE_Dridex
     meta:
         author = "kev"
         description = "Dridex encrypt/decrypt function"
+        cape_type = "Dridex Payload"
 
     strings:
         $crypt_32_v1 = {57 53 55 81 EC 0C 02 00 00 8B BC 24 1C 02 00 00 85 FF 74 20 8B AC 24 20 02 00 00 85 ED 74 15 83 BC 24 24 02 00 00 00 74 0B 8B 9C 24 28 02 00 00 85 DB 75 ?? 81 C4 ?? 02 00 00 5D 5B 5F}

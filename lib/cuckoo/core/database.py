@@ -18,7 +18,7 @@ from lib.cuckoo.common.demux import demux_sample
 
 try:
     from sqlalchemy import create_engine, Column, event
-    from sqlalchemy import Integer, String, Boolean, DateTime, Enum
+    from sqlalchemy import Integer, String, Boolean, DateTime, Enum, func
     from sqlalchemy import ForeignKey, Text, Index, Table
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -554,6 +554,28 @@ class Database(object):
             session.close()
 
     @classlock
+    def update_clock(self, task_id):
+        session = self.Session()
+        try:
+            row = session.query(Task).get(task_id)
+
+            if not row:
+                return
+
+            if row.clock == datetime.utcfromtimestamp(0):
+                if row.category == "file":
+                    row.clock = datetime.utcnow() + timedelta(days=self.cfg.cuckoo.daydelta)
+                else:
+                    row.clock = datetime.utcnow()
+                session.commit()
+            return row.clock
+        except SQLAlchemyError as e:
+            log.debug("Database error setting clock: {0}".format(e))
+            session.rollback()
+        finally:
+            session.close()
+
+    @classlock
     def set_status(self, task_id, status):
         """Set task status.
         @param task_id: task identifier
@@ -856,7 +878,7 @@ class Database(object):
     def add(self, obj, timeout=0, package="", options="", priority=1,
             custom="", machine="", platform="", tags=None,
             memory=False, enforce_timeout=False, clock=None,
-            shrike_url=None, shrike_msg=None, 
+            shrike_url=None, shrike_msg=None,
             shrike_sid = None, shrike_refer=None, parent_id=None):
         """Add a task to database.
         @param obj: object to add (File or URL).
@@ -911,7 +933,7 @@ class Database(object):
 
             # force a special tag for 64-bit binaries to prevent them from being
             # analyzed by default on VM types that can't handle them
-            if "PE32+" in file_type:
+            if "PE32+" in file_type and not machine:
                 if tags:
                     tags += ",64_bit"
                 else:
@@ -953,17 +975,18 @@ class Database(object):
                     task.clock = datetime.strptime(clock, "%m-%d-%Y %H:%M:%S")
                 except ValueError:
                     log.warning("The date you specified has an invalid format, using current timestamp.")
-                    task.clock = datetime.utcnow()
+                    task.clock = datetime.utcfromtimestamp(0)
+
             else:
                 task.clock = clock
-        elif isinstance(obj, File):
-            try:
-                clocktime = datetime.utcnow() + timedelta(days=self.cfg.cuckoo.daydelta)
-                task.clock = clocktime
-            except:
-                pass
+
+
+
+
+
+
         else:
-            task.clock = datetime.utcnow()
+            task.clock = datetime.utcfromtimestamp(0)
 
         session.add(task)
 
@@ -981,7 +1004,7 @@ class Database(object):
 
     def add_path(self, file_path, timeout=0, package="", options="",
                  priority=1, custom="", machine="", platform="", tags=None,
-                 memory=False, enforce_timeout=False, clock=None, shrike_url=None, 
+                 memory=False, enforce_timeout=False, clock=None, shrike_url=None,
                  shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None):
         """Add a task to database from file path.
         @param file_path: sample path.
@@ -1049,7 +1072,7 @@ class Database(object):
     @classlock
     def add_pcap(self, file_path, timeout=0, package="", options="", priority=1,
                 custom="", machine="", platform="", tags=None, memory=False,
-                enforce_timeout=False, clock=None, shrike_url=None, shrike_msg=None, 
+                enforce_timeout=False, clock=None, shrike_url=None, shrike_msg=None,
                 shrike_sid = None, shrike_refer=None, parent_id=None):
         return self.add(PCAP(file_path), timeout, package, options, priority,
                         custom, machine, platform, tags, memory,
@@ -1059,7 +1082,7 @@ class Database(object):
     @classlock
     def add_url(self, url, timeout=0, package="", options="", priority=1,
                 custom="", machine="", platform="", tags=None, memory=False,
-                enforce_timeout=False, clock=None, shrike_url=None, shrike_msg=None, 
+                enforce_timeout=False, clock=None, shrike_url=None, shrike_msg=None,
                 shrike_sid = None, shrike_refer=None, parent_id=None):
         """Add a task to database from url.
         @param url: url.
@@ -1153,7 +1176,8 @@ class Database(object):
             return []
         finally:
             session.close()
-            
+
+
     @classlock
     def list_tasks(self, limit=None, details=False, category=None,
                    offset=None, status=None, sample_id=None, not_status=None,
@@ -1208,6 +1232,21 @@ class Database(object):
             return []
         finally:
             session.close()
+
+    def minmax_tasks(self):
+         """Find tasks minimum and maximum
+         @return: unix timestamps of minimum and maximum
+         """
+         session = self.Session()
+         try:
+             _min = session.query(func.min(Task.started_on).label("min")).first()
+             _max = session.query(func.max(Task.completed_on).label("max")).first()
+             return int(_min[0].strftime("%s")), int(_max[0].strftime("%s"))
+         except SQLAlchemyError as e:
+             log.debug("Database error counting tasks: {0}".format(e))
+             return 0
+         finally:
+             session.close()
 
     @classlock
     def get_file_types(self):

@@ -48,6 +48,9 @@ log = logging.getLogger(__name__)
 
 FILE_CHUNK_SIZE = 16 * 1024
 
+CAPE_YARA_RULEPATH = \
+    os.path.join(CUCKOO_ROOT, "data", "yara", "index_CAPE.yar")
+
 class Dictionary(dict):
     """Cuckoo custom dict."""
 
@@ -395,6 +398,7 @@ class File:
         infos["ssdeep"] = self.get_ssdeep()
         infos["type"] = self.get_type()
         infos["yara"] = self.get_yara()
+        infos["cape_yara"] = self.get_yara(CAPE_YARA_RULEPATH)
         infos["clamav"] = self.get_clamav()
 
         return infos

@@ -718,6 +718,11 @@ class PortableExecutable(object):
                 return retlist
 
             signature = self.pe.write()[address+8:]
+
+            # BIO.MemoryBuffer expects an argument of type 'str'
+            if type(signature) is bytearray:
+                signature = str(signature)
+
             bio = BIO.MemoryBuffer(signature)
 
             if bio:

@@ -26,6 +26,7 @@ if enabledconf["mongodb"]:
     import pymongo
     results_db = pymongo.MongoClient(settings.MONGO_HOST, settings.MONGO_PORT)[settings.MONGO_DB]
 
+es_as_db = False
 if enabledconf["elasticsearchdb"]:
     from elasticsearch import Elasticsearch
     es_as_db = True
@@ -44,12 +45,12 @@ if enabledconf["elasticsearchdb"]:
 # Conditional decorator for web authentication
 class conditional_login_required(object):
     def __init__(self, dec, condition):
-	self.decorator = dec
-	self.condition = condition
+        self.decorator = dec
+        self.condition = condition
     def __call__(self, func):
-	if not self.condition:
-	    return func
-	return self.decorator(func)
+        if not self.condition:
+            return func
+        return self.decorator(func)
 
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)

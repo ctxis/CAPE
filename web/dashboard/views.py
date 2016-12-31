@@ -28,11 +28,6 @@ class conditional_login_required(object):
             return func
         return self.decorator(func)
 
-def timestamp(dt):
-    """Returns the timestamp of a datetime object."""
-    if not dt: return None
-    return time.mktime(dt.timetuple())
-
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def index(request):
@@ -63,26 +58,20 @@ def index(request):
     offset = None
 
     # For the following stats we're only interested in completed tasks.
-    tasks = db.list_tasks(offset=offset, status=TASK_COMPLETED)
-    tasks += db.list_tasks(offset=offset, status=TASK_REPORTED)
+    tasks = db.count_tasks(status=TASK_COMPLETED)
+    tasks += db.count_tasks(status=TASK_REPORTED)
 
     if tasks:
-        # Get the time when the first task started.
-        started = min(timestamp(task.started_on) for task in tasks)
-
-        # Get the time when the last task completed.
-        completed = max(timestamp(task.completed_on) for task in tasks)
-
-        # Get the amount of tasks that actually completed.
-        finished = len(tasks)
+        # Get the time when the first task started and last one ended.
+        started, completed = db.minmax_tasks()
 
         # It has happened that for unknown reasons completed and started were
         # equal in which case an exception is thrown, avoid this.
         if started and completed and int(completed - started):
-            hourly = 60 * 60 * finished / (completed - started)
+            hourly = 60 * 60 * tasks / (completed - started)
         else:
             hourly = 0
-        
+
         report["estimate_hour"] = int(hourly)
         report["estimate_day"] = int(24 * hourly)
 

@@ -45,3 +45,7 @@ class CuckooGuestError(CuckooOperationalError):
 class CuckooResultError(CuckooOperationalError):
     """Cuckoo result server error."""
     pass
+
+class CuckooDemuxError(CuckooOperationalError):
+    """Error in demux module."""
+    pass

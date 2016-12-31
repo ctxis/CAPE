@@ -67,7 +67,7 @@ class ReSubmitExtractedEXE(Report):
             if self.resubcnt >= self.resublimit:
                 break
             if os.path.isfile(dropped["path"]):
-                if ("PE32" in dropped["type"] or "MS-DOS" in dropped["type"]) and "DLL" not in dropped["type"]:
+                if ("PE32" in dropped["type"] or "MS-DOS" in dropped["type"]) and "DLL" not in dropped["type"] and "native" not in dropped["type"]:
                     if not filesdict.has_key(dropped['sha256']):
                         srcpath = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(report["info"]["id"]), "files", dropped['sha256'])
                         linkdir = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(report["info"]["id"]), "files", dropped['sha256'] + "_link")
@@ -97,7 +97,7 @@ class ReSubmitExtractedEXE(Report):
                         tmp_suricata_file_d = dict(suricata_file_e)
                         if os.path.isfile(suricata_file_e["file_info"]["path"]):
                             ftype = suricata_file_e["file_info"]["type"]
-                            if ("PE32" in ftype or "MS-DOS" in ftype) and "DLL" not in ftype:
+                            if ("PE32" in ftype or "MS-DOS" in ftype) and "DLL" not in ftype and "native" not in ftype:
                                 if not filesdict.has_key(suricata_file_e["file_info"]["sha256"]):
                                     filesdict[suricata_file_e["file_info"]["sha256"]] = suricata_file_e["file_info"]["path"]
                                     self.resubcnt = self.resubcnt + 1
@@ -118,7 +118,7 @@ class ReSubmitExtractedEXE(Report):
                                   timeout=200,
                                   options=self.task_options,
                                   priority=1,
-                                  machine=self.machine,
+                                  machine=self.machine or "",
                                   platform=None,
                                   custom=self.task_custom,
                                   memory=False,

@@ -72,10 +72,6 @@ Following are all RESTful resources. Also make sure to check out the
 +-----------------------------------+---------------------------------------------------------------+
 | ``DELETE`` :ref:`node_delete`     | Disable (not completely remove!) a node.                      |
 +-----------------------------------+---------------------------------------------------------------+
-| ``GET`` :ref:`task_root_get`      | Get a list of all (or a part) of the tasks in the database.   |
-+-----------------------------------+---------------------------------------------------------------+
-| ``POST`` :ref:`task_root_post`    | Create a new analysis task.                                   |
-+-----------------------------------+---------------------------------------------------------------+
 
 .. _node_root_get:
 
@@ -168,20 +164,6 @@ keep its history in the Distributed's database::
 
     $ curl -XDELETE http://localhost:9003/node/localhost
     null
-
-.. _task_root_post:
-
-POST /task
-----------
-
-Submit a new file or URL to be analyzed::
-
-    $ curl http://localhost:9003/task -F file=@sample.exe
-    {
-        "task_id": 2
-    }
-
-.. _task_get:
 
 .. _quick-usage:
 

@@ -764,6 +764,8 @@ def batch_sort(input_iterator, output_path, buffer_size=32000, output_class=None
         output_file = output_class(output_path)
         for elem in heapq.merge(*chunks):
             output_file.write(elem.obj)
+        else:
+            output_file.write()
         output_file.close()
     finally:
         for chunk in chunks:
@@ -787,11 +789,12 @@ class SortCap(object):
         self.ctr = 0  # counter to pass through packets without flow info (non-IP)
         self.conns = set()
 
-    def write(self, p):
+    def write(self, p=None):
         if not self.fileobj:
             self.fileobj = open(self.name, "wb")
             self.fd = dpkt.pcap.Writer(self.fileobj, linktype=self.linktype)
-        self.fd.writepkt(p.raw, p.ts)
+        if p:
+            self.fd.writepkt(p.raw, p.ts)
 
     def __iter__(self):
         if not self.fileobj:

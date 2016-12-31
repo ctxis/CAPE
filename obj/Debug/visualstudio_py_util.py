@@ -12,6 +12,11 @@
  #
  # ###########################################################################
 
+# This module MUST NOT import threading in global scope. This is because in a direct (non-ptvsd)
+# attach scenario, it is loaded on the injected debugger attach thread, and if threading module
+# hasn't been loaded already, it will assume that the thread on which it is being loaded is the
+# main thread. This will cause issues when the thread goes away after attach completes.
+
 import imp
 import os
 import sys
@@ -111,7 +116,7 @@ def exec_module(module, global_variables):
     Python 2.5.
     '''
     import runpy
-    runpy.run_module(module, global_variables, alter_sys = True)
+    runpy.run_module(module, global_variables, run_name=global_variables.get('__name__'), alter_sys=True)
 
 UNICODE_PREFIX = to_bytes('U')
 ASCII_PREFIX = to_bytes('A')
@@ -233,7 +238,10 @@ class SafeRepr(object):
     def _repr(self, obj, level):
         '''Returns an iterable of the parts in the final repr string.'''
 
-        obj_repr = type(obj).__repr__
+        try:
+            obj_repr = type(obj).__repr__
+        except:
+            obj_repr = None
 
         def has_obj_repr(t):
             r = t.__repr__

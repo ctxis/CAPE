@@ -1,0 +1,336 @@
+{
+    "address": {
+        "description": "IP address or domain name", 
+        "examples": [
+            "bad.com", 
+            "10.11.10.13"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "c2_address": {
+        "description": "special case of address, when the address is used for command and control", 
+        "examples": [
+            "bad.com", 
+            "10.11.10.13"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "c2_socketaddress": {
+        "description": "special case of scoketaddress, when socketaddress is used for command and control", 
+        "examples": [
+            [
+                "bad.com", 
+                "21", 
+                "tcp"
+            ], 
+            [
+                "10.11.10.13", 
+                "443", 
+                "tcp"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "c2_url": {
+        "description": "special case of address, when the address is used for command and control", 
+        "examples": [
+            "http://mal.com/pub/view.asp", 
+            "https://10.11.10.13:443/images/baner.jpg"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "credential": {
+        "description": "tuple of username and password", 
+        "examples": [
+            [
+                "Hunter", 
+                "Benson"
+            ], 
+            [
+                "admin", 
+                "123456"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "debug": {
+        "description": "Message used for debugging or to report errors. Not malware configuration per se", 
+        "examples": [
+            "Succesfully found config block, attempting decode", 
+            "Decode failed: detected config location 3735928559 outside file size of 184320"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "directory": {
+        "description": "directory (dirname) used by malware", 
+        "examples": [
+            "C:\\windows\\temp\\1\\log", 
+            "%APPDATA%\\foo"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "filename": {
+        "description": "filename (basename) used by malware", 
+        "examples": [
+            "keydb.txt", 
+            "bar.exe"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "filepath": {
+        "description": "filesystem path used by malware. Includes both a directory and a filename", 
+        "examples": [
+            "C:\\windows\\temp\\1\\log\\keydb.txt", 
+            "%APPDATA%\\foo\\bar.exe"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "injectionprocess": {
+        "description": "process into which malware is injected. Usually this is a processname but it may take other forms such as a filename of the executable.", 
+        "examples": [
+            "iexplore", 
+            "svchost"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "interval": {
+        "description": "time malware waits between beacons or other activity given in seconds", 
+        "examples": [
+            "3", 
+            ".1"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "key": {
+        "description": "encryption, encoding, or obfuscation key. By convention, when these represent binary data, they should be bare hex encoded with no other markup. Base64 or similar custom dictionaries are stored as is.", 
+        "examples": [
+            "85", 
+            "6d797263346b6579"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "listenport": {
+        "description": "TCP or UDP port that is opened for listening. This has the same format as a port, but indicates an incoming connection where the malware is the server.", 
+        "examples": [
+            [
+                "53", 
+                "udp"
+            ], 
+            [
+                "443", 
+                "tcp"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "missionid": {
+        "description": "attacker specified identifier encoded in malware, usually reflected in beacons and often related to target or time of attack", 
+        "examples": [
+            "target4", 
+            "201412"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "mutex": {
+        "description": "mutex name used to prevent multiple executions of malware", 
+        "examples": [
+            "ithinkimalonenow", 
+            "0036a8117afa"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "other": {
+        "description": "All items other than the standard fields declared in this list. Items may be duplicated here to provide malware specific context.", 
+        "examples": [
+            {
+                "Activate Keylogger": "TRUE"
+            }, 
+            {
+                "Config XOR key": "89"
+            }
+        ], 
+        "type": "dictofstrings"
+    }, 
+    "outputfile": {
+        "description": "relevant or related file created during parsing of malware. Tuple of filename and description", 
+        "examples": [
+            [
+                "config.xml", 
+                "extracted backdoor Foo config file"
+            ], 
+            [
+                "client.crt", 
+                "certificate for BarRat TLS client authentication"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "password": {
+        "description": "password used by malware", 
+        "examples": [
+            "Benson", 
+            "123456"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "port": {
+        "description": "TCP or UDP port. A tuple of a port number and protocol. This generally refers to outbound connections where the malware is the client. Other network layer protcols, such as ICMP can be represented here. Application layer protocols, such as HTTP, should be indicated in a URL.", 
+        "examples": [
+            [
+                "21", 
+                "tcp"
+            ], 
+            [
+                "443", 
+                "tcp"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "registrydata": {
+        "description": "registry value data item", 
+        "examples": [
+            "c:\\update.exe", 
+            "3"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "registrypath": {
+        "description": "a registry key, value name, combination of the two", 
+        "examples": [
+            "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater", 
+            "HKLM\\System\\CurrentControlSet\\Services\\pnpsvc\\start"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "registrypathdata": {
+        "description": "a tuple of registrypath and registrydata", 
+        "examples": [
+            [
+                "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater", 
+                "c:\\update.exe"
+            ], 
+            [
+                "HKLM\\System\\CurrentControlSet\\Services\\pnpsvc\\start", 
+                "3"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "service": {
+        "description": "A tuple of servicename, servicedisplayname, servicedescription, serviceimage and servicedll", 
+        "examples": [
+            [
+                "WindowsUserManagement", 
+                "Windows User Management", 
+                "Provides a common management to access information about windows user.", 
+                "%System%\\svohost.exe", 
+                ""
+            ], 
+            [
+                "pnpsvc", 
+                "Plug and Play svc service", 
+                "Provides plug and play svc devices support", 
+                "C:\\Windows\\System32\\rundll32.exe C:\\Windows\\Temp\\1.tmp", 
+                "C:\\Windows\\Temp\\1.tmp"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "servicedescription": {
+        "description": "description for a service", 
+        "examples": [
+            "Provides a common management to access information about windows user.", 
+            "Provides plug and play svc devices support"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "servicedisplayname": {
+        "description": "displayname for a service", 
+        "examples": [
+            "Windows User Management", 
+            "Plug and Play svc service"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "servicedll": {
+        "description": ".dll used by service, if any", 
+        "examples": [
+            "", 
+            "C:\\Windows\\Temp\\1.tmp"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "serviceimage": {
+        "description": "imagepath for a service. This typically includes the path to the executable and any command line options.", 
+        "examples": [
+            "%System%\\svohost.exe", 
+            "C:\\Windows\\System32\\rundll32.exe C:\\Windows\\Temp\\1.tmp"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "servicename": {
+        "description": "name for a service", 
+        "examples": [
+            "WindowsUserManagement", 
+            "pnpsvc"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "socketaddress": {
+        "description": "An address, port, and proto combination used together", 
+        "examples": [
+            [
+                "bad.com", 
+                "21", 
+                "tcp"
+            ], 
+            [
+                "10.11.10.13", 
+                "443", 
+                "tcp"
+            ]
+        ], 
+        "type": "listofstringtuples"
+    }, 
+    "url": {
+        "description": "full URL with scheme, address, optional port, and optional path", 
+        "examples": [
+            "http://mal.com/view.asp", 
+            "https://10.11.10.13:443/images/baner.jpg"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "urlpath": {
+        "description": "path portion of URL", 
+        "examples": [
+            "/view.asp", 
+            "/images/baner.jpg"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "useragent": {
+        "description": "software identifier used by malware", 
+        "examples": [
+            "Mozilla/4.0 (compatible; MISE 6.0; Windows NT 5.2)", 
+            "1337http"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "username": {
+        "description": "username used by malware", 
+        "examples": [
+            "Hunter", 
+            "admin"
+        ], 
+        "type": "listofstrings"
+    }, 
+    "version": {
+        "description": "the version of the malware. To the degree possible this should be based directly on artifacts from the malware", 
+        "examples": [
+            "3", 
+            "incrementing XOR encoding"
+        ], 
+        "type": "listofstrings"
+    }
+}

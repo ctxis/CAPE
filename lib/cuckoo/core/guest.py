@@ -65,7 +65,6 @@ class GuestManager:
                 # and return.
                 if self.server.get_status() == status:
                     log.debug("%s: status ready", self.id)
-                    time.sleep(2)
                     break
             except:
                 pass
@@ -122,7 +121,7 @@ class GuestManager:
         @param options: options.
         @return: operation status.
         """
-        log.info("Starting analysis on guest (id=%s, ip=%s)", self.id, self.ip) 
+        log.info("Starting analysis on guest (id=%s, ip=%s)", self.id, self.ip)
 
         # TODO: deal with unicode URLs.
         if options["category"] == "file":
@@ -143,12 +142,8 @@ class GuestManager:
             self.wait(CUCKOO_GUEST_INIT)
 
             # Invoke the upload of the analyzer to the guest.
-            try:
-                self.upload_analyzer()
-            except:
-                raise CuckooGuestError("{0}: unable to upload analyzer to "
-                                       "analysis machine".format(self.id))
-                                       
+            self.upload_analyzer()
+
             # Give the analysis options to the guest, so it can generate the
             # analysis.conf inside the guest.
             try:

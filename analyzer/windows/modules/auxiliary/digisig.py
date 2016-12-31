@@ -73,6 +73,9 @@ class DigiSig(Auxiliary):
                 parser_switch = "time"
                 continue
             # Potential end of timestamp verification
+            if line.startswith("File has page hashes"):
+                parser_switch = None
+            # Potential end of timestamp verification
             if line.startswith("Number of files"):
                 parser_switch = None
             # Potential end of timestamp verification

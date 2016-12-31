@@ -1,0 +1,35 @@
+# Ignore Cuckoo Database
+db/cuckoo.db
+
+# Ignore Cuckoo logs
+log/*.log
+
+# Ignore Cuckoo analyses
+storage/*
+
+# Ignore Python byte code
+*.pyc
+
+# Ignore certificates
+*.pem
+*.cert
+
+# Ignore OS generated files
+.DS_Store*
+.AppleDouble
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Ignore development files
+docs/book/src/_build/
+.idea/
+
+# Ignore Django secret_key
+web/web/secret_key.py
+
+cuckoo.v12.suo
+
+# Ignore yara rules
+data/yara/index_*.yar
+UpgradeLog.htm

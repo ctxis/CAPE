@@ -453,7 +453,7 @@ def gen_moloch_from_suri_http(suricata):
             if e.has_key("uri") and e["uri"]:
                 e["moloch_http_uri_url"] = settings.MOLOCH_BASE + "?date=-1&expression=http.uri" + quote("\x3d\x3d\x22%s\x22" % (e["uri"].encode("utf8")),safe='')
             if e.has_key("ua") and e["ua"]:
-                e["moloch_http_ua_url"] = settings.MOLOCH_BASE + "?date=-1&expression=http.user-agent" + quote("\x3d\x3d\x22%s\x22" % (e["ua"]),safe='')
+                e["moloch_http_ua_url"] = settings.MOLOCH_BASE + "?date=-1&expression=http.user-agent" + quote("\x3d\x3d\x22%s\x22" % (e["ua"].encode("utf8")),safe='')
             if e.has_key("method") and e["method"]:
                 e["moloch_http_method_url"] = settings.MOLOCH_BASE + "?date=-1&expression=http.method" + quote("\x3d\x3d\x22%s\x22" % (e["method"]),safe='')
     return suricata
@@ -597,7 +597,7 @@ def suritls(request,task_id):
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def surifiles(request,task_id):
-    report = results_db.analysis.find_one({"info.id": int(task_id)},{"suricata.files": 1},sort=[("_id", pymongo.DESCENDING)])
+    report = results_db.analysis.find_one({"info.id": int(task_id)},{"info.id": 1,"suricata.files": 1},sort=[("_id", pymongo.DESCENDING)])
     if not report:
         return render(request, "error.html",
                                   {"error": "The specified analysis does not exist"})

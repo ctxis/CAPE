@@ -1,3 +1,4 @@
+from lib.cuckoo.common.utils import convert_to_printable
 from django.template.defaultfilters import register
 from collections import deque
 
@@ -39,7 +40,7 @@ def proctreetolist(tree):
                             cmdline = node["environ"]["CommandLine"]
                 if len(cmdline) >= 200 + 15:
                     cmdline = cmdline[:200] + " ...(truncated)"
-                newnode["commandline"] = cmdline
+                newnode["commandline"] = convert_to_printable(cmdline)
             outlist.append(newnode)
         if is_special:
             continue

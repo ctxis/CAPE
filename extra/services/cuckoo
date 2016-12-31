@@ -10,14 +10,12 @@
 
 case "$1" in
   start)
-	 su kev -c "vmrun -T ws revertToSnapshot /data/vms/remnux/REMnuxV5.vmx Base"
-    su kev -c "cd /data/cuckoo/ && screen -d -m ./cuckoo.py -d"    su cuckoo -c "cd /data/cuckoo/ && screen -d -m ./cuckoo.py -d"
-    su kev -c "cd /data/cuckoo/web && screen -d -m python manage.py runserver 0.0.0.0:8000"
+    su cuckoo -c "cd /data/cuckoo/ && screen -d -m ./cuckoo.py"
+    su cuckoo -c "cd /data/cuckoo/web && screen -d -m python manage.py runserver 0.0.0.0:8080"
 ;;
   stop)
-	 su kev -c "vmrun -T ws stop /data/vms/remnux/REMnuxV5.vmx hard"
-    pkill -f "SCREEN -d -m ./cuckoo.py -d"
-    pkill -f "SCREEN -d -m python manage.py runserver 0.0.0.0:8000"
+    pkill -f "SCREEN -d -m ./cuckoo.py"
+    pkill -f "SCREEN -d -m python manage.py runserver 0.0.0.0:8080"
 ;;
 
  restart)

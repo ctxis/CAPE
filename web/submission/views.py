@@ -23,7 +23,8 @@ sys.path.append(settings.CUCKOO_PATH)
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.utils import store_temp_file, validate_referrer
 from lib.cuckoo.common.quarantine import unquarantine
-from lib.cuckoo.common.saztopcap import saz_to_pcap 
+from lib.cuckoo.common.saztopcap import saz_to_pcap
+from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.core.database import Database
 
 # Conditional decorator for web authentication
@@ -114,6 +115,11 @@ def index(request):
                 options += ","
             options += "kernel_analysis=yes"   
 
+        if request.POST.get("norefer"):
+            if options:
+                options += ","
+            options += "norefer=1"
+
         orig_options = options
 
         if gateway and gateway.lower() == "all":
@@ -170,9 +176,13 @@ def index(request):
                     options = update_options(gw, orig_options)
 
                     for entry in task_machines:
-                        task_ids_new = db.demux_sample_and_add_to_db(file_path=path, package=package, timeout=timeout, options=options, priority=priority,
-                                                                     machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock)
-                        task_ids.extend(task_ids_new)
+                        try:
+                            task_ids_new = db.demux_sample_and_add_to_db(file_path=path, package=package, timeout=timeout, options=options, priority=priority,
+                                    machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock)
+                            task_ids.extend(task_ids_new)
+                        except CuckooDemuxError as err:
+                            return render(request, "error.html", {"error": err})
+
         elif "quarantine" in request.FILES:
             samples = request.FILES.getlist("quarantine")
             for sample in samples:
@@ -378,8 +388,8 @@ def index(request):
             machines.append((machine.label, label))
 
         # Prepend ALL/ANY options.
-        machines.insert(0, ("all", "All"))
-        machines.insert(1, ("", "First available"))
+        machines.insert(0, ("", "First available"))
+        machines.insert(1, ("all", "All"))
 
         return render(request, "submission/index.html",
                                   {"packages": sorted(packages),

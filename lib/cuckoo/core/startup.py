@@ -220,7 +220,8 @@ def init_yara():
     yara_root = os.path.join(CUCKOO_ROOT, "data", "yara")
 
     # We divide yara rules in three categories.
-    categories = ["binaries", "urls", "memory"]
+    # CAPE adds a fourth
+    categories = ["binaries", "urls", "memory", "CAPE"]
     generated = []
     # Loop through all categories.
     for category in categories:

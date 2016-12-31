@@ -17,6 +17,7 @@ __all__ = ['enable_attach', 'wait_for_attach', 'break_into_debugger', 'settrace'
 import atexit
 import getpass
 import os
+import os.path
 import platform
 import socket
 import struct
@@ -67,9 +68,9 @@ from ptvsd.visualstudio_py_util import to_bytes, read_bytes, read_int, read_stri
 #   is assumed to be using the normal PTVS REPL protocol. If not successful (which can happen if there is
 #   no debugger attached), the server responds with 'RJCT' and closes the connection. 
 
-PTVS_VER = '2.1'
+PTVS_VER = '2.2'
 DEFAULT_PORT = 5678
-PTVSDBG_VER = 4 # must be kept in sync with DebuggerProtocolVersion in PythonRemoteProcess.cs
+PTVSDBG_VER = 6 # must be kept in sync with DebuggerProtocolVersion in PythonRemoteProcess.cs
 PTVSDBG = to_bytes('PTVSDBG')
 ACPT = to_bytes('ACPT')
 RJCT = to_bytes('RJCT')
@@ -79,7 +80,7 @@ REPL = to_bytes('REPL')
 
 _attach_enabled = False
 _attached = threading.Event()
-vspd.DONT_DEBUG.append(__file__)
+vspd.DONT_DEBUG.append(os.path.normcase(__file__))
 
 
 class AttachAlreadyEnabledError(Exception):
@@ -153,9 +154,6 @@ def enable_attach(secret, address = ('0.0.0.0', DEFAULT_PORT), certfile = None, 
     if _attach_enabled:
         raise AttachAlreadyEnabledError('ptvsd.enable_attach() has already been called in this process.')
     _attach_enabled = True
-
-    if redirect_output:
-        vspd.enable_output_redirection()
 
     atexit.register(vspd.detach_process_and_notify_debugger)
 
@@ -234,6 +232,10 @@ def enable_attach(secret, address = ('0.0.0.0', DEFAULT_PORT), certfile = None, 
                     client.recv(1)
 
                 elif response == ATCH:
+                    debug_options = vspd.parse_debug_options(read_string(client))
+                    if redirect_output:
+                        debug_options.add('RedirectOutput')
+
                     if vspd.DETACHED:
                         write_bytes(client, ACPT)
                         try:
@@ -247,7 +249,7 @@ def enable_attach(secret, address = ('0.0.0.0', DEFAULT_PORT), certfile = None, 
                         write_int(client, minor)
                         write_int(client, micro)
 
-                        vspd.attach_process_from_socket(client, report = True)
+                        vspd.attach_process_from_socket(client, debug_options, report = True)
                         vspd.mark_all_threads_for_break(vspd.STEPPING_ATTACH_BREAK)
                         _attached.set()
                         client = None
@@ -269,7 +271,7 @@ def enable_attach(secret, address = ('0.0.0.0', DEFAULT_PORT), certfile = None, 
                     client.close()
 
     server_thread = threading.Thread(target = server_thread_func)
-    server_thread.daemon = True
+    server_thread.setDaemon(True)
     server_thread.start()
 
     frames = []

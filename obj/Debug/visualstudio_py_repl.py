@@ -14,6 +14,11 @@
 
 from __future__ import with_statement
 
+# This module MUST NOT import threading in global scope. This is because in a direct (non-ptvsd)
+# attach scenario, it is loaded on the injected debugger attach thread, and if threading module
+# hasn't been loaded already, it will assume that the thread on which it is being loaded is the
+# main thread. This will cause issues when the thread goes away after attach completes.
+
 try:
     import thread
 except ImportError:
@@ -24,7 +29,6 @@ try:
 except:
     SSLError = None
 
-import threading
 import sys
 import socket
 import select
@@ -153,6 +157,7 @@ actual inspection and introspection."""
     _DBGA = to_bytes('DBGA')
     _DETC = to_bytes('DETC')
     _DPNG = to_bytes('DPNG')
+    _DXAM = to_bytes('DXAM')
 
     _MERR = to_bytes('MERR')
     _SERR = to_bytes('SERR')
@@ -162,6 +167,7 @@ actual inspection and introspection."""
     _MODC = to_bytes('MODC')
     
     def __init__(self):
+        import threading
         self.conn = None
         self.send_lock = SafeSendLock()
         self.input_event = threading.Lock()
@@ -339,9 +345,11 @@ actual inspection and introspection."""
         self.execute_file_ex(filetype, filename, args)
 
     def _cmd_debug_attach(self):
+        import visualstudio_py_debugger
         port = read_int(self.conn)
         id = read_string(self.conn)
-        self.attach_process(port, id)
+        debug_options = visualstudio_py_debugger.parse_debug_options(read_string(self.conn))
+        self.attach_process(port, id, debug_options)
 
     _COMMANDS = {
         to_bytes('run '): _cmd_run,
@@ -372,7 +380,7 @@ actual inspection and introspection."""
         from os import path
         sys.path.append(path.dirname(__file__))
         import visualstudio_py_debugger
-        visualstudio_py_debugger.DONT_DEBUG.append(__file__)
+        visualstudio_py_debugger.DONT_DEBUG.append(path.normcase(__file__))
         new_thread = visualstudio_py_debugger.new_thread()
         sys.settrace(new_thread.trace_func)
         visualstudio_py_debugger.intercept_threads(True)
@@ -387,6 +395,12 @@ actual inspection and introspection."""
             write_bytes(self.conn, ReplBackend._DPNG)
             write_int(self.conn, len(image_bytes))
             write_bytes(self.conn, image_bytes)
+
+    def write_xaml(self, xaml_bytes):
+        with self.send_lock:
+            write_bytes(self.conn, ReplBackend._DXAM)
+            write_int(self.conn, len(xaml_bytes))
+            write_bytes(self.conn, xaml_bytes)
 
     def send_prompt(self, ps1, ps2, update_all = True):
         """sends the current prompt to the interactive window"""
@@ -484,7 +498,7 @@ actual inspection and introspection."""
         """flushes the stdout/stderr buffers"""
         raise NotImplementedError
 
-    def attach_process(self, port, debugger_id):
+    def attach_process(self, port, debugger_id, debug_options):
         """starts processing execution requests"""
         raise NotImplementedError
     
@@ -526,6 +540,7 @@ class BasicReplBackend(ReplBackend):
 
     """Basic back end which executes all Python code in-proc"""
     def __init__(self, mod_name = '__main__', launch_file = None):
+        import threading
         ReplBackend.__init__(self)
         if mod_name is not None:
             if sys.platform == 'cli':
@@ -983,11 +998,11 @@ due to the exec, so we do it here"""
         visualstudio_py_debugger.DETACH_CALLBACKS.remove(self.do_detach)
         self.on_debugger_detach()
 
-    def attach_process(self, port, debugger_id):
+    def attach_process(self, port, debugger_id, debug_options):
         def execute_attach_process_work_item():
             import visualstudio_py_debugger
             visualstudio_py_debugger.DETACH_CALLBACKS.append(self.do_detach)
-            visualstudio_py_debugger.attach_process(port, debugger_id, report = True, block = True)
+            visualstudio_py_debugger.attach_process(port, debugger_id, debug_options, report=True, block=True)
         
         self.execute_item = execute_attach_process_work_item
         self.execute_item_lock.release()
@@ -1154,6 +1169,7 @@ class DebugReplBackend(BasicReplBackend):
 class _ReplOutput(object):
     """file like object which redirects output to the repl window."""
     errors = None
+    closed = False
 
     def __init__(self, backend, is_stdout, old_out = None):
         self.name = "<stdout>" if is_stdout else "<stderr>"

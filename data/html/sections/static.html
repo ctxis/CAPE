@@ -116,6 +116,98 @@
             </div>
         {% endif %}
 
+       {% if results.static.pe.digital_signers %}
+        <div>
+	    {% if summary_report %}
+            <h4>Digital Signers</h4>
+            <div id="pe_digital_signers">
+	    {% else %}
+            <h4><a href="javascript:showHide('pe_digital_signers');">Digital Signers</a></h4>
+            <div id="pe_digital_signers" style="display: none;">
+	    {% endif %}
+                <table class="table table-striped table-bordered">
+                    <tr>
+                        <th>Certificate Common Name</th>
+                        <th>Serial Number</th>
+                        <th>SHA1 Fingerprint</th>
+                        <th>MD5 Fingerprint</th>
+                    </tr>
+                    {% for info in results.static.pe.digital_signers %}
+                        <tr>
+                            <td>{{info.cn}}</td>
+                            <td>{{info.sn}}</td>
+                            <td>{{info.sha1_fingerprint}}</td>
+                            <td>{{info.md5_fingerprint}}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if results.static.pe.guest_signers and results.static.pe.guest_signers.aux_signers %}
+        <div>
+	    {% if summary_report %}
+            <h4>Microsoft Certificate Validation (Sign Tool)</h4>
+            <div id="pe_digital_signers_validation">
+	    {% else %}
+            <h4><a href="javascript:showHide('pe_digital_signers_validation');">Microsoft Certificate Validation (Sign Tool)</a></h4>
+            <div id="pe_digital_signers_validation" style="display: none;">
+	    {% endif %}
+                <table class="table table-striped table-bordered">
+                    <tr>
+                        <th width="20%">SHA1</th>
+                        <th width="20%">Timestamp</th>
+                        <th width="5%">Valid</th>
+                        <th width="55%">Error</th>
+                    </tr>
+                    <tr>
+                        <td>{{results.static.pe.guest_signers.aux_sha1}}</td>
+                        <td>{{results.static.pe.guest_signers.aux_timestamp}}</td>
+                        {% if results.static.pe.guest_signers.aux_valid %}
+                        <td><center><span class="label label-success">Yes</span></center></td>
+                        <td>None</td>
+                        {% else %}
+                        <td><center><span class="label label-danger">No</span></center></td>
+                        <td>{{results.static.pe.guest_signers.aux_error_desc}}</td>
+                        {% endif %}
+                    </tr>
+                </table>
+                {% for signer in results.static.pe.guest_signers.aux_signers %}
+                <table class="table table-striped table-bordered">
+                    <colgroup>
+                        <col style="width:15%">
+                        <col style="width:85%">
+                    </colgroup>
+                    <tbody>
+                        <tr>
+                            <td><b>Chain</b></td>
+                            <td>{{signer.name}}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Issued to</b></td>
+			    <td>{{signer['Issued to']}}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Issued by</b></td>
+			    <td>{{signer['Issued by']}}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Expires</b></td>
+			    <td>{{signer.Expires}}</td>
+                        </tr>
+                        <tr>
+                            <td><b>SHA1 Hash</b></td>
+			    <td>{{signer['SHA1 hash']}}</td>
+                        </tr>
+                    </tbody>
+                 </table>
+		{% endfor %}
+            </div>
+        </div>
+        <hr />
+        {% endif %}
+
         {% if results.static.pe.sections %}
             <div>
                 {% if summary_report %}

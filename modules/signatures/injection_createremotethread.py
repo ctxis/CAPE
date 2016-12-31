@@ -17,10 +17,10 @@ from lib.cuckoo.common.abstracts import Signature
 
 class InjectionCRT(Signature):
     name = "injection_createremotethread"
-    description = "Code injection with CreateRemoteThread in a remote process"
+    description = "CAPE detection: Injection with CreateRemoteThread in a remote process"
     severity = 3
     categories = ["injection"]
-    authors = ["JoseMi Holguin", "nex", "Accuvant"]
+    authors = ["JoseMi Holguin", "nex", "Accuvant", "kevoreilly"]
     minimum = "1.0"
     evented = True
 
@@ -45,6 +45,10 @@ class InjectionCRT(Signature):
             if self.get_argument(call, "ProcessIdentifier") != process["process_id"]:
                 self.process_handles.add(self.get_argument(call, "ProcessHandle"))
                 self.process_pids.add(self.get_argument(call, "ProcessIdentifier"))
+        elif call["api"] == "CreateProcessInternalW":
+            if self.get_argument(call, "ProcessId") != process["process_id"]:
+                self.process_handles.add(self.get_argument(call, "ProcessHandle"))
+                self.process_pids.add(self.get_argument(call, "ProcessId"))
         elif (call["api"] == "NtMapViewOfSection") and self.sequence == 0:
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
                 self.sequence = 2

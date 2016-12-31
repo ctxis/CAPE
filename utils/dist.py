@@ -293,7 +293,11 @@ class Node(db.Model):
                                 verify = False)
 
                 # Zip files preprocessed, so only one id
-                task.task_id = r.json()["task_ids"][0]
+                if r and r.status_code == 200 and "task_ids" in r.json() and len(r.json()["task_ids"]) > 0:
+                    task.task_id = r.json()["task_ids"][0]
+                    log.info(task.task_id)
+                else:
+                    return
 
             task.node_id = self.id
 

@@ -156,8 +156,6 @@ class Agent:
 
             with ZipFile(zip_data, "r") as archive:
                 archive.extractall(ANALYZER_FOLDER)
-        except Exception as e:
-            ERROR_MESSAGE = str(e)
         finally:
             zip_data.close()
 

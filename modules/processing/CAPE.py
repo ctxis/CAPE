@@ -11,7 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+    
+import sys
 import os
 import binascii
 import logging
@@ -30,10 +31,19 @@ from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
 from struct import unpack_from, calcsize
 from socket import inet_ntoa
-from collections import defaultdict, OrderedDict
+#from collections import defaultdict, OrderedDict
+import collections
 
-from parsers.malwareconfig import JavaDropper
-from parsers.plugxconfig import plugx
+parser_path = os.path.dirname(__file__)
+parser_path += "/parsers"
+if parser_path not in sys.path:
+    sys.path.append(parser_path)
+from malwareconfig import JavaDropper
+from plugxconfig import plugx
+from mwcp import malwareconfigreporter
+
+CAPE_YARA_RULEPATH = \
+    os.path.join(CUCKOO_ROOT, "data", "yara", "index_CAPE.yar")
 
 BUFSIZE = 10485760
 
@@ -54,19 +64,42 @@ UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
 
+def convert(data):
+    if isinstance(data, unicode):
+        return str(data)
+    if isinstance(data, basestring):
+        return str(data)
+    elif isinstance(data, collections.Mapping):
+        return dict(map(convert, data.iteritems()))
+    elif isinstance(data, collections.Iterable):
+        return type(data)(map(convert, data))
+    else:
+        return data
+
 def upx_unpack(raw_data):
-    f = tempfile.NamedTemporaryFile(delete=False)
-    f.write(raw_data)
-    f.close()
+    upxfile = tempfile.NamedTemporaryFile(delete=False)
+    upxfile.write(raw_data)
+    upxfile.close()
     try:
-        subprocess.call("(upx -d %s)" %f.name, shell=True)
+        ret = subprocess.call("(upx -d %s)" %upxfile.name, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except Exception as e:
-        log.error("UPX Error %s", e)
-        os.unlink(f.name)
+        log.error("CAPE: UPX Error %s", e)
+        os.unlink(upxfile.name)
         return
     
-    return f.name
-
+    if ret == 0:
+        log.info("CAPE: UPX - Statically unpacked binary %s.", upxfile.name)
+        return upxfile.name
+    elif ret == 127:
+        log.error("CAPE: Error - UPX not installed.")
+    elif ret == 2:
+        log.error("CAPE: Error - UPX 'not packed' exception.")
+    else:
+        log.error("CAPE: Unknown error - check UPX is installed and working.")
+        
+    os.unlink(upxfile.name)
+    return
+        
 class CAPE(Processing):
     """Dropped files analysis."""
 
@@ -95,6 +128,7 @@ class CAPE(Processing):
 
         file_info = File(file_path, metastring).get_all()
 
+        # Get the file data
         with open(file_info["path"], "r") as drop_open:
             filedata = drop_open.read(buf + 1)
         if len(filedata) > buf:
@@ -211,28 +245,31 @@ class CAPE(Processing):
                         file_info["cape_type"] += "DLL"
                     else:
                         file_info["cape_type"] += "executable"                        
-        # Process Yara hits
-        for hit in file_info["yara"]:
-            name = hit["name"]
+        
+        # Process CAPE Yara hits
+        for hit in file_info["cape_yara"]:
+            cape_name = hit["name"]
+            try:
+                file_info["cape_type"] = hit["meta"]["cape_type"]
+            except:
+                #log.error("CAPE Yara signature has no CAPE type metadata: %s", cape_name)
+                file_info["cape_type"] = "CAPE Detection: <Type missing>"
             # UPX Check and unpack
-            if name == 'UPX':
-                log.info("CAPE: Found UPX Packed sample, Attempting to unpack")
+            if cape_name == 'UPX':
+                log.info("CAPE: Found UPX Packed sample - attempting to unpack")
                 unpacked_file = upx_unpack(filedata)
-                unpacked_yara = File(unpacked_file).get_yara()
-                for unpacked_hit in unpacked_yara:
-                    unpacked_name = unpacked_hit["name"]
-                    if unpacked_name == 'UPX':
-                        # Failed to unpack
-                        log.info("CAPE: Failed to unpack UPX")
-                        os.unlink(unpacked_file)
-                        #return
-                if os.path.exists(unpacked_file):
+                if unpacked_file and os.path.exists(unpacked_file):
+                    unpacked_yara = File(unpacked_file).get_yara(CAPE_YARA_RULEPATH)
+                    for unpacked_hit in unpacked_yara:
+                        unpacked_name = unpacked_hit["name"]
+                        if unpacked_name == 'UPX':
+                            # Failed to unpack
+                            log.info("CAPE: Failed to unpack UPX")
+                            os.unlink(unpacked_file)
+                            break
                     if not os.path.exists(self.CAPE_path):
                         os.makedirs(self.CAPE_path)
-                    new_CAPE_folder = os.path.join(self.CAPE_path, str(random.randint(100000000, 9999999999)))
-                    os.makedirs(new_CAPE_folder)
-                    newname = os.path.join(new_CAPE_folder, os.path.basename(unpacked_file))
-                    log.error("unpacked_file %s, newname %s", unpacked_file, newname)
+                    newname = os.path.join(self.CAPE_path, os.path.basename(unpacked_file))
                     os.rename(unpacked_file, newname)
                     infofd = open(newname + "_info.txt", "a")
                     infofd.write(os.path.basename(unpacked_file) + "\n")
@@ -242,35 +279,61 @@ class CAPE(Processing):
                     self.process_file(newname, CAPE_files, True)
                 
             # Java Dropper Check
-            if name == 'JavaDropper':
-                log.info("CAPE: Found Java Dropped, attemping to unpack")
-                unpacked_file = JavaDropper.run(unpacked_file)
-                name = yara_scan(unpacked_file)
+            #if cape_name == 'JavaDropper':
+            #    log.info("CAPE: Found Java Dropped, attemping to unpack")
+            #    unpacked_file = JavaDropper.run(unpacked_file)
+            #    cape_name = yara_scan(unpacked_file)
+            #
+            #    if cape_name == 'JavaDropper':
+            #        log.info("CAPE: Failed to unpack JavaDropper")
+            #        #return
 
-                if name == 'JavaDropper':
-                    log.info("CAPE: Failed to unpack JavaDropper")
-                    #return
-
-            # Attempt to import a decoder for the yara hit
+            # Attempt to import a parser for the yara hit
+            # DC3-MWCP
             try:
-                decoders = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
-                file, pathname, description = imp.find_module(name,[decoders])
-                module = imp.load_module(name, file, pathname, description)
-                module_loaded = True
-                #log.info("CAPE: Importing decoder %s", name)
+                mwcp = malwareconfigreporter.malwareconfigreporter()
+                kwargs = {}
+                mwcp.run_parser(cape_name, data=filedata, **kwargs)
+                if mwcp.errors == []:
+                    log.info("CAPE: Imported DC3-MWCP parser %s", cape_name)
+                    mwcp_loaded = True
+                else:
+                    for error in mwcp.errors:
+                        #log.info("CAPE: DC3-MWCP parser error: %s", error.readline())
+                        log.info("CAPE: DC3-MWCP parser error: %s", error)
+                        mwcp_loaded = False
             except ImportError:
-                #log.error("CAPE: Unable to import decoder %s", name)
-                module_loaded = False
-
+                mwcp_loaded = False
+            
+            # malwareconfig
+            try:
+                malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
+                module = imp.load_module(cape_name, file, pathname, description)
+                malwareconfig_loaded = True
+                log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
+            except ImportError:
+                #log.error("CAPE: Unable to import malwareconfig.com parser %s", cape_name)
+                malwareconfig_loaded = False
+            
             # Get config data
-            if module_loaded:
+            if mwcp_loaded:
                 try:
-                    file_info["cape_config"] = module.config(filedata)
-                    file_info["cape_name"] = format(name)
+                    file_info["cape_config"] = convert(mwcp.metadata)
+                    file_info["cape_name"] = format(cape_name)
                     append_file = True
                 except Exception as e:
-                    log.error("CAPE: Config parsing error with %s: %s", name, e)
-                        
+                    log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
+            elif malwareconfig_loaded:
+                try:
+                    file_info["cape_config"] = {} 
+                    for (key, value) in module.config(filedata).iteritems():
+                        file_info["cape_config"].update({key: [value]}) 
+                    file_info["cape_name"] = format(cape_name)
+                    append_file = True
+                except Exception as e:
+                    log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
+            
         if append_file == True:
             CAPE_files.append(file_info)
     
@@ -282,17 +345,17 @@ class CAPE(Processing):
         output = ""
         CAPE_files = []
 
-        # Static processing of submitted file
+        # Process dynamically dumped CAPE files
+        for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
+            for file_name in file_names:
+                file_path = os.path.join(dir_name, file_name)
+                self.process_file(file_path, CAPE_files, True)
+                
+        # Finally static processing of submitted file
         if self.task["category"] == "file":
             if not os.path.exists(self.file_path):
                 raise CuckooProcessingError("Sample file doesn't exist: \"%s\"" % self.file_path)
             
             self.process_file(self.file_path, CAPE_files, False)
             
-        # Now process dynamically dumped CAPE files
-        for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
-            for file_name in file_names:
-                file_path = os.path.join(dir_name, file_name)
-                self.process_file(file_path, CAPE_files, True)
-                
         return CAPE_files

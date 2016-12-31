@@ -10,13 +10,23 @@ from lib.common.abstracts import Package
 
 log = logging.getLogger(__name__)
 
-class PlugXPayload(Package):
+class Shellcode(Package):
     """DLL analysis package."""
     #PATHS = [
     #    ("SystemRoot", "system32"),
     #]
 
+    def __init__(self, options={}, config=None):
+        """@param options: options dict."""
+        self.config = config
+        self.options = options
+        self.pids = []
+        self.options["dll"] = "CAPE_Extraction.dll"
+        
+        log.info("Timeout: " + str(self.config.timeout))
+
     def start(self, path):
+        self.options["dll"] = "CAPE_Extraction.dll"
         loaderpath = "bin\\loader.exe"
         #arguments = path
         arguments = "plugx " + path

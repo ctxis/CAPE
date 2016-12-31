@@ -24,7 +24,7 @@ elasticsearch
 java-random
 python-whois
 bs4
-http://pefile.googlecode.com/files/pefile-1.2.10-139.tar.gz#egg=pefile
+pefile2==1.2.11
 git+https://github.com/crackinglandia/pype32.git
 git+https://github.com/jsocol/django-ratelimit
 git+https://github.com/kbandla/pydeep.git

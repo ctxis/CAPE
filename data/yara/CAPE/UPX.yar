@@ -1,4 +1,4 @@
-rule UPX_section_names
+rule UPX
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"

@@ -1,5 +1,7 @@
 from lib.cuckoo.common.abstracts import Signature
 
+EXTRACTION_MIN_SIZE = 0x2000
+
 class CAPE_PlugX(Signature):
     name = "CAPE PlugX"
     description = "CAPE detection: PlugX"
@@ -181,27 +183,30 @@ class ExtractionRWX(Signature):
     authors = ["Context"]
     minimum = "1.2"
     evented = True
-
+    
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
 
     filter_apinames = set(["NtAllocateVirtualMemory","NtProtectVirtualMemory","VirtualProtectEx"])
 
+    # PAGE_EXECUTE_READWRITE = 0x00000040
+    
     def on_call(self, call, process):
         if call["api"] == "NtAllocateVirtualMemory":
             protection = self.get_argument(call, "Protection")
             regionsize = int(self.get_raw_argument(call, "RegionSize"), 0)
-            # PAGE_EXECUTE_READWRITE
-            if protection == "0x00000040" and regionsize > 0x2000:
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle == "0xffffffff" and protection == "0x00000040" and regionsize >= EXTRACTION_MIN_SIZE:
                 return True
         if call["api"] == "VirtualProtectEx":
             protection = self.get_argument(call, "Protection")
             size = int(self.get_raw_argument(call, "Size"), 0)
             handle = self.get_argument(call, "ProcessHandle")
-            if handle == "0xffffffff" and protection == "0x00000040" and size > 0x2000:
+            if handle == "0xffffffff" and protection == "0x00000040" and size >= EXTRACTION_MIN_SIZE:
                 return True
         elif call["api"] == "NtProtectVirtualMemory":
             protection = self.get_argument(call, "NewAccessProtection")
             size = int(self.get_raw_argument(call, "NumberOfBytesProtected"), 0)
-            if protection == "0x00000040" and size > 0x2000:
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle == "0xffffffff" and protection == "0x00000040" and size >= EXTRACTION_MIN_SIZE:
                 return True
