@@ -1,6 +1,15 @@
+import struct
 from lib.cuckoo.common.abstracts import Signature
 
-EXTRACTION_MIN_SIZE = 0x2000
+IMAGE_DOS_SIGNATURE             = 0x5A4D
+IMAGE_NT_SIGNATURE              = 0x00004550
+OPTIONAL_HEADER_MAGIC_PE        = 0x10b
+OPTIONAL_HEADER_MAGIC_PE_PLUS   = 0x20b
+IMAGE_FILE_EXECUTABLE_IMAGE     = 0x0002
+PE_HEADER_LIMIT                 = 0x200
+
+PLUGX_SIGNATURE		            = 0x5658
+EXTRACTION_MIN_SIZE             = 0x2000
 
 class CAPE_PlugX(Signature):
     name = "CAPE PlugX"
@@ -22,10 +31,11 @@ class CAPE_PlugX(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
-            buf = self.get_argument(call, "UncompressedBuffer")
-            if "XV" in buf:
+            buf = self.get_raw_argument(call, "UncompressedBuffer")
+            dos_header = buf[:64]
+            if struct.unpack("<H", dos_header[0:2])[0] == IMAGE_DOS_SIGNATURE:
                 self.compressed_binary = True
-            if "MZ" in buf:
+            elif struct.unpack("<H", dos_header[0:2])[0] == PLUGX_SIGNATURE:
                 self.compressed_binary = True
 
         if call["api"] == "memcpy":
@@ -70,11 +80,12 @@ class CAPE_PlugX_fuzzy(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
-            buf = self.get_argument(call, "UncompressedBuffer")
-            if "XV" in buf:
-                self.plugx = True
-            if "MZ" in buf:
+            buf = self.get_raw_argument(call, "UncompressedBuffer")
+            dos_header = buf[:64]
+            if struct.unpack("<H", dos_header[0:2])[0] == IMAGE_DOS_SIGNATURE:
                 self.compressed_binary = True
+            elif struct.unpack("<H", dos_header[0:2])[0] == PLUGX_SIGNATURE:
+                self.plugx = True
 
     def on_complete(self):
         if self.config_copy == True and self.compressed_binary == True:
@@ -99,10 +110,38 @@ class CAPE_Compression(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
-            buf = self.get_argument(call, "UncompressedBuffer")
-            if "MZ" in buf:
+            buf = self.get_raw_argument(call, "UncompressedBuffer")
+            dos_header = buf[:64]
+
+            if struct.unpack("<H", dos_header[0:2])[0] == IMAGE_DOS_SIGNATURE:
                 self.compressed_binary = True
 
+            # Check for sane value in e_lfanew
+            e_lfanew, = struct.unpack("<L", dos_header[60:64])
+            if not e_lfanew or e_lfanew > PE_HEADER_LIMIT:
+                return
+            
+            nt_headers = buf[e_lfanew:e_lfanew+256]
+
+            #if ((pNtHeader->FileHeader.Machine == 0) || (pNtHeader->FileHeader.SizeOfOptionalHeader == 0 || pNtHeader->OptionalHeader.SizeOfHeaders == 0)) 
+            if struct.unpack("<H", nt_headers[4:6]) == 0 or struct.unpack("<H", nt_headers[20:22]) == 0 or struct.unpack("<H", nt_headers[84:86]) == 0:
+                return
+
+            #if (!(pNtHeader->FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)) 
+            if (struct.unpack("<H", nt_headers[22:24])[0] & IMAGE_FILE_EXECUTABLE_IMAGE) == 0:
+                return
+
+            #if (pNtHeader->FileHeader.SizeOfOptionalHeader & (sizeof (ULONG_PTR) - 1)) 
+            if struct.unpack("<H", nt_headers[20:22])[0] & 3 != 0:
+                return
+
+            #if ((pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC))
+            if struct.unpack("<H", nt_headers[24:26])[0] != OPTIONAL_HEADER_MAGIC_PE and struct.unpack("<H", nt_headers[24:26])[0] != OPTIONAL_HEADER_MAGIC_PE_PLUS:
+                return
+ 
+            # To pass the above tests it should now be safe to assume it's a PE image
+            self.compressed_binary = True            
+            
     def on_complete(self):
         if self.compressed_binary == True:
             return True
