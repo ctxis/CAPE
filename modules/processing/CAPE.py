@@ -326,9 +326,14 @@ class CAPE(Processing):
                     log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
             elif malwareconfig_loaded:
                 try:
-                    file_info["cape_config"] = {} 
-                    for (key, value) in module.config(filedata).iteritems():
-                        file_info["cape_config"].update({key: [value]}) 
+                    file_info["cape_config"] = {}
+                    malwareconfig_config = module.config(filedata)
+                    if isinstance(malwareconfig_config, list):
+                        for (key, value) in module.config(filedata)[0].iteritems():
+                            file_info["cape_config"].update({key: [value]}) 
+                    elif isinstance(malwareconfig_config, dict):
+                        for (key, value) in module.config(filedata).iteritems():
+                            file_info["cape_config"].update({key: [value]}) 
                     file_info["cape_name"] = format(cape_name)
                     append_file = True
                 except Exception as e:
