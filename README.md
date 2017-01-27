@@ -15,6 +15,8 @@ The techniques or behaviours that CAPE detects and has packages for include:
     - Extraction of executable modules or shellcode in memory
 
 Packages for these behaviours will dump the payloads being injected, extracted or decompressed for further analysis. This is often the malware payload in unpacked form.    
+
+In addition to specific behaviour,s CAPE also automatically creates a process dump for each process' main executable, or, in the case of a DLL, the DLL's module image in memory. This is useful for samples packed with simple packers, where often the module image dump is fully unpacked.
     
 CAPE can also extract the payloads from 'hacked' (modified) packers derived from UPX, a favourite with malware authors.
     
@@ -27,9 +29,9 @@ There are a number of other malware family packages currently in the works, so w
 
 A number of other malware families have their payloads extracted by some of the behavioural packages, configuration parsing on the output of some of these is also currently being worked on.
 
-In addition, a number of malware families are covered by static configuration extraction based on malwareconfig.com (thanks to Kevin Breen/TechAnarchy for this).
+CAPE has two config parsing frameworks inbuilt. DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser) and the RATDecoders parser from malwareconfig.com (Kevin Breen/TechAnarchy). The publicly available decoders from malwareconfig.com are also included in CAPE.
 
-Detection to trigger a CAPE package can be based from either 'Cuckoo' (API) or Yara signatures.
+Detection to trigger a CAPE package can be based from on 'Cuckoo' (API) or Yara signatures.
 
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.
 

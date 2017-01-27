@@ -16,7 +16,19 @@
                         <th style="border-top: 0; width: 15%;"><b>{{key}}</b></th>
                         <td style="border-top: 0; word-wrap: break-word;">
                         {% for subvalue in value %}
-                            <div>{{subvalue}}</div>
+                            {% if subvalue|length > 1 %}
+                                {% for subsubvalue in subvalue %}
+                                    {% if subsubvalue|length > 1 %}
+                                        <div>{{subsubvalue}}</div>
+                                    {% else %}
+                                        {% if forloop.first %}
+                                            <div>{{subvalue}}</div>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <div>{{subvalue}}</div>
+                            {% endif %}
                         {% endfor %}
                         </td>
                     </tr>

@@ -219,11 +219,11 @@ class SubmitCAPE(Report):
         if 'CAPE_EvilGrab' in detections:
             package = 'CAPE_EvilGrab'	
             
-        if 'CAPE_Crossfire' in detections:
+        if 'CAPE_Azzy' in detections:
             if parent_package=='dll':
-                package = 'CAPE_Crossfire_dll'
+                package = 'CAPE_Azzy_dll'
             else:
-                package = 'CAPE_Crossfire'
+                package = 'CAPE_Azzy'
             
         if self.task_options_stack:
             self.task_options=','.join(self.task_options_stack)            
