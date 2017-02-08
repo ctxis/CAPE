@@ -36,9 +36,28 @@ def pirpi_password(strings):
     return password
 
 class SubmitCAPE(Report):
+    def process_cape_yara(self, cape_yara, detections):
+        
+        #if cape_yara["name"] == "Pirpi":
+        #    detections.add('CAPE_PirpiPassword')
+
+        if cape_yara["name"] == "Azzy" and 'CAPE_Azzy' not in detections:
+            encrypt1 = cape_yara["addresses"].get("encrypt1")
+            encrypt2 = cape_yara["addresses"].get("encrypt2")
+            if encrypt1:
+                self.task_options_stack.append("CAPE_var1={0}".format(encrypt1))
+            if encrypt2:
+                self.task_options_stack.append("CAPE_var2={0}".format(encrypt2))
+            detections.add('CAPE_Azzy')
+            
+        #if cape_yara["name"] == "CAPE EvilGrab":
+        #    detections.add('CAPE_EvilGrab')                            
+
+        if cape_yara["name"] == "CAPE_Dridex":
+            self.task_options_stack.append("breakpoint={0}".format(cape_yara["addresses"][0]))
+            detections.add('CAPE_Dridex')
+    
     def run(self, results):
-        #self.noinject = self.options.get("noinject", False)
-        #self.resublimit = int(self.options.get("resublimit",1))
         self.task_options_stack = []
         self.task_options = None
         self.task_custom = None
@@ -47,6 +66,12 @@ class SubmitCAPE(Report):
         db = Database()
         detections = set()
 
+        parent_package = report["info"].get("package")
+        if parent_package.startswith('CAPE'):
+            # we only want to trigger detections from 'straight' runs, behavioural packages or unpackers
+            if parent_package != "CAPE_Extraction" and parent_package != "CAPE_Injection" and parent_package != "CAPE_Compression" and parent_package != "CAPE_UPX":
+                return
+            
         ##### Initial static hits from CAPE's yara signatures
         #####
         if "target" in results:
@@ -55,26 +80,26 @@ class SubmitCAPE(Report):
                 file = target["file"]
                 if "cape_yara" in file:
                     for entry in file["cape_yara"]:
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
-
-                        #if entry["name"] == "Pirpi":
-                        #    detections.add('CAPE_PirpiPassword')
+                        self.process_cape_yara(entry, detections)
+                        
+        if results["procdump"]:
+            for file in results["procdump"]:
+                if "cape_yara" in file:
+                    for entry in file["cape_yara"]:
+                        self.process_cape_yara(entry, detections)
         
-                        if entry["name"] == "Azzy":
-                            #for address in entry["addresses"]:
-                                #self.task_options_stack.append("breakpoint{0}={1}".format(index, address)
-                            self.task_options_stack.append("breakpoint={0}".format(entry["addresses"][0]))
-                            detections.add('CAPE_Azzy')
+        if results["CAPE"]:
+            for file in results["CAPE"]:
+                if "cape_yara" in file:
+                    for entry in file["cape_yara"]:
+                        self.process_cape_yara(entry, detections)
                             
-                        #if entry["name"] == "CAPE EvilGrab":
-                        #    detections.add('CAPE_EvilGrab')                            
+        if results["dropped"]:
+            for file in results["dropped"]:
+                if "cape_yara" in file:
+                    for entry in file["cape_yara"]:
+                        self.process_cape_yara(entry, detections)
 
-                        if entry["name"] == "CAPE_Dridex":
-                            self.task_options_stack.append("breakpoint={0}".format(entry["addresses"][0]))
-                            detections.add('CAPE_Dridex')
-                            
         ##### Dynamic CAPE hits
         ##### Packers, injection or other generic dumping
         #####
@@ -82,9 +107,6 @@ class SubmitCAPE(Report):
             for entry in results["signatures"]:
                 if entry["name"] == "injection_runpe" or entry["name"] == "injection_createremotethread":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         if parent_package=='doc':
                             detections.add('CAPE_Injection_doc')    
                             continue
@@ -98,9 +120,6 @@ class SubmitCAPE(Report):
                 
                 elif entry["name"] == "extraction_rwx":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         if parent_package=='doc':
                         #    detections.add('CAPE_Extraction_doc')
                         # Word triggers this so removed
@@ -118,9 +137,6 @@ class SubmitCAPE(Report):
                 
                 elif entry["name"] == "CAPE Compression":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         if parent_package=='dll':
                             detections.add('CAPE_Compression_dll')    
                             continue                            
@@ -129,14 +145,10 @@ class SubmitCAPE(Report):
                             continue                            
                         detections.add('CAPE_Compression')
                     
-        ##### Malware families
+        ##### Specific malware family packages
         #####
-
                 elif entry["name"] == "CAPE PlugX":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         if parent_package=='PlugXPayload':
                             detections.add('CAPE_PlugXPayload')   
                             continue
@@ -153,9 +165,6 @@ class SubmitCAPE(Report):
 
                 elif entry["name"] == "CAPE PlugX fuzzy":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         if parent_package=='PlugXPayload':
                             detections.add('CAPE_PlugXPayload_fuzzy')
                             continue
@@ -172,16 +181,10 @@ class SubmitCAPE(Report):
                                             
                 elif entry["name"] == "CAPE Derusbi":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         detections.add('CAPE_Derusbi')
                     
                 elif entry["name"] == "CAPE EvilGrab":
                     if report["info"].has_key("package"):
-                        parent_package = report["info"].get("package")
-                        if parent_package.startswith('CAPE'):
-                            continue
                         detections.add('CAPE_EvilGrab')
         
         # We only want to submit a single job if we have a
@@ -246,6 +249,8 @@ class SubmitCAPE(Report):
                 log.warn("Error adding CAPE task to database: {0}".format(package))
             
         else: #nothing submitted, only 'dumpers' left, let's do them all
+            if parent_package == "CAPE_Extraction" or parent_package == "CAPE_Injection" or parent_package == "CAPE_Compression":
+                return            
             for dumper in detections:
                 # only submit Extraction if no other dumpers are detected
                 #if len(detections) > 1 and dumper.startswith('CAPE_Extraction'):

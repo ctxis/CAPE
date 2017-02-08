@@ -16,23 +16,24 @@ The techniques or behaviours that CAPE detects and has packages for include:
 
 Packages for these behaviours will dump the payloads being injected, extracted or decompressed for further analysis. This is often the malware payload in unpacked form.    
 
-In addition to specific behaviour,s CAPE also automatically creates a process dump for each process' main executable, or, in the case of a DLL, the DLL's module image in memory. This is useful for samples packed with simple packers, where often the module image dump is fully unpacked.
+In addition to specific behaviours, CAPE also automatically creates a process dump for each process' main executable, or, in the case of a DLL, the DLL's module image in memory. This is useful for samples packed with simple packers, where often the module image dump is fully unpacked.
     
 CAPE can also extract the payloads from 'hacked' (modified) packers derived from UPX, a favourite with malware authors.
     
-Currently CAPE has packages for the following malware families:
+Currently CAPE has specific packages for the following malware families:
     - PlugX
     - EvilGrab
     - Azzy
 
-There are a number of other malware family packages currently in the works, so watch this space.
-
-A number of other malware families have their payloads extracted by some of the behavioural packages, configuration parsing on the output of some of these is also currently being worked on.
-
-CAPE has two config parsing frameworks inbuilt. DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser) and the RATDecoders parser from malwareconfig.com (Kevin Breen/TechAnarchy). The publicly available decoders from malwareconfig.com are also included in CAPE.
-
 Detection to trigger a CAPE package can be based from on 'Cuckoo' (API) or Yara signatures.
+    
+Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of yara-based detection, and config parsing based on CAPE's primary config parsing framework, DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). Thanks to the creators at the Defense Cyber Crime Center. Parsers may also be written using the RATDecoders parser from malwareconfig.com (Kevin Breen/TechAnarchy). The publicly available decoders from malwareconfig.com are also included in CAPE.
 
+Currently CAPE has config parsers for the following malware families, whose payloads are extracted by a behavioural package:
+    - HttpBrowser
+
+There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
+    
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.
 
 The CAPE debugger allows four breakpoints to be set on each malware thread to detect on read, write or execute of a memory region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data.

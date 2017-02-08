@@ -187,8 +187,11 @@ def cape_file(file_path):
         if os.path.exists(file_path):
             sha256 = hash_file(hashlib.sha256, file_path)
             if sha256 in CAPE_DUMPED_LIST:
-                # The file was already uploaded, forget it
-                return
+                newname = sha256 + '_1'
+                while newname in CAPE_DUMPED_LIST:
+                    index = int(newname.split('_')[1])
+                    newname = sha256 + '_' + str(index+1)
+                sha256 = newname
         else:
             log.warning("CAPE file at path \"%s\" does not exist, skip.",
                         file_path.encode("utf-8", "replace"))

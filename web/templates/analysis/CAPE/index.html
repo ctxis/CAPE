@@ -4,10 +4,6 @@
         <div class="panel panel-default">
             <table class="table table-striped" style="table-layout: fixed;">
                 <tr>
-                    <th style="border-top: 0; width: 15%;">File name</th>
-                    <td style="border-top: 0; word-wrap: break-word;"><b>{{file.name}}</b></td>
-                </tr>
-                <tr>
                     <th style="border-top: 0; width: 15%;">Type</th>
                     <td style="border-top: 0; word-wrap: break-word;"><b>{{file.cape_name}} Config</b></td>
                 </tr>                
@@ -48,34 +44,6 @@
             </table>
         </div> 
         </tr>
-        {% elif file.plugx_config %}
-        <div class="panel panel-default">
-            <table class="table table-striped" style="table-layout: fixed;">
-                <tr>
-                    <th style="border-top: 0; width: 15%;">Type</th>
-                    <td style="border-top: 0; word-wrap: break-word;"><b>PlugX Config</b></td>
-                </tr>                
-                {% for key, value in file.plugx_config.items %}
-                    <tr>
-                        <th><b>{{key}}</b></th>
-                        <td>{{value}}</td>
-                    </tr>
-                {% endfor %}
-                {% if file.object_id or file.dropdir %}
-                <tr>
-                    <th></th>
-                    {% if config.mongodb %}
-                    <td><a href="{% url "analysis.views.mongo_file" "CAPE" file.object_id %}" class="btn btn-primary btn-small">Download</a>
-                    </td>
-                    {% elif config.elasticsearchdb %}
-                    <td><a href="{% url "analysis.views.elastic_file" "CAPE" analysis.info.id file.dropdir %}" class="btn btn-primary btn-small">Download</a>
-                    </td>
-                    {% endif %}
-                </tr>
-                {% endif %}                
-            </table>
-        </div> 
-        </tr>
         {% else %}
         <div class="panel panel-default">
             <table class="table table-striped" style="table-layout: fixed;">
@@ -88,49 +56,55 @@
                     <td>{{file.size}} bytes</td>
                 </tr>
                 {% if file.cape_type_code == 8 or file.cape_type_code == 9 %}
-                <tr>
-                    <th>Virtual Address</th>
-                    <td>{{file.virtual_address}}</td>
-                </tr>                
+                    <tr>
+                        <th>Virtual Address</th>
+                        <td>{{file.virtual_address}}</td>
+                    </tr>                
                 {% endif %}
                 {% if file.cape_type_code == 3 or file.cape_type_code == 4 %}
-                <tr>
-                    <th>Target Process</th>
-                    <td>{{file.target_process}}</td>
-                </tr>
-                <tr>
-                    <th>Target PID</th>
-                    <td>{{file.target_pid}}</td>
-                </tr>                
-                <tr>
-                    <th>Target Path</th>
-                    <td>{{file.target_path}}</td>
-                </tr>                
-                <tr>
-                    <th>Injecting Process</th>
-                    <td>{{file.process_name}}</td>
-                </tr>
-                <tr>
-                    <th>Injecting PID</th>
-                    <td>{{file.pid}}</td>
-                </tr>                
-                <tr>
-                    <th>Path</th>
-                    <td>{{file.process_path}}</td>
-                </tr>                
+                    <tr>
+                        <th>Target Process</th>
+                        <td>{{file.target_process}}</td>
+                    </tr>
+                    <tr>
+                        <th>Target PID</th>
+                        <td>{{file.target_pid}}</td>
+                    </tr>                
+                    <tr>
+                        <th>Target Path</th>
+                        <td>{{file.target_path}}</td>
+                    </tr>                
+                    <tr>
+                        <th>Injecting Process</th>
+                        <td>{{file.process_name}}</td>
+                    </tr>
+                    <tr>
+                        <th>Injecting PID</th>
+                        <td>{{file.pid}}</td>
+                    </tr>                
+                    <tr>
+                        <th>Path</th>
+                        <td>{{file.process_path}}</td>
+                    </tr>                
                 {% else %}
-                <tr>
-                    <th>Process</th>
-                    <td>{{file.process_name}}</td>
-                </tr>
-                <tr>
-                    <th>PID</th>
-                    <td>{{file.pid}}</td>
-                </tr>
-                <tr>
-                    <th>Path</th>
-                    <td>{{file.process_path}}</td>
-                </tr>                
+                    {% if file.process_name %}
+                    <tr>
+                        <th>Process</th>
+                        <td>{{file.process_name}}</td>
+                    </tr>
+                    {% endif %}
+                    {% if file.pid %}
+                    <tr>
+                        <th>PID</th>
+                        <td>{{file.pid}}</td>
+                    </tr>
+                    {% endif %}
+                    {% if file.process_path %}
+                    <tr>
+                        <th>Path</th>
+                        <td>{{file.process_path}}</td>
+                    </tr>                
+                    {% endif %}
                 {% endif %}
                 <tr>
                     <th>MD5</th>
@@ -172,7 +146,7 @@
                     <td><a href="{% url "file" "CAPE" analysis.info.id file.dropdir %}" class="btn btn-primary btn-small">Download</a>
                     </td>
                 </tr>
-                {% else %}
+                {% elif file.sha256 %}
                 <tr>
                     <th></th>
                     <td>

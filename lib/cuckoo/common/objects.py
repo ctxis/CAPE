@@ -343,15 +343,15 @@ class File:
                 for s in match.strings:
                     strings.add(self._yara_encode_string(s[2]))
 
-                addresses = set()
+                addresses = {}
                 for s in match.strings:
-                    addresses.add(s[0])
+                    addresses[s[1].strip('$')] = s[0]
 
                 results.append({
                     "name": match.rule,
                     "meta": match.meta,
                     "strings": list(strings),
-                    "addresses": list(addresses),
+                    "addresses": addresses,
                 })
 
         except Exception as e:

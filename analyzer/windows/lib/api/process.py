@@ -625,9 +625,15 @@ class Process:
                 config.write("procmemdump={0}\n".format(cfgoptions["procmemdump"]))
             if "import_reconstruction" in cfgoptions:
                 config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
-            if "breakpoint" in cfgoptions:
-                config.write("breakpoint={0}\n".format(cfgoptions["breakpoint"]))
-                
+            if "CAPE_var1" in cfgoptions:
+                config.write("CAPE_var1={0}\n".format(cfgoptions["CAPE_var1"]))
+            if "CAPE_var2" in cfgoptions:
+                config.write("CAPE_var2={0}\n".format(cfgoptions["CAPE_var2"]))
+            if "CAPE_var3" in cfgoptions:
+                config.write("CAPE_var3={0}\n".format(cfgoptions["CAPE_var3"]))
+            if "CAPE_var4" in cfgoptions:
+                config.write("CAPE_var4={0}\n".format(cfgoptions["CAPE_var4"]))
+
         orig_bin_name = ""
         bit_str = ""
         if is_64bit:
@@ -750,8 +756,14 @@ class Process:
                 config.write("procmemdump={0}\n".format(cfgoptions["procmemdump"]))
             if "import_reconstruction" in cfgoptions:
                 config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
-            if "breakpoint" in cfgoptions:
-                config.write("breakpoint={0}\n".format(cfgoptions["breakpoint"]))
+            if "CAPE_var1" in cfgoptions:
+                config.write("CAPE_var1={0}\n".format(cfgoptions["CAPE_var1"]))
+            if "CAPE_var2" in cfgoptions:
+                config.write("CAPE_var2={0}\n".format(cfgoptions["CAPE_var2"]))
+            if "CAPE_var3" in cfgoptions:
+                config.write("CAPE_var3={0}\n".format(cfgoptions["CAPE_var3"]))
+            if "CAPE_var4" in cfgoptions:
+                config.write("CAPE_var4={0}\n".format(cfgoptions["CAPE_var4"]))
                 
         orig_bin_name = ""
         bit_str = ""

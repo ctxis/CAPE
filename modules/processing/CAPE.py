@@ -31,7 +31,6 @@ from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
 from struct import unpack_from, calcsize
 from socket import inet_ntoa
-#from collections import defaultdict, OrderedDict
 import collections
 
 parser_path = os.path.dirname(__file__)
@@ -60,6 +59,7 @@ PLUGX_PAYLOAD           = 0x10
 PLUGX_CONFIG            = 0x11    
 EVILGRAB_PAYLOAD        = 0x14
 EVILGRAB_DATA           = 0x15
+AZZY_DATA               = 0x20
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -101,13 +101,17 @@ def upx_unpack(raw_data):
     return
         
 class CAPE(Processing):
-    """Dropped files analysis."""
+    """CAPE output file processing."""
 
+    cape_config = {}
+    
     def process_file(self, file_path, CAPE_files, append_file):
         """Process file.
-        @return: nothing
+        @return: file_info
         """
+        global cape_config
         strings = []
+        
         buf = self.options.get("buffer", BUFSIZE)
             
         if file_path.endswith("_info.txt"):
@@ -129,8 +133,8 @@ class CAPE(Processing):
         file_info = File(file_path, metastring).get_all()
 
         # Get the file data
-        with open(file_info["path"], "r") as drop_open:
-            filedata = drop_open.read(buf + 1)
+        with open(file_info["path"], "r") as file_open:
+            filedata = file_open.read(buf + 1)
         if len(filedata) > buf:
             file_info["data"] = binascii.b2a_hex(filedata[:buf] + " <truncated>")
         else:
@@ -192,10 +196,13 @@ class CAPE(Processing):
             if file_info["cape_type_code"] == PLUGX_CONFIG:
                 file_info["cape_type"] = "PlugX Config"
                 plugx_parser = plugx.PlugXConfig()
-                config_output = plugx_parser.parse_config(filedata, len(filedata))
-                if config_output:
-                    file_info["plugx_config"] = config_output
-                append_file = True
+                plugx_config = plugx_parser.parse_config(filedata, len(filedata))
+                if not "cape_config" in cape_config and plugx_config:
+                    cape_config["cape_config"] = {}
+                    for key, value in plugx_config.items():
+                        cape_config["cape_config"].update({key: [value]})
+                    cape_config["cape_name"] = "PlugX"
+                append_file = False
             if file_info["cape_type_code"] == PLUGX_PAYLOAD:
                 file_info["cape_type"] = "PlugX Payload"
                 type_strings = file_info["type"].split()
@@ -229,10 +236,54 @@ class CAPE(Processing):
                         file_info["cape_type"] += "executable"
             if file_info["cape_type_code"] == EVILGRAB_DATA:
                 file_info["cape_type"] = "EvilGrab Data"
-                append_file = True
+                if not "cape_config" in cape_config:
+                    cape_config["cape_config"] = {}
+                if file_info["size"] == 256 or file_info["size"] == 260:
+                    ConfigItem = "filepath"
+                    ConfigData = format(filedata)
+                    cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                if file_info["size"] > 0x1000:
+                    append_file = True
+                else:
+                    append_file = False
+            # Azzy
+            if file_info["cape_type_code"] == AZZY_DATA:
+                cape_config["cape_name"] = "Azzy"
+                cape_config["cape_type"] = "Azzy Config"
+                if not "cape_config" in cape_config:
+                    cape_config["cape_config"] = {}
+                if len(metastrings) > 4:
+                    AzzyConfigIndex = metastrings[4]
+                if AzzyConfigIndex == '0x0':
+                    ConfigItem = "Timer1"
+                elif AzzyConfigIndex == '0x1':
+                    ConfigItem = "Timer2"
+                elif AzzyConfigIndex == '0x2':
+                    ConfigItem = "Computer Name"
+                elif AzzyConfigIndex == '0x3':
+                    ConfigItem = "C&C1"
+                elif AzzyConfigIndex == '0x4':
+                    ConfigItem = "C&C2"
+                elif AzzyConfigIndex == '0x5':
+                    ConfigItem = "Operation Name"
+                elif AzzyConfigIndex == '0x6':
+                    ConfigItem = "Keylogger MaxBuffer"
+                elif AzzyConfigIndex == '0x7':
+                    ConfigItem = "Keylogger MaxTimeout"
+                elif AzzyConfigIndex == '0x8':
+                    ConfigItem = "Keylogger Flag"
+                elif AzzyConfigIndex == '0x9':
+                    ConfigItem = "C&C3"
+                else: 
+                    ConfigItem = "Unknown"
+                ConfigData = format(filedata)
+                if ConfigData:
+                    cape_config["cape_config"].update({ConfigItem: [ConfigData]}) 
+                append_file = False
             # UPX
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"
+                type_strings = file_info["type"].split()
                 if type_strings[0] == ("PE32+"):
                     file_info["cape_type"] += ": 64-bit "
                     if type_strings[2] == ("(DLL)"):
@@ -250,10 +301,22 @@ class CAPE(Processing):
         for hit in file_info["cape_yara"]:
             cape_name = hit["name"]
             try:
-                file_info["cape_type"] = hit["meta"]["cape_type"]
+                file_info["cape_type"] = hit["meta"]["cape_type"]                      
             except:
-                #log.error("CAPE Yara signature has no CAPE type metadata: %s", cape_name)
-                file_info["cape_type"] = "CAPE Detection: <Type missing>"
+                file_info["cape_type"] = cape_name + " Payload"
+            type_strings = file_info["type"].split()
+            if type_strings[0] == ("PE32+"):
+                file_info["cape_type"] += ": 64-bit "
+                if type_strings[2] == ("(DLL)"):
+                    file_info["cape_type"] += "DLL"
+                else:
+                    file_info["cape_type"] += "executable"
+            if type_strings[0] == ("PE32"):
+                file_info["cape_type"] += ": 32-bit "
+                if type_strings[2] == ("(DLL)"):
+                    file_info["cape_type"] += "DLL"
+                else:
+                    file_info["cape_type"] += "executable"  
             # UPX Check and unpack
             if cape_name == 'UPX':
                 log.info("CAPE: Found UPX Packed sample - attempting to unpack")
@@ -276,18 +339,23 @@ class CAPE(Processing):
                     infofd.close()
 
                     # Recursive process of unpacked file
-                    self.process_file(newname, CAPE_files, True)
+                    upx_extract = self.process_file(newname, CAPE_files, True)
+                    if upx_extract["type"]:
+                        upx_extract["cape_type"] = "UPX-extracted "
+                        type_strings = upx_extract["type"].split()
+                        if type_strings[0] == ("PE32+"):
+                            upx_extract["cape_type"] += " 64-bit "
+                            if type_strings[2] == ("(DLL)"):
+                                upx_extract["cape_type"] += "DLL"
+                            else:
+                                upx_extract["cape_type"] += "executable"
+                        if type_strings[0] == ("PE32"):
+                            upx_extract["cape_type"] += " 32-bit "
+                            if type_strings[2] == ("(DLL)"):
+                                upx_extract["cape_type"] += "DLL"
+                            else:
+                                upx_extract["cape_type"] += "executable"  
                 
-            # Java Dropper Check
-            #if cape_name == 'JavaDropper':
-            #    log.info("CAPE: Found Java Dropped, attemping to unpack")
-            #    unpacked_file = JavaDropper.run(unpacked_file)
-            #    cape_name = yara_scan(unpacked_file)
-            #
-            #    if cape_name == 'JavaDropper':
-            #        log.info("CAPE: Failed to unpack JavaDropper")
-            #        #return
-
             # Attempt to import a parser for the yara hit
             # DC3-MWCP
             try:
@@ -298,13 +366,13 @@ class CAPE(Processing):
                     log.info("CAPE: Imported DC3-MWCP parser %s", cape_name)
                     mwcp_loaded = True
                 else:
-                    for error in mwcp.errors:
-                        #log.info("CAPE: DC3-MWCP parser error: %s", error.readline())
-                        log.info("CAPE: DC3-MWCP parser error: %s", error)
-                        mwcp_loaded = False
+                    error_lines = mwcp.errors[0].split("\n")
+                    for line in error_lines:
+                        if line.startswith('ImportError: '):
+                            log.info("CAPE: DC3-MWCP parser: %s", line.split(': ')[1])
+                    mwcp_loaded = False
             except ImportError:
                 mwcp_loaded = False
-            
             # malwareconfig
             try:
                 malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
@@ -313,49 +381,58 @@ class CAPE(Processing):
                 malwareconfig_loaded = True
                 log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
             except ImportError:
-                #log.error("CAPE: Unable to import malwareconfig.com parser %s", cape_name)
+                #log.info("CAPE: No malwareconfig.com parser for %s", cape_name)
                 malwareconfig_loaded = False
             
             # Get config data
             if mwcp_loaded:
                 try:
-                    file_info["cape_config"] = convert(mwcp.metadata)
-                    file_info["cape_name"] = format(cape_name)
-                    append_file = True
+                    if not "cape_config" in cape_config:
+                        cape_config["cape_config"] = {}
+                        cape_config["cape_config"] = convert(mwcp.metadata)
+                    else:
+                        cape_config["cape_config"].update(convert(mwcp.metadata))
+                    cape_config["cape_name"] = format(cape_name)
                 except Exception as e:
                     log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
             elif malwareconfig_loaded:
                 try:
-                    file_info["cape_config"] = {}
+                    if not "cape_config" in cape_config:
+                        cape_config["cape_config"] = {}
                     malwareconfig_config = module.config(filedata)
                     if isinstance(malwareconfig_config, list):
                         for (key, value) in module.config(filedata)[0].iteritems():
-                            file_info["cape_config"].update({key: [value]}) 
+                            cape_config["cape_config"].update({key: [value]}) 
                     elif isinstance(malwareconfig_config, dict):
                         for (key, value) in module.config(filedata).iteritems():
-                            file_info["cape_config"].update({key: [value]}) 
-                    file_info["cape_name"] = format(cape_name)
-                    append_file = True
+                            cape_config["cape_config"].update({key: [value]}) 
+                    cape_config["cape_name"] = format(cape_name)
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
             
         if append_file == True:
             CAPE_files.append(file_info)
+        return file_info
     
     def run(self):
         """Run analysis.
         @return: list of CAPE output files with related information.
         """
+        global cape_config
+        cape_config = {}
         self.key = "CAPE"
         output = ""
         CAPE_files = []
-
+        
         # Process dynamically dumped CAPE files
         for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
             for file_name in file_names:
                 file_path = os.path.join(dir_name, file_name)
-                self.process_file(file_path, CAPE_files, True)
-                
+        # We want to exclude duplicate files from display in ui
+                if len(file_name) <= 64:
+                    self.process_file(file_path, CAPE_files, True)
+                else:
+                    self.process_file(file_path, CAPE_files, False)
         # Finally static processing of submitted file
         if self.task["category"] == "file":
             if not os.path.exists(self.file_path):
@@ -363,4 +440,7 @@ class CAPE(Processing):
             
             self.process_file(self.file_path, CAPE_files, False)
             
+        if cape_config:
+            CAPE_files.append(cape_config)
+        
         return CAPE_files
