@@ -147,30 +147,42 @@ class PlugXConfig():
             # CC
             num_cc = 4 if cfg_sz not in (0x36a4, 0x4ea4) else 16
             get_proto = self.get_proto if cfg_sz not in (0x36a4, 0x4ea4) else self.get_proto2
+            cc_list = []
             for k in xrange(num_cc):
                 (proto, cc_port, cc_address) = unpack_from('<2H64s', cfg_blob)
                 cfg_blob = cfg_blob[0x44:]
                 proto = get_proto(proto)
                 cc_address = cc_address.split('\x00')[0]
                 if cc_address != "":
-                    config_output.update({'C&C Address': ("%s:%d (%s)" % (str(cc_address), cc_port, proto))})
+                    cc_list.append("%s:%d (%s)" % (str(cc_address), cc_port, proto))
+            if cc_list:
+                config_output.update({'C&C Address': cc_list})
 
             # Additional URLs
             num_url = 4 if cfg_sz not in (0x36a4, 0x4ea4) else 16
+            url_list = []
             for k in xrange(num_url):
                 url = cfg_blob[:0x80].split('\x00')[0]
                 cfg_blob = cfg_blob[0x80:]
                 if len(url) > 0 and str(url) != "HTTP://":
-                    config_output.update({'URL': str(url)})
+                    url_list.append(str(url))
+            if url_list:
+                config_output.update({'URL': url_list})
 
             # Proxies
+            proxy_list = []
+            proxy_creds = []
             for k in xrange(4):
                 ptype, port, proxy, user, passwd = unpack_from('<2H64s64s64s', cfg_blob)
                 cfg_blob = cfg_blob[calcsize('<2H64s64s64s'):]
                 if proxy[0] != '\x00':
-                    config_output.update({'Proxy': ("%s:%d" % (proxy.split('\x00')[0], port))})
+                    proxy_list.append("%s:%d" % (proxy.split('\x00')[0], port))
                     if user[0] != '\x00':
-                        config_output.update({'Proxy credentials': ("%s / %s\0" % (user, passwd))})
+                        proxy_creds.append("%s / %s\0" % (user, passwd))
+            if proxy_list:
+                config_output.update({'Proxy': proxy_list})
+            if proxy_creds:
+                config_output.update({'Proxy credentials': proxy_creds})
 
             str_sz = 0x80 if cfg_sz == 0xbe4 else 0x200
 
@@ -298,22 +310,30 @@ class PlugXConfig():
                 cfg_blob = cfg_blob[6:]
 
             if cfg_sz in (0x4ea4,):
+                process_list = []
                 for k in xrange(8):
                     process_name = self.get_str_utf16le(cfg_blob[:0x100])
                     cfg_blob = cfg_blob[0x100:]
                     if process_name != "":
-                        config_output.update({'Process black list': process_name.encode('ascii','ignore')})
+                        process_list.append(process_name.encode('ascii','ignore'))
+                if process_list:
+                    config_output.update({'Process black list': process_list})
+                file_list = []
                 for k in xrange(8):
                     file_name = self.get_str_utf16le(cfg_blob[:0x100])
                     cfg_blob = cfg_blob[0x100:]
                     if process_name != "":
-                        config_output.update({'File black list': file_name.encode('ascii','ignore')})
+                        file_list.append(file_name.encode('ascii','ignore'))
+                if file_list:
+                    config_output.update({'File black list': file_list})
+                reg_list = []
                 for k in xrange(8):
                     reg_name = self.get_str_utf16le(cfg_blob[:0x100])
                     cfg_blob = cfg_blob[0x100:]
                     if process_name != "":
-                        config_output.update({'Registry black list': reg_name.encode('ascii','ignore')})
-
+                        reg_list.append(reg_name.encode('ascii','ignore'))
+                if reg_list:
+                    config_output.update({'Registry black list': reg_list})
         else:
             return None
 
