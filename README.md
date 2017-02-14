@@ -14,11 +14,11 @@ The techniques or behaviours that CAPE detects and has packages for include:
     - Decompression of executable modules in memory
     - Extraction of executable modules or shellcode in memory
 
-Packages for these behaviours will dump the payloads being injected, extracted or decompressed for further analysis. This is often the malware payload in unpacked form.    
+Packages for these behaviours will dump the payloads being injected, extracted or decompressed for further analysis. This is often the malware payload in unpacked form. 
 
 In addition to specific behaviours, CAPE also automatically creates a process dump for each process' main executable, or, in the case of a DLL, the DLL's module image in memory. This is useful for samples packed with simple packers, where often the module image dump is fully unpacked.
     
-CAPE can also extract the payloads from 'hacked' (modified) packers derived from UPX, a favourite with malware authors.
+CAPE also has a package which can dynamically extract payloads from 'hacked' (modified) packers derived from UPX, a favourite with malware authors.
     
 Currently CAPE has specific packages for the following malware families:
     - PlugX
