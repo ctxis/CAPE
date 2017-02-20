@@ -228,6 +228,10 @@ class SubmitCAPE(Report):
             else:
                 package = 'CAPE_Azzy'
             
+        self.task_options = self.task["options"]
+        # we want to switch off automatic process dumps in CAPE submissions
+        if 'procmemdump=1' in self.task_options:
+            self.task_options = self.task_options.replace(u"procmemdump=1", u"procmemdump=0", 1)
         if self.task_options_stack:
             self.task_options=','.join(self.task_options_stack)            
             
@@ -248,13 +252,10 @@ class SubmitCAPE(Report):
             else:
                 log.warn("Error adding CAPE task to database: {0}".format(package))
             
-        else: #nothing submitted, only 'dumpers' left, let's do them all
+        else: # nothing submitted, only 'dumpers' left
             if parent_package == "CAPE_Extraction" or parent_package == "CAPE_Injection" or parent_package == "CAPE_Compression":
                 return            
             for dumper in detections:
-                # only submit Extraction if no other dumpers are detected
-                #if len(detections) > 1 and dumper.startswith('CAPE_Extraction'):
-                #    continue
                 task_id = db.add_path(file_path=self.task["target"],
                                 package=dumper,
                                 timeout=self.task["timeout"],
@@ -270,3 +271,4 @@ class SubmitCAPE(Report):
                     log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(self.task["target"], dumper, task_id))
                 else:
                     log.warn("Error adding CAPE task to database: {0}".format(dumper))
+        return
