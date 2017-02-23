@@ -110,7 +110,7 @@ class SubmitCAPE(Report):
                         if parent_package=='doc':
                             detections.add('CAPE_Injection_doc')    
                             continue
-                        if parent_package=='dll':
+                        if parent_package=='dll' or parent_package=='regsvr':
                             detections.add('CAPE_Injection_dll')    
                             continue
                         if parent_package=='zip':
@@ -137,7 +137,7 @@ class SubmitCAPE(Report):
                 
                 elif entry["name"] == "CAPE Compression":
                     if report["info"].has_key("package"):
-                        if parent_package=='dll':
+                        if parent_package=='dll' or parent_package=='regsvr':
                             detections.add('CAPE_Compression_dll')    
                             continue                            
                         if parent_package=='doc':
