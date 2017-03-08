@@ -155,6 +155,7 @@ class Package(object):
         @return: process pid
         """
         dll = self.options.get("dll")
+        dll_64 = self.options.get("dll_64")
         gw = self.options.get("setgw", None)
 
         u = Utils()
@@ -168,7 +169,12 @@ class Package(object):
             raise CuckooPackageError("Unable to execute the initial process, "
                                      "analysis aborted.")
 
-        p.debug_inject(dll, interest, childprocess=False)
+        is_64bit = p.is_64bit()
+            
+        if is_64bit:
+            p.debug_inject(dll_64, interest, childprocess=False)
+        else:
+            p.debug_inject(dll, interest, childprocess=False)
         p.resume()
         p.close()
         

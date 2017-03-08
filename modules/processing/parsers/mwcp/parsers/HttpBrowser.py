@@ -91,41 +91,50 @@ class evilgrab(malwareconfigparser):
             yara_offset = int(type1['$connect_1'])
             
             port = ascii_from_va(pe, yara_offset+39)
-            self.reporter.add_metadata('port', [port, "tcp"])
+            if port:    
+                self.reporter.add_metadata('port', [port, "tcp"])
 
             c2_address = unicode_from_va(pe, yara_offset+49)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
 
         if type2:
             yara_offset = int(type2['$connect_2'])
             
             port = ascii_from_va(pe, yara_offset+35)
-            self.reporter.add_metadata('port', [port, "tcp"])
+            if port:
+                self.reporter.add_metadata('port', [port, "tcp"])
 
             c2_address = unicode_from_va(pe, yara_offset+45)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
 
         if type3:
             yara_offset = int(type3['$connect_3'])
 
             port = ascii_from_va(pe, yara_offset+18)
-            self.reporter.add_metadata('port', [port, "tcp"])
+            if port:    
+                self.reporter.add_metadata('port', [port, "tcp"])
 
             c2_address = unicode_from_va(pe, yara_offset+28)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
 
             c2_address = unicode_from_va(pe, yara_offset+66)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
 
         if type4:
             yara_offset = int(type4['$connect_4'])
             
             c2_address = unicode_from_va(pe, yara_offset+35)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
             
             filepath = unicode_from_va(pe, yara_offset+90)
-            self.reporter.add_metadata('filepath', filepath)
+            if filepath:    
+                self.reporter.add_metadata('filepath', filepath)
             
             injectionprocess = unicode_from_va(pe, yara_offset-13)
-            self.reporter.add_metadata('injectionprocess', injectionprocess)
-            
+            if injectionprocess:    
+                self.reporter.add_metadata('injectionprocess', injectionprocess)

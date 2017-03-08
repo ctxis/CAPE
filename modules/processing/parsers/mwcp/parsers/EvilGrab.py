@@ -83,59 +83,75 @@ class evilgrab(malwareconfigparser):
             yara_offset = int(type1['$configure1'])
             
             c2_address = string_from_va(pe, yara_offset+24)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
             
             port = str(struct.unpack('h', filebuf[yara_offset+71:yara_offset+73])[0])
-            self.reporter.add_metadata('port', [port, "tcp"])
+            if port:
+                self.reporter.add_metadata('port', [port, "tcp"])
             
             missionid = string_from_va(pe, yara_offset+60)
-            self.reporter.add_metadata('missionid', missionid)
+            if missionid:
+                self.reporter.add_metadata('missionid', missionid)
 
             version = string_from_va(pe, yara_offset+90)
-            self.reporter.add_metadata('version', version)
+            if version:
+                self.reporter.add_metadata('version', version)
 
             injectionprocess = string_from_va(pe, yara_offset+132)
-            self.reporter.add_metadata('injectionprocess', injectionprocess)
+            if injectionprocess:
+                self.reporter.add_metadata('injectionprocess', injectionprocess)
 
             mutex = string_from_va(pe, yara_offset-186)
-            self.reporter.add_metadata('mutex', mutex)
+            if mutex:
+                self.reporter.add_metadata('mutex', mutex)
 
         if type2:
             yara_offset = int(type2['$configure2'])
             
             c2_address = string_from_va(pe, yara_offset+24)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
             
             port = str(struct.unpack('h', filebuf[yara_offset+78:yara_offset+80])[0])
-            self.reporter.add_metadata('port', [port, "tcp"])
+            if port:
+                self.reporter.add_metadata('port', [port, "tcp"])
 
             missionid = string_from_va(pe, yara_offset+67)
-            self.reporter.add_metadata('missionid', missionid)
+            if missionid:
+                self.reporter.add_metadata('missionid', missionid)
 
             version = string_from_va(pe, yara_offset+91)
-            self.reporter.add_metadata('version', version)
+            if version:
+                self.reporter.add_metadata('version', version)
 
             injectionprocess = string_from_va(pe, yara_offset+133)
-            self.reporter.add_metadata('injectionprocess', injectionprocess)
+            if injectionprocess:
+                self.reporter.add_metadata('injectionprocess', injectionprocess)
 
             mutex = string_from_va(pe, yara_offset-188)
-            self.reporter.add_metadata('mutex', mutex)
+            if mutex:
+                self.reporter.add_metadata('mutex', mutex)
 
         if type3:
             yara_offset = int(type3['$configure3'])
 
             c2_address = string_from_va(pe, yara_offset+38)
-            self.reporter.add_metadata('c2_address', c2_address)
+            if c2_address:
+                self.reporter.add_metadata('c2_address', c2_address)
 
             port = str(struct.unpack('h', filebuf[yara_offset+99:yara_offset+101])[0])
-            self.reporter.add_metadata('port', [port, "tcp"])
+            if port:
+                self.reporter.add_metadata('port', [port, "tcp"])
 
             missionid = string_from_va(pe, yara_offset+132)
-            self.reporter.add_metadata('missionid', missionid)
+            if missionid:
+                self.reporter.add_metadata('missionid', missionid)
 
             version = string_from_va(pe, yara_offset+167)
-            self.reporter.add_metadata('version', version)
+            if version:
+                self.reporter.add_metadata('version', version)
 
             injectionprocess = string_from_va(pe, yara_offset+195)
-            self.reporter.add_metadata('injectionprocess', injectionprocess)
-            
+            if injectionprocess:
+                self.reporter.add_metadata('injectionprocess', injectionprocess)

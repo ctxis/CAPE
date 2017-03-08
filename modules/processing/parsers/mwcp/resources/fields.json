@@ -16,7 +16,7 @@
         "type": "listofstrings"
     }, 
     "c2_socketaddress": {
-        "description": "special case of scoketaddress, when socketaddress is used for command and control", 
+        "description": "special case of socketaddress, when socketaddress is used for command and control", 
         "examples": [
             [
                 "bad.com", 
@@ -32,7 +32,7 @@
         "type": "listofstringtuples"
     }, 
     "c2_url": {
-        "description": "special case of address, when the address is used for command and control", 
+        "description": "special case of url, when the url is used for command and control", 
         "examples": [
             "http://mal.com/pub/view.asp", 
             "https://10.11.10.13:443/images/baner.jpg"
@@ -56,7 +56,7 @@
     "debug": {
         "description": "Message used for debugging or to report errors. Not malware configuration per se", 
         "examples": [
-            "Succesfully found config block, attempting decode", 
+            "Successfully found config block, attempting decode", 
             "Decode failed: detected config location 3735928559 outside file size of 184320"
         ], 
         "type": "listofstrings"
@@ -86,7 +86,7 @@
         "type": "listofstrings"
     }, 
     "injectionprocess": {
-        "description": "process into which malware is injected. Usually this is a processname but it may take other forms such as a filename of the executable.", 
+        "description": "process into which malware is injected. Usually this is a process name but it may take other forms such as a filename of the executable.", 
         "examples": [
             "iexplore", 
             "svchost"
@@ -152,15 +152,17 @@
         "type": "dictofstrings"
     }, 
     "outputfile": {
-        "description": "relevant or related file created during parsing of malware. Tuple of filename and description", 
+        "description": "relevant or related file created during parsing of malware. Tuple of filename, description, and md5.", 
         "examples": [
             [
                 "config.xml", 
-                "extracted backdoor Foo config file"
+                "extracted backdoor Foo config file",
+                "12345678901234567890123456789012"
             ], 
             [
                 "client.crt", 
-                "certificate for BarRat TLS client authentication"
+                "certificate for BarRat TLS client authentication",
+                "09876543210987654321098765432109"
             ]
         ], 
         "type": "listofstringtuples"
@@ -174,7 +176,7 @@
         "type": "listofstrings"
     }, 
     "port": {
-        "description": "TCP or UDP port. A tuple of a port number and protocol. This generally refers to outbound connections where the malware is the client. Other network layer protcols, such as ICMP can be represented here. Application layer protocols, such as HTTP, should be indicated in a URL.", 
+        "description": "TCP or UDP port. A tuple of a port number and protocol. This generally refers to outbound connections where the malware is the client. Other network layer protocols, such as ICMP can be represented here. Application layer protocols, such as HTTP, should be indicated in a URL.", 
         "examples": [
             [
                 "21", 

@@ -26,16 +26,6 @@ class VMwareServer(Machinery):
             raise CuckooMachineError("VMware vmrun path missing, "
                                      "please add it to vmwareserver.conf")
 
-#        if not os.path.exists(self.options.vmwareserver.path):
-#            raise CuckooMachineError("VMware vmrun not found in "
-#                                     "specified path %s" %
-#                                     self.options.vmwareserver.path)
-        # Consistency checks.
-#        for machine in self.machines():
-#            vmx_path = machine.label
-
-#            snapshot = self._snapshot_from_vmx(vmx_path)
-#            self._check_vmx(vmx_path)
             self._check_snapshot(vmx_path, snapshot)
 
         # Base checks.
@@ -59,7 +49,7 @@ class VMwareServer(Machinery):
         @param snapshot: snapshot name
         @raise CuckooMachineError: if snapshot not found
         """
-        #check_string = "strace " + \
+
         check_string = self.options.vmwareserver.path + \
                        " -T ws-shared -h " + \
                        self.options.vmwareserver.vmware_url + \
@@ -88,9 +78,8 @@ class VMwareServer(Machinery):
         """
         snapshot = self._snapshot_from_vmx(vmx_path)
 
-        # Preventive check
+        # Check if the machine is already running, stop if so.
         if self._is_running(vmx_path):
-            #raise CuckooMachineError("Machine %s is already running" % vmx_path)
             log.debug("Machine %s is already running, attempting to stop..." % vmx_path)
             self.stop(vmx_path)
             time.sleep(3)
@@ -99,7 +88,6 @@ class VMwareServer(Machinery):
 
         time.sleep(3)
 
-        #start_string = "strace " + \
         start_string = self.options.vmwareserver.path + \
                        " -T ws-shared -h " + \
                        self.options.vmwareserver.vmware_url + \
@@ -126,8 +114,7 @@ class VMwareServer(Machinery):
         @param vmx_path: path to vmx file
         @raise CuckooMachineError: if unable to stop.
         """
-        #stop_string =  "strace " + \
-                       #self.options.vmwareserver.path + \
+
         stop_string =  self.options.vmwareserver.path + \
                        " -T ws-shared -h " + \
                        self.options.vmwareserver.vmware_url + \
@@ -159,8 +146,6 @@ class VMwareServer(Machinery):
         """
         log.debug("Revert snapshot for vm %s: %s" % (vmx_path, snapshot))
         
-        #revert_string = "strace " + \
-                        #self.options.vmwareserver.path + \
         revert_string = self.options.vmwareserver.path + \
                         " -T ws-shared -h " + \
                         self.options.vmwareserver.vmware_url + \
@@ -168,6 +153,8 @@ class VMwareServer(Machinery):
                         " -p " + self.options.vmwareserver.password + \
                         " revertToSnapshot " + "\"" + vmx_path + "\" " + snapshot
                
+        #log.debug("Revert string: %s" % revert_string)
+
         try:
             if subprocess.call(revert_string, shell=True):
                 raise CuckooMachineError("Unable to revert snapshot for "
@@ -183,8 +170,6 @@ class VMwareServer(Machinery):
         @param vmx_path: path to vmx file
         @return: running status
         """
-        #list_string = "strace " + \
-                      #self.options.vmwareserver.path + \
         list_string = self.options.vmwareserver.path + \
                       " -T ws-shared -h " + \
                       self.options.vmwareserver.vmware_url + \
@@ -192,12 +177,10 @@ class VMwareServer(Machinery):
                       " -p " + self.options.vmwareserver.password + \
                       " list " + "\"" + vmx_path + "\""
 
+        #log.debug("List string: %s" % list_string)
+					  
         try:
             p = subprocess.Popen(list_string, stdout=subprocess.PIPE, shell=True)
-            #p = subprocess.Popen(list_string,
-            #p = subprocess.Popen([self.options.vmware.path, "list"],
-                                 #stdout=subprocess.PIPE,
-                                 #stderr=subprocess.PIPE)
             output, error = p.communicate()
         except OSError as e:
             raise CuckooMachineError("Unable to check running status for %s. "
@@ -216,41 +199,3 @@ class VMwareServer(Machinery):
         """
         vm_info = self.db.view_machine_by_label(vmx_path)
         return vm_info.snapshot
-
-    def dump_memory(self, vmx_path, path):
-        """Take a memory dump of the machine."""
-        if not os.path.exists(vmx_path):
-            raise CuckooMachineError("Can't find .vmx file {0}. Ensure to configure a fully qualified path in vmwareserver.conf (key = vmx_path)".format(vmx_path))
-
-        try:
-            subprocess.call([self.options.vmwareserver.path,
-                            "-T ws-shared -h", self.options.vmwareserver.vmware_url,
-                            "-u", self.options.vmwareserver.username, "-p", self.options.vmwareserver.password,
-                            "snapshot",
-                            vmx_path, "memdump"],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-        except OSError as e:
-            raise CuckooMachineError("vmrun failed to take a memory dump of the machine with label %s: %s" % (vmx_path, e))
-
-        vmwarepath, _ = os.path.split(vmx_path)
-        latestvmem = max(glob.iglob(os.path.join(vmwarepath, "*.vmem")),
-                         key=os.path.getctime)
-
-        # We need to move the snapshot to the current analysis directory as
-        # vmware doesn't support an option for the destination path :-/
-        shutil.move(latestvmem, path)
-
-        # Old snapshot can be deleted, as it isn't needed any longer.
-        try:
-            subprocess.call([self.options.vmwareserver.path,
-                            "-T ws-shared -h", vmware_url,
-                            "-u", self.options.vmwareserver.username, "-p", self.options.vmwareserver.password,
-                            "deleteSnapshot",
-                            vmx_path, "memdump"],
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-        except OSError as e:
-            raise CuckooMachineError("vmrun failed to delete the temporary snapshot in %s: %s" % (vmx_path, e))
-
-        log.info("Successfully generated memory dump for virtual machine with label %s ", vmx_path)
