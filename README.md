@@ -31,6 +31,8 @@ Many other malware families have their payloads extracted by some of the behavio
 
 Currently CAPE has config parsers for the following malware families, whose payloads are extracted by a behavioural package:
     - HttpBrowser
+    - Enfal
+    - ChChes
 
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
