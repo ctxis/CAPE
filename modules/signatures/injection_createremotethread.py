@@ -72,4 +72,3 @@ class InjectionCRT(Signature):
             if self.get_argument(call, "ProcessId") in self.process_pids:
                 self.description = "Code injection with NtQueueApcThread in a remote process"
                 return True
-
