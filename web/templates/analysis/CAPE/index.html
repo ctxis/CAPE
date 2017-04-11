@@ -44,7 +44,10 @@
             </table>
         </div> 
         </tr>
-        {% else %}
+        {% endif %}
+    {% endfor %}
+    {% for file in analysis.CAPE %}
+        {% if not file.cape_config %}
         <div class="panel panel-default">
             <table class="table table-striped" style="table-layout: fixed;">
                 <tr>
@@ -155,9 +158,7 @@
                 </tr>
                 {% endif %}            </table>
         </div>
-        
         {% endif %}        
-
     {% endfor %}
 {% else %}
     <div class="alert alert-info"><b>Sorry!</b> No CAPE files.</div>

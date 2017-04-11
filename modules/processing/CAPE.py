@@ -22,6 +22,7 @@ except ImportError:
     import re
 import subprocess
 import tempfile
+import hashlib
 import random
 import imp
 
@@ -64,6 +65,21 @@ UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
 
+def hash_file(method, path):
+    """Calculates an hash on a file by path.
+    @param method: callable hashing method
+    @param path: file path
+    @return: computed hash string
+    """
+    f = open(path, "rb")
+    h = method()
+    while True:
+        buf = f.read(BUFSIZE)
+        if not buf:
+            break
+        h.update(buf)
+    return h.hexdigest()
+
 def convert(data):
     if isinstance(data, unicode):
         return str(data)
@@ -88,8 +104,10 @@ def upx_unpack(raw_data):
         return
     
     if ret == 0:
-        log.info("CAPE: UPX - Statically unpacked binary %s.", upxfile.name)
-        return upxfile.name
+        sha256 = hash_file(hashlib.sha256, upxfile.name)
+        os.rename(upxfile.name, sha256)
+        log.info("CAPE: UPX - Statically unpacked binary %s.", sha256)
+        return sha256
     elif ret == 127:
         log.error("CAPE: Error - UPX not installed.")
     elif ret == 2:
@@ -110,6 +128,7 @@ class CAPE(Processing):
         @return: file_info
         """
         global cape_config
+        cape_name = ""
         strings = []
         
         buf = self.options.get("buffer", BUFSIZE)
@@ -201,7 +220,7 @@ class CAPE(Processing):
                     cape_config["cape_config"] = {}
                     for key, value in plugx_config.items():
                         cape_config["cape_config"].update({key: [value]})
-                    cape_config["cape_name"] = "PlugX"
+                    cape_name = "PlugX"
                 append_file = False
             if file_info["cape_type_code"] == PLUGX_PAYLOAD:
                 file_info["cape_type"] = "PlugX Payload"
@@ -235,6 +254,7 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"
             if file_info["cape_type_code"] == EVILGRAB_DATA:
+                cape_name = "EvilGrab"
                 file_info["cape_type"] = "EvilGrab Data"
                 if not "cape_config" in cape_config:
                     cape_config["cape_config"] = {}
@@ -248,7 +268,7 @@ class CAPE(Processing):
                     append_file = False
             # Azzy
             if file_info["cape_type_code"] == AZZY_DATA:
-                cape_config["cape_name"] = "Azzy"
+                cape_name = "Azzy"
                 cape_config["cape_type"] = "Azzy Config"
                 if not "cape_config" in cape_config:
                     cape_config["cape_config"] = {}
@@ -392,7 +412,6 @@ class CAPE(Processing):
                         cape_config["cape_config"] = convert(mwcp.metadata)
                     else:
                         cape_config["cape_config"].update(convert(mwcp.metadata))
-                    cape_config["cape_name"] = format(cape_name)
                 except Exception as e:
                     log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
             elif malwareconfig_loaded:
@@ -406,10 +425,17 @@ class CAPE(Processing):
                     elif isinstance(malwareconfig_config, dict):
                         for (key, value) in module.config(filedata).iteritems():
                             cape_config["cape_config"].update({key: [value]}) 
-                    cape_config["cape_name"] = format(cape_name)
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
             
+        if cape_name:
+            cape_config["cape_name"] = format(cape_name)
+            if not "cape" in self.results:
+                #self.results["cape"] = []
+                self.results["cape"] = cape_name
+            #if cape_name not in self.results["cape"]:
+            #    self.results["cape"].append(cape_name)
+
         if append_file == True:
             CAPE_files.append(file_info)
         return file_info
@@ -433,6 +459,19 @@ class CAPE(Processing):
                     self.process_file(file_path, CAPE_files, True)
                 else:
                     self.process_file(file_path, CAPE_files, False)
+        # We want to process procdumps too just in case they might
+        # be detected as payloads and trigger config parsing
+        for dir_name, dir_names, file_names in os.walk(self.procdump_path):
+            for file_name in file_names:
+                file_path = os.path.join(dir_name, file_name)
+        # the files by default in the CAPE tab
+                self.process_file(file_path, CAPE_files, False)
+        # We want to process dropped files too 
+        for dir_name, dir_names, file_names in os.walk(self.dropped_path):
+            for file_name in file_names:
+                file_path = os.path.join(dir_name, file_name)
+                self.process_file(file_path, CAPE_files, False)
+        # We set append_file to False as we don't wan't to include
         # Finally static processing of submitted file
         if self.task["category"] == "file":
             if not os.path.exists(self.file_path):
@@ -440,7 +479,7 @@ class CAPE(Processing):
             
             self.process_file(self.file_path, CAPE_files, False)
             
-        if cape_config:
+        if "cape_config" in cape_config:
             CAPE_files.append(cape_config)
         
         return CAPE_files

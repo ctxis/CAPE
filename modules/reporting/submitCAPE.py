@@ -30,6 +30,13 @@ from lib.cuckoo.core.database import Database
 
 log = logging.getLogger(__name__)
 
+cape_package_list = [
+        "Azzy", "Azzy_dll", "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
+        "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Injection", "Injection_dll", "Injection_doc", 
+        "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Shellcode-Extraction", 
+        "UPX", "UPX_dll"
+    ];
+
 def pirpi_password(strings):
     string = strings[0]
     password = string[20] + string[39] + string[58] #+ strings[77]
@@ -39,23 +46,36 @@ class SubmitCAPE(Report):
     def process_cape_yara(self, cape_yara, detections):
         
         #if cape_yara["name"] == "Pirpi":
-        #    detections.add('CAPE_PirpiPassword')
+        #    detections.add('PirpiPassword')
 
-        if cape_yara["name"] == "Azzy" and 'CAPE_Azzy' not in detections:
+        if cape_yara["name"] == "Azzy" and 'Azzy' not in detections:
             encrypt1 = cape_yara["addresses"].get("encrypt1")
             encrypt2 = cape_yara["addresses"].get("encrypt2")
             if encrypt1:
                 self.task_options_stack.append("CAPE_var1={0}".format(encrypt1))
             if encrypt2:
                 self.task_options_stack.append("CAPE_var2={0}".format(encrypt2))
-            detections.add('CAPE_Azzy')
+            detections.add('Azzy')
             
-        #if cape_yara["name"] == "CAPE EvilGrab":
-        #    detections.add('CAPE_EvilGrab')                            
+        #if cape_yara["name"] == "EvilGrab":
+        #    detections.add('EvilGrab')                            
 
-        if cape_yara["name"] == "CAPE_Dridex":
-            self.task_options_stack.append("breakpoint={0}".format(cape_yara["addresses"][0]))
-            detections.add('CAPE_Dridex')
+        if cape_yara["name"] == "Dridex":
+            crypt_32_1 = cape_yara["addresses"].get("crypt_32_v1")
+            crypt_32_2 = cape_yara["addresses"].get("crypt_32_v2")
+            crypt_32_3 = cape_yara["addresses"].get("crypt_32_v3")
+            
+            crypt_64_1 = cape_yara["addresses"].get("crypt_64_v1")
+    
+            if crypt_32_1:
+                self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_1))
+            if crypt_32_2:
+                self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_2))
+            if crypt_32_3:
+                self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_3))
+            if crypt_64_1:
+                self.task_options_stack.append("CAPE_var1={0}".format(crypt_64_1))
+            detections.add('Dridex')
     
     def run(self, results):
         self.task_options_stack = []
@@ -67,9 +87,9 @@ class SubmitCAPE(Report):
         detections = set()
 
         parent_package = report["info"].get("package")
-        if parent_package.startswith('CAPE'):
+        if parent_package in cape_package_list:
             # we only want to trigger detections from 'straight' runs, behavioural packages or unpackers
-            if parent_package != "CAPE_Extraction" and parent_package != "CAPE_Injection" and parent_package != "CAPE_Compression" and parent_package != "CAPE_UPX":
+            if parent_package != "Extraction" and parent_package != "Injection" and parent_package != "Compression" and parent_package != "UPX":
                 return
             
         ##### Initial static hits from CAPE's yara signatures
@@ -108,125 +128,125 @@ class SubmitCAPE(Report):
                 if entry["name"] == "injection_runpe" or entry["name"] == "injection_createremotethread" or entry["name"] == "injection_setwindowlong":
                     if report["info"].has_key("package"):
                         if parent_package=='doc':
-                            detections.add('CAPE_Injection_doc')    
+                            detections.add('Injection_doc')    
                             continue
                         if parent_package=='dll' or parent_package=='regsvr':
-                            detections.add('CAPE_Injection_dll')    
+                            detections.add('Injection_dll')    
                             continue
                         if parent_package=='zip':
-                            detections.add('CAPE_Injection_zip')    
+                            detections.add('Injection_zip')    
                             continue
-                        detections.add('CAPE_Injection')
+                        detections.add('Injection')
                 
                 elif entry["name"] == "extraction_rwx":
                     if report["info"].has_key("package"):
                         if parent_package=='doc':
-                        #    detections.add('CAPE_Extraction_doc')
+                        #    detections.add('Extraction_doc')
                         # Word triggers this so removed
                             continue
                         if parent_package=='zip':
-                            detections.add('CAPE_Extraction_zip')    
+                            detections.add('Extraction_zip')    
                             continue
                         if parent_package=='dll':
-                            detections.add('CAPE_Extraction_dll')    
+                            detections.add('Extraction_dll')    
                             continue
                         if parent_package=='regsvr':
-                            detections.add('CAPE_Extraction_regsvr')    
+                            detections.add('Extraction_regsvr')    
                             continue
-                        detections.add('CAPE_Extraction')
+                        detections.add('Extraction')
                 
-                elif entry["name"] == "CAPE Compression":
+                elif entry["name"] == "Compression":
                     if report["info"].has_key("package"):
                         if parent_package=='dll' or parent_package=='regsvr':
-                            detections.add('CAPE_Compression_dll')    
+                            detections.add('Compression_dll')    
                             continue                            
                         if parent_package=='doc':
-                            detections.add('CAPE_Compression_doc')    
+                            detections.add('Compression_doc')    
                             continue                            
-                        detections.add('CAPE_Compression')
+                        detections.add('Compression')
                     
         ##### Specific malware family packages
         #####
-                elif entry["name"] == "CAPE PlugX":
+                elif entry["name"] == "PlugX":
                     if report["info"].has_key("package"):
                         if parent_package=='PlugXPayload':
-                            detections.add('CAPE_PlugXPayload')   
+                            detections.add('PlugXPayload')   
                             continue
                         if parent_package=='zip':
-                            detections.add('CAPE_PlugX_zip')
+                            detections.add('PlugX_zip')
                             continue
                         if parent_package=='doc':
-                            detections.add('CAPE_PlugX_doc')    
+                            detections.add('PlugX_doc')    
                             continue
                         if parent_package=='dll':
-                            detections.add('CAPE_PlugX_dll')    
+                            detections.add('PlugX_dll')    
                             continue
-                        detections.add('CAPE_PlugX')
+                        detections.add('PlugX')
 
-                elif entry["name"] == "CAPE PlugX fuzzy":
+                elif entry["name"] == "PlugX fuzzy":
                     if report["info"].has_key("package"):
                         if parent_package=='PlugXPayload':
-                            detections.add('CAPE_PlugXPayload_fuzzy')
+                            detections.add('PlugXPayload_fuzzy')
                             continue
                         if parent_package=='zip':
-                            detections.add('CAPE_PlugX_fuzzy_zip')    
+                            detections.add('PlugX_fuzzy_zip')    
                             continue
                         if parent_package=='doc':
-                            detections.add('CAPE_PlugX_fuzzy_doc')
+                            detections.add('PlugX_fuzzy_doc')
                             continue
                         if parent_package=='dll':
-                            detections.add('CAPE_PlugX_fuzzy_dll')                              
+                            detections.add('PlugX_fuzzy_dll')                              
                             continue
-                        detections.add('CAPE_PlugX_fuzzy')    
+                        detections.add('PlugX_fuzzy')    
                                             
-                elif entry["name"] == "CAPE Derusbi":
+                elif entry["name"] == "Derusbi":
                     if report["info"].has_key("package"):
-                        detections.add('CAPE_Derusbi')
+                        detections.add('Derusbi')
                     
-                elif entry["name"] == "CAPE EvilGrab":
+                elif entry["name"] == "EvilGrab":
                     if report["info"].has_key("package"):
-                        detections.add('CAPE_EvilGrab')
+                        detections.add('EvilGrab')
         
         # We only want to submit a single job if we have a
         # malware detection. A given package should do 
         # everything we need for its respective family.
         package = None
         
-        if 'CAPE_PlugX_fuzzy' in detections:
-            package = 'CAPE_PlugX_fuzzy'
-        elif 'CAPE_PlugXPayload_fuzzy' in detections:
-            package = 'CAPE_PlugXPayload_fuzzy'			
-        elif 'CAPE_PlugX_fuzzy_zip' in detections:
-            package = 'CAPE_PlugX_fuzzy_zip'
-        elif 'CAPE_PlugX_fuzzy_doc' in detections:
-            package = 'CAPE_PlugX_fuzzy_doc'
-        elif 'CAPE_PlugX_fuzzy_dll' in detections:
-            package = 'CAPE_PlugX_fuzzy_dll'
+        if 'PlugX_fuzzy' in detections:
+            package = 'PlugX_fuzzy'
+        elif 'PlugXPayload_fuzzy' in detections:
+            package = 'PlugXPayload_fuzzy'			
+        elif 'PlugX_fuzzy_zip' in detections:
+            package = 'PlugX_fuzzy_zip'
+        elif 'PlugX_fuzzy_doc' in detections:
+            package = 'PlugX_fuzzy_doc'
+        elif 'PlugX_fuzzy_dll' in detections:
+            package = 'PlugX_fuzzy_dll'
             
         # We may have both 'fuzzy' and non 'fuzzy'
         # but only want to submit non.
-        if 'CAPE_PlugX' in detections:
-            package = 'CAPE_PlugX'
-        elif 'CAPE_PlugXPayload' in detections:
-            package = 'CAPE_PlugXPayload'
-        elif 'CAPE_PlugX_zip' in detections:
-            package = 'CAPE_PlugX_zip'
-        elif 'CAPE_PlugX_doc' in detections:
-            package = 'CAPE_PlugX_doc'
-        elif 'CAPE_PlugX_dll' in detections:
-            package = 'CAPE_PlugX_dll'
+        if 'PlugX' in detections:
+            package = 'PlugX'
+        elif 'PlugXPayload' in detections:
+            package = 'PlugXPayload'
+        elif 'PlugX_zip' in detections:
+            package = 'PlugX_zip'
+        elif 'PlugX_doc' in detections:
+            package = 'PlugX_doc'
+        elif 'PlugX_dll' in detections:
+            package = 'PlugX_dll'
             
-        if 'CAPE_Derusbi' in detections:
-            package = 'CAPE_Derusbi'	
+        if 'Derusbi' in detections:
+            package = 'Derusbi'	
             
-        if 'CAPE_EvilGrab' in detections:
-            package = 'CAPE_EvilGrab'	
+        if 'EvilGrab' in detections:
+            package = 'EvilGrab'	
             
-        if 'CAPE_Azzy' in detections:
+        if 'Azzy' in detections:
             if parent_package=='dll':
-                package = 'CAPE_Azzy_dll'
+                package = 'Azzy_dll'
             else:
-                package = 'CAPE_Azzy'
+                package = 'Azzy'
             
         self.task_options = self.task["options"]
         # we want to switch off automatic process dumps in CAPE submissions
@@ -253,7 +273,7 @@ class SubmitCAPE(Report):
                 log.warn("Error adding CAPE task to database: {0}".format(package))
             
         else: # nothing submitted, only 'dumpers' left
-            if parent_package == "CAPE_Extraction" or parent_package == "CAPE_Injection" or parent_package == "CAPE_Compression":
+            if parent_package == "Extraction" or parent_package == "Injection" or parent_package == "Compression":
                 return            
             for dumper in detections:
                 task_id = db.add_path(file_path=self.task["target"],

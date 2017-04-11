@@ -62,6 +62,20 @@
                     </td>
                 </tr>
                 <tr>
+                    <th>CAPE Yara</th>
+                    <td>
+                    {% if file.cape_yara %}
+                        <ul style="margin-bottom: 0;">
+                        {% for sign in file.cape_yara %}
+                            <li>{{sign.meta.cape_type}}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        None matched
+                    {% endif %}
+                    </td>
+                </tr>
+                <tr>
                     <th>Dump Filename</th>
                     <td style="word-wrap: break-word;">{{file.name}}</td>
                 </tr>

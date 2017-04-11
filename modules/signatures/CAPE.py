@@ -25,15 +25,15 @@ IMAGE_FILE_EXECUTABLE_IMAGE     = 0x0002
 PE_HEADER_LIMIT                 = 0x200
 
 PLUGX_SIGNATURE		            = 0x5658
-EXTRACTION_MIN_SIZE             = 0x2000
+EXTRACTION_MIN_SIZE             = 0x1001
 
 class CAPE_PlugX(Signature):
-    name = "CAPE PlugX"
+    name = "PlugX"
     description = "CAPE detection: PlugX"
     severity = 3
     categories = ["chinese", "malware"]
     families = ["plugx"]
-    authors = ["kev"]
+    authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
 
@@ -77,12 +77,12 @@ class CAPE_PlugX(Signature):
             return True
 
 class CAPE_PlugX_fuzzy(Signature):
-    name = "CAPE PlugX fuzzy"
+    name = "PlugX fuzzy"
     description = "CAPE detection: PlugX (fuzzy match)"
     severity = 3
     categories = ["chinese", "malware"]
     families = ["plugx"]
-    authors = ["kev"]
+    authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
 
@@ -110,11 +110,11 @@ class CAPE_PlugX_fuzzy(Signature):
             return True
 
 class CAPE_Compression(Signature):
-    name = "CAPE Compression"
+    name = "Compression"
     description = "CAPE detection: Compression"
     severity = 3
     categories = ["malware"]
-    authors = ["kev"]
+    authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
 
@@ -163,12 +163,12 @@ class CAPE_Compression(Signature):
             return True
             
 class CAPE_Derusbi(Signature):
-    name = "CAPE Derusbi"
+    name = "Derusbi"
     description = "CAPE detection: Derusbi"
     severity = 3
     categories = ["chinese", "malware"]
     families = ["derusbi"]
-    authors = ["kev"]
+    authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
 
@@ -198,11 +198,11 @@ class CAPE_Derusbi(Signature):
         return False
 
 class CAPE_EvilGrab(Signature):
-    name = "CAPE EvilGrab"
+    name = "EvilGrab"
     description = "CAPE detection: EvilGrab"
     severity = 3
     categories = ["malware"]
-    authors = ["kev"]
+    authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
 
@@ -235,7 +235,7 @@ class ExtractionRWX(Signature):
     description = "CAPE detection: Extraction"
     severity = 1
     categories = ["allocation"]
-    authors = ["Context"]
+    authors = ["kevoreilly"]
     minimum = "1.2"
     evented = True
     
@@ -265,3 +265,46 @@ class ExtractionRWX(Signature):
             handle = self.get_argument(call, "ProcessHandle")
             if handle == "0xffffffff" and protection == "0x00000040" and size >= EXTRACTION_MIN_SIZE:
                 return True
+
+class InjectionSWL(Signature):
+    name = "injection_setwindowlong"
+    description = "CAPE detection: Injection with SetWindowLong in a remote process"
+    severity = 3
+    categories = ["injection"]
+    authors = ["kevoreilly"]
+    minimum = "1.0"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.lastprocess = None
+        self.sharedsections = ["\\basenamedobjects\\shimsharedmemory",
+                                "\\basenamedobjects\\windows_shell_global_counters",
+                                "\\basenamedobjects\\msctf.shared.sfm.mih",
+                                "\\basenamedobjects\\msctf.shared.sfm.amf",
+                                "\\basenamedobjects\\urlzonessm_administrator",
+                                "\\basenamedobjects\\urlzonessm_system"]
+
+    filter_apinames = set(["NtMapViewOfSection", "NtOpenSection", "NtCreateSection", "FindWindowA", "FindWindowW", "FindWindowExA", "FindWindowExW", "PostMessageA", "PostMessageW", "SendNotifyMessageA", "SendNotifyMessageW", "SetWindowLongA", "SetWindowLongW", "SetWindowLongPtrA", "SetWindowLongPtrW"])
+
+    def on_call(self, call, process):
+        if process is not self.lastprocess:
+            self.lastprocess = process
+            self.window_handles = set()
+            self.sharedmap = False
+            self.windowfound = False
+
+        if (call["api"] == ("NtMapViewOfSection")):
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle != "0xffffffff":
+                self.sharedmap = True
+        elif call["api"] == "NtOpenSection" or call["api"] == "NtCreateSection":
+            name = self.get_argument(call, "ObjectAttributes")
+            if name.lower() in self.sharedsections:
+                self.sharedmap = True
+        elif call["api"].startswith("FindWindow") and call["status"] == True:
+            self.windowfound = True
+        elif call["api"].startswith("SetWindowLong") and call["status"] == True:
+            if self.sharedmap == True and self.windowfound == True:
+                return True
+                

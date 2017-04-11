@@ -100,7 +100,7 @@ def get_analysis_info(db, id=-1, task=None):
         rtmp = results_db.analysis.find_one(
                    {"info.id": int(new["id"])},
                    {
-                       "info": 1, "virustotal_summary": 1,
+                       "info": 1, "virustotal_summary": 1, "cape": 1,
                        "info.custom":1, "info.shrike_msg":1, "malscore": 1, "malfamily": 1,
                        "network.pcap_sha256": 1,
                        "mlist_cnt": 1, "f_mlist_cnt": 1, "info.package": 1, "target.file.clamav": 1,
@@ -122,6 +122,8 @@ def get_analysis_info(db, id=-1, task=None):
             pass
 
     if rtmp:
+        if rtmp.has_key("cape"):
+            new["cape"] = rtmp["cape"]
         if rtmp.has_key("virustotal_summary") and rtmp["virustotal_summary"]:
             new["virustotal_summary"] = rtmp["virustotal_summary"]
         if rtmp.has_key("mlist_cnt") and rtmp["mlist_cnt"]:

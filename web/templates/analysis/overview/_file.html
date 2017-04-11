@@ -63,6 +63,20 @@
                 </td>
             </tr>
             <tr>
+                <th>CAPE Yara</th>
+                <td>
+                {% if file.cape_yara %}
+                    <ul style="margin-bottom: 0;">
+                    {% for sign in file.cape_yara %}
+                        <li>{{sign.meta.cape_type}}</li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    None matched
+                {% endif %}
+                </td>
+            </tr>            
+            <tr>
                 <th></th>
                 <td>
                     <a class="btn btn-primary btn-small" href="{% url "file" "sample" analysis.info.id analysis.target.file.sha256 %}">Download</a>

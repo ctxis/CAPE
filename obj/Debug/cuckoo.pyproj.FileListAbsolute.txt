@@ -1,7 +1,0 @@
-D:\work\cuckoo\CAPE\cape\bin\Microsoft.PythonTools.WebRole.dll
-D:\work\cuckoo\CAPE\cape\obj\Debug\attach_server.py
-D:\work\cuckoo\CAPE\cape\obj\Debug\visualstudio_py_debugger.py
-D:\work\cuckoo\CAPE\cape\obj\Debug\visualstudio_py_repl.py
-D:\work\cuckoo\CAPE\cape\obj\Debug\visualstudio_py_util.py
-D:\work\cuckoo\CAPE\cape\obj\Debug\__init__.py
-D:\work\cuckoo\CAPE\cape\obj\Debug\__main__.py

@@ -1,6 +1,6 @@
 CAPE: Config And Payload Extraction
 
-CAPE is an addition to Cuckoo specifically designed to extract payloads and configuration from malware.
+CAPE is an extension of Cuckoo specifically designed to extract payloads and configuration from malware.
 
 CAPE can detect a number of malware techniques or behaviours, as well as specific malware families, from its initial run on a sample. 
 
@@ -20,29 +20,33 @@ In addition to specific behaviours, CAPE also automatically creates a process du
     
 CAPE also has a package which can dynamically extract payloads from 'hacked' (modified) packers derived from UPX, a favourite with malware authors.
     
-Currently CAPE has specific packages for the following malware families:
+Currently CAPE has specific packages dumping configuration and payloads for the following malware families:
     - PlugX
     - EvilGrab
     - Azzy
 
 Detection to trigger a CAPE package can be based from on 'Cuckoo' (API) or Yara signatures.
     
-Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of yara-based detection, and config parsing based on CAPE's primary config parsing framework, DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). Thanks to the creators at the Defense Cyber Crime Center. Parsers may also be written using the RATDecoders parser from malwareconfig.com (Kevin Breen/TechAnarchy). The publicly available decoders from malwareconfig.com are also included in CAPE.
+Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of yara-based detection, and config parsing based on CAPE's primary config parsing framework, DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). Parsers may also be written using the RATDecoders parser from malwareconfig.com. Thanks to DC3 and Kevin Breen/TechAnarchy for these frameworks.
 
 Currently CAPE has config parsers for the following malware families, whose payloads are extracted by a behavioural package:
     - HttpBrowser
     - Enfal
     - ChChes
+    - RedLeaf
+    - PoisonIvy
 
+The publicly available decoders from malwareconfig.com are also included in CAPE. This includes, among many others, Sakula, DarkComet and PoisonIvy.
+    
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.
 
-The CAPE debugger allows four breakpoints to be set on each malware thread to detect on read, write or execute of a memory region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data.
+The CAPE debugger allows four breakpoints to be set on each malware thread to detect on read, write or execute of a memory region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code or via yara signatures.
 
-Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API.
+Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API. These dumps can then be scanned and parsed for configuration information.
 
-Executable modules are fixed on being dumped, and may also have their imports automatically reconstructed (thanks to Scylla authors).
+Executable modules are fixed on being dumped, and may also have their imports automatically reconstructed (based on Scylla).
 
 It is derived from spender-sandbox, thanks to Brad Spengler and the rest of the Cuckoo contributors.
 
