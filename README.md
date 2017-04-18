@@ -18,7 +18,7 @@ Packages for these behaviours will dump the payloads being injected, extracted o
 
 In addition to specific behaviours, CAPE also automatically creates a process dump for each process' main executable, or, in the case of a DLL, the DLL's module image in memory. This is useful for samples packed with simple packers, where often the module image dump is fully unpacked.
     
-CAPE also has a package which can dynamically extract payloads from 'hacked' (modified) packers derived from UPX, a favourite with malware authors.
+CAPE also has a package which can dynamically extract payloads from 'hacked' (modified) packers derived from UPX, very popular with malware authors. These samples are run in CAPE's debugger until their OEP (original entry point), whereupon they are dumped, fixed and their imports are automatically reconstructed, ready for analysis.
     
 Currently CAPE has specific packages dumping configuration and payloads for the following malware families:
     - PlugX

@@ -1351,7 +1351,7 @@ def tasks_iocs(request, task_id, detail=None):
             del data["target"]["file"]["path"]
             del data["target"]["file"]["guest_paths"]
     data["network"] = {}
-    if "network" in buf.keys():
+    if "network" in buf.keys() and buf["network"]:
         data["network"]["traffic"] = {}
         for netitem in ["tcp", "udp", "irc", "http", "dns", "smtp", "hosts", "domains"]:
             if netitem in buf["network"]:
