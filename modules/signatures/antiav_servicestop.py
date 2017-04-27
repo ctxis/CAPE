@@ -1,16 +1,20 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+try:
+    import re2 as re
+except ImportError:
+    import re
+
 from lib.cuckoo.common.abstracts import Signature
-import re
 
 class AntiAVServiceStop(Signature):
     name = "antiav_servicestop"
     description = "Attempts to stop active services"
     severity = 3
     categories = ["anti-av"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -35,8 +39,6 @@ class AntiAVServiceStop(Signature):
             code = int(self.get_argument(call, "ControlCode"), 10)
             if code == 1 and handle in self.handles and self.handles[handle] not in self.stoppedservices:
                 self.stoppedservices.append(self.handles[handle])
-
-        return None
 
     def on_complete(self):
         ret = False

@@ -21,7 +21,7 @@ class VBoxDetectWindow(Signature):
     severity = 3
     categories = ["anti-vm"]
     authors = ["nex"]
-    minimum = "1.0"
+    minimum = "1.3"
     evented = True
 
     filter_categories = set(["windows"])
@@ -33,6 +33,6 @@ class VBoxDetectWindow(Signature):
         ]
 
         for indicator in indicators:
-            if self.check_argument_call(call, pattern=indicator, category="windows"):
+            if self.check_argument_call(call, pattern=indicator, ignorecase=True):
                 self.data.append({"window" : indicator})
                 return True

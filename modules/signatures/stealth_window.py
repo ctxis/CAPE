@@ -1,4 +1,4 @@
-# Copyright (C) 2015 KillerInstinct
+﻿# Copyright (C) 2015 KillerInstinct
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
+try:
+    import re2 as re
+except ImportError:
+    import re
+
 from lib.cuckoo.common.abstracts import Signature
 
 class Hidden_Window(Signature):
@@ -40,12 +44,16 @@ class Hidden_Window(Signature):
                                           re.search("-windowstyle[ ]+hidden", clbuf)):
                 proc = process["process_name"]
                 spawn = self.get_argument(call, "ApplicationName")
+                if not spawn:
+                    spawn = self.get_argument(call, "CommandLine")
                 self.hidden.append((proc, spawn))
                 self.data.append({"Process": proc + " -> " + spawn})
             # Handle CREATE_NO_WINDOW flag, ignored for CREATE_NEW_CONSOLE and DETACHED_PROCESS
             elif cfbuf & 0x08000000 and  not (cfbuf & 0x10 or cfbuf & 0x8):
                 proc = process["process_name"]
                 spawn = self.get_argument(call, "ApplicationName")
+                if not spawn:
+                    spawn = self.get_argument(call, "CommandLine")
                 self.hidden.append((proc, spawn))
                 self.data.append({"Process": proc + " -> " + spawn})
 

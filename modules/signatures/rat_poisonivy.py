@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,7 +9,7 @@ class PoisonIvyMutexes(Signature):
     description = "Creates known Poison Ivy mutexes"
     severity = 3
     categories = ["rat"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     references = ["http://www.fireeye.com/resources/pdfs/fireeye-poison-ivy-report.pdf"]
     minimum = "1.2"
 

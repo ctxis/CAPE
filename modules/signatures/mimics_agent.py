@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,7 +9,7 @@ class MimicsAgent(Signature):
     description = "Mimics the system's user agent string for its own requests"
     severity = 2
     categories = ["stealth"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -18,6 +18,7 @@ class MimicsAgent(Signature):
         self.useragent = None
 
     filter_apinames = set(["ObtainUserAgentString","InternetOpenA","InternetOpenW"])
+    filter_analysistypes = set(["file"])
 
     def on_call(self, call, process):
         if call["api"] == "ObtainUserAgentString":

@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -8,17 +8,26 @@ class InjectionRWX(Signature):
     name = "injection_rwx"
     description = "Creates RWX memory"
     severity = 2
+    confidence = 50
     categories = ["injection"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
+        self.dont_check = False
+
+        if self.results["info"]["package"] not in ["exe", "rar", "zip", "dll", "regsvr"]:
+            self.dont_check = True
 
     filter_apinames = set(["NtAllocateVirtualMemory","NtProtectVirtualMemory","VirtualProtectEx"])
+    filter_analysistypes = set(["file"])
 
     def on_call(self, call, process):
+        if self.dont_check:
+            return False
+
         if call["api"] == "NtAllocateVirtualMemory" or call["api"] == "VirtualProtectEx":
             protection = self.get_argument(call, "Protection")
             # PAGE_EXECUTE_READWRITE

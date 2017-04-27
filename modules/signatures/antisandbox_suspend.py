@@ -1,4 +1,4 @@
-# Copyright (C) 2015 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@ class AntiSandboxSuspend(Signature):
     severity = 3
     confidence = 80
     categories = ["anti-sandbox"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.3"
     evented = True
 
-    filter_apis = set(["NtSuspendThread"])
+    filter_apinames = set(["NtSuspendThread"])
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -33,4 +33,9 @@ class AntiSandboxSuspend(Signature):
     def on_call(self, call, process):
         alert = self.get_argument(call, "Alert")
         if alert:
+            proc = "{0} ({1})".format(process["process_name"], str(process["process_id"]))
+            buf = {"Process": proc}
+            if buf not in self.data:
+                self.data.append(buf)
+
             return True

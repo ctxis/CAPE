@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,7 +9,7 @@ class StealthChildProc(Signature):
     description = "Forces a created process to be the child of an unrelated process"
     severity = 3
     categories = ["stealth"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -20,5 +20,5 @@ class StealthChildProc(Signature):
 
     def on_call(self, call, process):
         parenthandle = self.get_argument(call, "ParentHandle")
-        if parenthandle and parenthandle != "0xffffffff":
+        if parenthandle and parenthandle != "0xffffffff" and parenthandle != "0xffffffffffffffff":
             return True

@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Robby Zeitfuchs (@robbyFux)
+﻿# Copyright (C) 2014 Robby Zeitfuchs (@robbyFux)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,9 +21,9 @@ class ZeusMutexes(Signature):
     severity = 3
     categories = ["banker"]
     families = ["zeus"]
-    authors = ["Robby Zeitfuchs"]
-    minimum = "0.5"
-    references = ["https://malwr.com/analysis/NmNhODg5ZWRkYjc0NDY0M2I3YTJhNDRlM2FlOTZiMjA/#summary_mutexes", 
+    authors = ["Robby Zeitfuchs", "KillerInstinct"]
+    minimum = "1.2"
+    references = ["https://malwr.com/analysis/NmNhODg5ZWRkYjc0NDY0M2I3YTJhNDRlM2FlOTZiMjA/#summary_mutexes",
                   "https://malwr.com/analysis/MmMwNDJlMTI0MTNkNGFjNmE0OGY3Y2I5MjhiMGI1NzI/#summary_mutexes",
                   "https://malwr.com/analysis/MzY5ZTM2NzZhMzI3NDY2YjgzMjJiODFkODZkYzIwYmQ/#summary_mutexes",
                   "https://www.virustotal.com/de/file/301fcadf53e6a6167e559c84d6426960af8626d12b2e25aa41de6dce511d0568/analysis/#behavioural-info",
@@ -33,19 +33,24 @@ class ZeusMutexes(Signature):
 
     def run(self):
         indicators = [
-            "_AVIRA_.*",                                
-            "__SYSTEM__.*",                        
-            "_LILO_.*",                                   
-            "_SOSI_.*",                                  
-            ".*MSIdent Logon",                            
-            ".*MPSWabDataAccessMutex",                    
+            "_AVIRA_.*",
+            "__SYSTEM__.*",
+            "_LILO_.*",
+            "_SOSI_.*",
+            ".*MSIdent Logon",
+            ".*MPSWabDataAccessMutex",
             ".*MPSWABOlkStoreNotifyMutex"
         ]
-            
+
         for indicator in indicators:
             match = self.check_mutex(pattern=indicator, regex=True)
             if match:
                 self.data.append({"mutex": match})
-                return True            
-        
+                return True
+
+        indicator = r"(Local|Global)\\\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}"
+        matches = self.check_mutex(pattern=indicator, regex=True, all=True)
+        if matches and len(matches) > 10:
+            return True
+
         return False

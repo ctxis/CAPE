@@ -333,8 +333,9 @@ class File:
                 rules = yara.compile(rulepath)
             matches = rules.match(self.file_path)
 
-            if getattr(yara, "__version__", None) == "1.7.7":
-                return self._yara_matches_177(matches)
+            # This is ancient, and breaks CAPE, so removing.
+            #if getattr(yara, "__version__", None) == "1.7.7":
+            #    return self._yara_matches_177(matches)
 
             results = []
 

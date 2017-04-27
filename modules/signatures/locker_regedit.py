@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Thomas "stacks" Birn (@stacksth)
+# Copyright (C) 2012,2015 Thomas "stacks" Birn (@stacksth), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,24 +20,11 @@ class DisableRegedit(Signature):
     description = "Disables Windows' Registry Editor"
     severity = 3
     categories = ["locker"]
-    authors = ["Thomas Birn", "nex"]
-    minimum = "1.0"
-    evented = True
+    authors = ["Thomas Birn", "nex", "Optiv"]
+    minimum = "1.2"
 
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.saw_disable = False
+    def run(self):
+        if self.check_write_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableRegistryTools$", regex=True):
+            return True
 
-    filter_categories = set(["registry"])
-
-    def on_call(self, call, process):
-        if self.check_argument_call(call,
-                                    pattern="DisableRegistryTools",
-                                    category="registry"):
-            self.saw_disable = True
-
-    def on_complete(self):
-        if self.check_key(pattern=".*\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System$",
-                          regex=True):
-            if self.saw_disable:
-                return True
+        return False

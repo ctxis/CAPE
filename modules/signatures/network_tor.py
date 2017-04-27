@@ -21,19 +21,18 @@ class Tor(Signature):
     severity = 3
     categories = ["network", "anonimity", "tor"]
     authors = ["nex"]
-    minimum = "1.0"
+    minimum = "1.3"
     evented = True
 
-    filter_apinames = set(["CreateServiceA"])
+    filter_apinames = set(["CreateServiceA", "CreateServiceW"])
 
     def on_call(self, call, process):
         if self.check_argument_call(call,
                                     pattern="Tor Win32 Service",
-                                    api="CreateServiceA",
-                                    category="services"):
+                                    ignorecase=True):
             return True
 
-    def run(self):
+    def on_complete(self):
         indicators = [
             ".*\\\\tor\\\\cached-certs$",
             ".*\\\\tor\\\\cached-consensus$",

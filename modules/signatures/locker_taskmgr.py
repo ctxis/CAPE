@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Thomas "stacks" Birn (@stacksth)
+# Copyright (C) 2012, 2015 Thomas "stacks" Birn (@stacksth), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,22 +21,10 @@ class DisableTaskMgr(Signature):
     severity = 3
     categories = ["locker"]
     authors = ["Thomas Birn", "nex"]
-    minimum = "1.0"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.saw_disable = False
-
-    filter_categories = set(["registry"])
-
-    def on_call(self, call, process):
-        if self.check_argument_call(call, pattern="DisableTaskMgr",
-                               category="registry"):
-            self.saw_disable = True
+    minimum = "1.2"
 
     def run(self):
-        if self.check_key(pattern=".*\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System$",
-                          regex=True):
-            if self.saw_disable:
-                return True
+        if self.check_write_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableTaskMgr$", regex=True):
+            return True
+
+        return False

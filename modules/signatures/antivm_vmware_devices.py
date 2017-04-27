@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ class VMwareDetectDevices(Signature):
     description = "Detects VMware through the presence of a device"
     severity = 3
     categories = ["anti-vm"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):

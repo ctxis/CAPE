@@ -25,15 +25,15 @@ class VBoxDetectDevices(Signature):
 
     def run(self):
         indicators = [
-            ".*\\VBoxGuest$",
-            ".*\\VBoxMouse$",
-            ".*\\VBoxVideo$",
-            ".*\\VBoxMiniRdrDN$",
-            ".*\\VBoxTrayIPC$",
+            r".*\\VBoxGuest$",
+            r".*\\VBoxMouse$",
+            r".*\\VBoxVideo$",
+            r".*\\VBoxMiniRdrDN$",
+            r".*\\VBoxTrayIPC$",
         ]
 
         for indicator in indicators:
-            if self.check_file(pattern=indicator):
+            if self.check_file(pattern=indicator, regex=True):
                 return True
 
         return False

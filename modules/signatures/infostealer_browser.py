@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 Claudio "nex" Guarnieri (@botherder), Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2012-2015 Claudio "nex" Guarnieri (@botherder), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
+try:
+    import re2 as re
+except ImportError:
+    import re
 
 from lib.cuckoo.common.abstracts import Signature
 
@@ -21,8 +24,9 @@ class BrowserStealer(Signature):
     name = "infostealer_browser"
     description = "Steals private information from local Internet browsers"
     severity = 3
+    confidence = 30
     categories = ["infostealer"]
-    authors = ["nex", "Accuvant"]
+    authors = ["nex", "Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -38,16 +42,24 @@ class BrowserStealer(Signature):
         re.compile(".*\\\\Mozilla\\\\Firefox\\\\Profiles\\\\.*\\\\.default\\\\key3\.db$", re.I),
         re.compile(".*\\\\History\\\\History\.IE5\\\\index\.dat$", re.I),
         re.compile(".*\\\\Cookies\\\\.*", re.I),
-        re.compile(".*\\\\Temporary\\\\ Internet\\ Files\\\\Content\.IE5\\\\index\.dat$", re.I),
+        re.compile(".*\\\\Temporary\\ Internet\\ Files\\\\Content\.IE5\\\\index\.dat$", re.I),
         re.compile(".*\\\\Application\\ Data\\\\Google\\\\Chrome\\\\.*", re.I),
+        re.compile(".*\\\\Local\\\\Google\\\\Chrome\\\\User\\ Data\\\\Default\\\\.*", re.I),
         re.compile(".*\\\\Application\\ Data\\\\Mozilla\\\\Firefox\\\\.*", re.I),
+        re.compile(".*\\\\AppData\\\\Roaming\\\\Mozilla\\\\Firefox\\\\.*", re.I),
         re.compile(".*\\\\Application\\ Data\\\\Opera\\\\.*", re.I),
+        re.compile(".*\\\\AppData\\\\Roaming\\\\Opera\\\\Opera\\\\.*", re.I),
         re.compile(".*\\\\Application\\ Data\\\\Chromium\\\\.*", re.I),
+        re.compile(".*\\\\AppData\\\\Local\\\\Chromium\\\\.*", re.I),
         re.compile(".*\\\\Application\\ Data\\\\ChromePlus\\\\.*", re.I),
+        re.compile(".*\\\\AppData\\\\Local\\\\MapleStudio\\\\ChromePlus\\\\.*", re.I),
         re.compile(".*\\\\Application\\ Data\\\\Nichrome\\\\.*", re.I),
         re.compile(".*\\\\Application\\ Data\\\\Bromium\\\\.*", re.I),
-        re.compile(".*\\\\Application\\ Data\\\\RockMelt\\\\.*", re.I)
-
+        re.compile(".*\\\\Application\\ Data\\\\RockMelt\\\\.*", re.I),
+        re.compile(".*\\\\Application\\ Data\\\\Flock\\\\.*", re.I),
+        re.compile(".*\\\\AppData\\\\Local\\\\Flock\\\\.*", re.I),
+        re.compile(".*\\\\Application\\ Data\\\\Comodo\\\\Dragon\\\\.*", re.I),
+        re.compile(".*\\\\AppData\\\\Local\\\\Comodo\\\\Dragon\\\\.*", re.I),
     ]
     filter_apinames = set(["NtReadFile", "CopyFileA", "CopyFileW", "CopyFileExW"])
 

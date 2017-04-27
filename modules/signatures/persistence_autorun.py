@@ -1,4 +1,4 @@
-# Copyright (C) 2012,2014,2015 Michael Boman (@mboman), Accuvant, Inc. (bspengler@accuvant.com)
+﻿# Copyright (C) 2012,2014,2015 Michael Boman (@mboman), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free Software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,11 @@
 
 # Additional keys added from SysInternals Administrators Guide
 
-import re
+try:
+    import re2 as re
+except ImportError:
+    import re
+
 from lib.cuckoo.common.abstracts import Signature
 
 class Autorun(Signature):
@@ -25,8 +29,8 @@ class Autorun(Signature):
     description = "Installs itself for autorun at Windows startup"
     severity = 3
     categories = ["persistence"]
-    authors = ["Michael Boman", "nex","securitykitten","Accuvant"]
-    minimum = "1.2"
+    authors = ["Michael Boman", "nex", "securitykitten", "Optiv", "KillerInstinct"]
+    minimum = "1.3"
     evented = True
 
     def __init__(self, *args, **kwargs):
@@ -71,7 +75,8 @@ class Autorun(Signature):
             ".*\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\ShellServiceObjectDelayLoad\\\\.*",
             ".*\\\\System\\\\(CurrentControlSet|ControlSet001)\\\\Control\\\\Session\\ Manager\\\\AppCertDlls\\\\.*",
             ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\.*",
-            ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\LocalServer32\\\\.*"
+            ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\LocalServer32\\\\.*",
+            ".*\\\\Microsoft\\\\Command\\ Processor\\\\AutoRun$"
             ]
         whitelists = [
             ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\{CAFEEFAC-0017-0000-FFFF-ABCDEFFEDCBA}\\\\InprocServer32\\\\.*",
@@ -103,10 +108,22 @@ class Autorun(Signature):
         ]
 
         for indicator in indicators:
+            if "dropped" in self.results and len(self.results["dropped"]):
+                for drop in self.results["dropped"]:
+                    for path in drop["guest_paths"]:
+                        if re.match(indicator, path, re.IGNORECASE):
+                            self.data.append({"file" : path})
+                            self.found_autorun = True
             match_file = self.check_write_file(pattern=indicator, regex=True, all=True)
             if match_file:
                 for match in match_file:
                     self.data.append({"file" : match})
                 self.found_autorun = True
+
+        taskpat = ".*schtasks(\.exe)?.*/CREATE.*/SC\s+.*"
+        tasked = self.check_executed_command(pattern=taskpat, regex=True)
+        if tasked:
+            self.found_autorun = True
+            self.data.append({"task": tasked})
 
         return self.found_autorun

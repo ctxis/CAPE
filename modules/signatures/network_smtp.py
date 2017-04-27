@@ -1,4 +1,4 @@
-# Copyright (C) 2013 Claudio "nex" Guarnieri (@botherder)
+# Copyright (C) 2013-2016 Claudio "nex" Guarnieri (@botherder), KillerInstinct
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,16 +17,29 @@ from lib.cuckoo.common.abstracts import Signature
 
 class NetworkSMTP(Signature):
     name = "network_smtp"
-    description = "Makes SMTP requests, possibly sending spam"
+    description = "Makes SMTP requests, possibly sending spam or exfiltrating data."
     severity = 3
     categories = ["smtp", "spam"]
-    authors = ["nex"]
+    authors = ["nex", "KillerInstinct"]
     minimum = "0.5"
 
     def run(self):
         if "network" in self.results:
             if "smtp" in self.results["network"]:
                 if len(self.results["network"]["smtp"]) > 0:
+                    for mail in self.results["network"]["smtp"]:
+                        sentToIP = mail["dst"]
+                        sentToDomain = str()
+                        for name in self.results["network"].get("dns", []):
+                            if name["answers"]:
+                                for ip in name["answers"]:
+                                    if ip["data"] == sentToIP:
+                                        sentToDomain = name["request"]
+                        desc = sentToIP
+                        if sentToDomain:
+                            desc += " (%s)" % str(sentToDomain)
+                        self.data.append({"SMTP": desc})
+
                     return True
 
         return False

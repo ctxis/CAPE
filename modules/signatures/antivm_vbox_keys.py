@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Claudio "nex" Guarnieri (@botherder)
+# Copyright (C) 2012,2016 Claudio "nex" Guarnieri (@botherder), Brad Spengler
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,9 +20,20 @@ class VBoxDetectKeys(Signature):
     description = "Detects VirtualBox through the presence of a registry key"
     severity = 3
     categories = ["anti-vm"]
-    authors = ["nex"]
+    authors = ["nex", "Brad Spengler"]
     minimum = "0.5"
 
     def run(self):
-        return self.check_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Oracle\\\\VirtualBox\\ Guest\\ Additions$",
-                              regex=True)
+        indicators = [
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Oracle\\\\VirtualBox\\ Guest\\ Additions$",
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\Uninstall\\\\Oracle\\ VM\\ VirtualBox\\ Guest\\ Additions$",
+            ".*\\\\SYSTEM\\\\(CurrentControlSet|ControlSet001)\\\\Enum\\\\PCI\\\\VEN_80EE&DEV_BEEF&SUBSYS_00000000&REV_00$",
+            ".*\\\\SYSTEM\\\\(CurrentControlSet|ControlSet001)\\\\Enum\\\\PCI\\\\VEN_80EE&DEV_CAFE&SUBSYS_00000000&REV_00$",
+            ".*\\\\SYSTEM\\\\(CurrentControlSet|ControlSet001)\\\\Control\\\\VirtualDeviceDrivers$",
+            ".*\\\\HARDWARE\\\\ACPI\\\\(DSDT|FADT|RSDT)\\\\VBOX__.*",
+        ]
+        for indicator in indicators:
+            if self.check_key(pattern=indicator, regex=True):
+                return True
+
+        return False

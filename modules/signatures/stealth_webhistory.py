@@ -1,4 +1,4 @@
-# Copyright (C) 2015 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,15 +9,16 @@ class StealthWebHistory(Signature):
     description = "Clears web history"
     severity = 3
     categories = ["stealth"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
         file_indicators = [
         ".*\\\\History\\\\History\.IE5\\\\.*",
-        ".*\\\\Cookies\\\\.*",
         ".*\\\\Temporary\\\\ Internet\\ Files\\\\Content\.IE5\\\\.*",
         ]
+        if self.results["target"]["category"] == "file":
+            file_indicators.append(".*\\\\Cookies\\\\.*")
         found_cleaner = False
         for indicator in file_indicators:
             file_match = self.check_delete_file(pattern=indicator, regex=True, all=True)

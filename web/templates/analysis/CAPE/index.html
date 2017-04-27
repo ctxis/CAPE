@@ -143,6 +143,23 @@
                     {% endif %}
                     </td>
                 </tr>
+                <tr>
+                    <th>CAPE Yara</th>
+                    <td>
+                    {% if file.cape_yara %}
+                        <ul style="margin-bottom: 0;">
+                        {% for sign in file.cape_yara %}
+                            <li>{{sign.name}}</li>
+                            {% if sign.meta.cape_type %}
+                                <li>{{sign.meta.cape_type}}</li>
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        None matched
+                    {% endif %}
+                    </td>
+                </tr>                
                 {% if file.dropdir %}
                 <tr>
                     <th></th>

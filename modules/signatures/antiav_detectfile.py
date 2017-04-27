@@ -1,16 +1,20 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+try:
+    import re2 as re
+except ImportError:
+    import re
+
 from lib.cuckoo.common.abstracts import Signature
-import re
 
 class AntiAVDetectFile(Signature):
     name = "antiav_detectfile"
     description = "Attempts to identify installed AV products by installation directory"
     severity = 3
     categories = ["anti-av"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
@@ -22,7 +26,7 @@ class AntiAVDetectFile(Signature):
             ".*\\\\Kaspersky\\ Lab\\ Setup\\ Files",
             ".*\\\\DrWeb",
             ".*\\\\Norton\\ AntiVirus",
-            ".*\\\\Norton\\ (Security with Backup|Internet Security)\\\\"
+            ".*\\\\Norton\\ (Security with Backup|Internet Security)\\\\",
             ".*\\\\ESET",
             ".*\\\\Agnitum",
             ".*\\\\Panda\\ Security",
@@ -47,7 +51,7 @@ class AntiAVDetectFile(Signature):
             ".*\\\\G\\ DATA",
             ".*\\\\P\\ Tools",
             ".*\\\\P\\ Tools\\ Internet\\ Security",
-            ".*\\\\K7\\ omputing",
+            ".*\\\\K7\\ Computing",
             ".*\\\\Vba32",
             ".*\\\\Sunbelt\\ Software",
             ".*\\\\FRISK\\ Software",

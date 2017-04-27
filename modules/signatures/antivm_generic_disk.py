@@ -1,4 +1,4 @@
-# Copyright (C) 2012,2014 Claudio "nex" Guarnieri (@botherder), Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2012,2014 Claudio "nex" Guarnieri (@botherder), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ class DiskInformation(Signature):
     description = "Queries information on disks, possibly for anti-virtualization"
     severity = 3
     categories = ["anti-vm"]
-    authors = ["nex", "Accuvant"]
+    authors = ["nex", "Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -35,6 +35,7 @@ class DiskInformation(Signature):
         ioctls = [
             0x2d1400, # IOCTL_STORAGE_QUERY_PROPERTY
             0x70000,  # IOCTL_DISK_GET_DRIVE_GEOMETRY
+            0x700a0,  # IOCTL_DISK_GET_DRIVE_GEOMETRY_EX
             0x4d008,  # IOCTL_SCSI_MINIPORT
             0x7405c,  # IOCTL_DISK_GET_LENGTH_INFO
         ]

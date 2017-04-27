@@ -1,4 +1,4 @@
-# Copyright (C) 2015 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,7 +9,7 @@ class DisablesWFP(Signature):
     description = "Attempts to disable Windows File Protection"
     severity = 3
     categories = ["generic"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 

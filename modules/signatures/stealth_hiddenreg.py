@@ -1,4 +1,4 @@
-# Copyright (C) 2015 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,13 +9,14 @@ class StealthHiddenReg(Signature):
     description = "Attempts to modify Explorer settings to prevent hidden files from being displayed"
     severity = 3
     categories = ["stealth"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
         reg_indicators = [
         ".*\\\\Software\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Advanced\\\\Hidden$",
         ".*\\\\Software\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Advanced\\\\ShowSuperHidden$",
+        ".*\\\\Software\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\Advanced\\\\SuperHidden$",
         ]
 
         for indicator in reg_indicators:

@@ -1,4 +1,4 @@
-rule CAPE_Dridex
+rule Dridex
 {
     meta:
         author = "kev"

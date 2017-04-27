@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,16 +19,19 @@ class Dropper(Signature):
     name = "dropper"
     description = "Drops a binary and executes it"
     severity = 2
+    confidence = 50
     categories = ["dropper"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
         is_dropper = False
         mainprocesspath = ""
         processpaths = set()
-        processes = self.results["behavior"]["processes"]
-        if processes:
+        processes = None
+        if "behavior" in self.results and "processes" in self.results["behavior"]:
+            processes = self.results["behavior"]["processes"]
+        if processes and len(processes):
             mainprocesspath = processes[0]["module_path"].lower()
             for process in processes[1:]:
                 processpath = process["module_path"].lower()
@@ -40,4 +43,6 @@ class Dropper(Signature):
                     if path.lower() == processpath:
                         self.data.append({"binary" : path})
                         is_dropper = True
+                        if self.results["info"]["package"] not in ["exe", "bin", "msi", "rar", "zip", "dll", "regsvr"]:
+                            self.severity = 3
         return is_dropper

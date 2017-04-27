@@ -6,6 +6,7 @@ rule KazyBot_RAT
     meta:
         author = "KillerInstinct"
         description = "Strings indicitive of unpacked KazyBot RAT"
+		malfamily = "kazybot"
 
     strings:
         $pdb1 = /[A-Za-z]:\\[^\\]+\\KazyBot\\PluginServer\\[^\.]+.pdb/

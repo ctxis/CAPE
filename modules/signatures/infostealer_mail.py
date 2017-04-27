@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,10 +9,14 @@ class EmailStealer(Signature):
     description = "Harvests information related to installed mail clients"
     severity = 3
     categories = ["infostealer"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
+        office_pkgs = ["ppt","doc","xls","eml"]
+        if any(e in self.results["info"]["package"] for e in office_pkgs):
+            return False
+
         file_indicators = [
             ".*\.pst$",
             ".*\\\\Microsoft\\\\Windows\\ Live\\ Mail.*",
@@ -20,10 +24,10 @@ class EmailStealer(Signature):
             ".*\\\\Microsoft\\\\Outlook\\ Express\\\\.*\.dbx$",
             ".*\\\\Foxmail\\\\mail\\\\.*\\\\Account\.stg$",
             ".*\\\\Foxmail.*\\\\Accounts\.tdat$",
-            ".*\\\\Thunderbird\\\\Profiles\\\\.*\.default$"
+            ".*\\\\Thunderbird\\\\Profiles\\\\.*\.default$",
+            ".*\\\\AppData\\\\Roaming\\\\Thunderbird\\\\profiles.ini$",
         ]
         registry_indicators = [
-            ".*\\\\Software\\\\(Wow6432Node\\\\)?Clients\\\\Mail.*",
             ".*\\\\Microsoft\\\\Windows\\ Messaging\\ Subsystem\\\\MSMapiApps.*",
             ".*\\\\Microsoft\\\\Windows\\ Messaging\\ Subsystem\\\\Profiles.*",
             ".*\\\\Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\Windows\\ Messaging\\ Subsystem\\\\Profiles.*",
@@ -31,7 +35,11 @@ class EmailStealer(Signature):
             ".*\\\\Microsoft\\\\Office\\\\Outlook\\\\OMI\\ Account\\ Manager\\\\Accounts.*",
             ".*\\\\Microsoft\\\\Internet\\ Account\\ Manager\\\\Accounts.*",
             ".*\\\\Software\\\\(Wow6432Node\\\\)?IncrediMail.*"
+            ".*\\\\Software\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\ Live\\ Mail.*",
         ]
+        if self.results["target"]["category"] == "file":
+            registry_indicators.append(".*\\\\Software\\\\(Wow6432Node\\\\)?Clients\\\\Mail.*")
+            
         found_stealer = False
         for indicator in file_indicators:
             file_match = self.check_file(pattern=indicator, regex=True, all=True)

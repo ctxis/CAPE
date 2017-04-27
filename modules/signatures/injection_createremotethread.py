@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2015 JoseMi "h0rm1" Holguin (@j0sm1), Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2012-2016 JoseMi "h0rm1" Holguin (@j0sm1), Optiv, Inc. (brad.spengler@optiv.com), KillerInstinct
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,11 +17,11 @@ from lib.cuckoo.common.abstracts import Signature
 
 class InjectionCRT(Signature):
     name = "injection_createremotethread"
-    description = "CAPE detection: Injection with CreateRemoteThread in a remote process"
+    description = "Code injection with CreateRemoteThread in a remote process"
     severity = 3
     categories = ["injection"]
-    authors = ["JoseMi Holguin", "nex", "Accuvant", "kevoreilly"]
-    minimum = "1.0"
+    authors = ["JoseMi Holguin", "nex", "Optiv", "KillerInstinct"]
+    minimum = "1.3"
     evented = True
 
     def __init__(self, *args, **kwargs):
@@ -35,40 +35,57 @@ class InjectionCRT(Signature):
             self.sequence = 0
             self.process_handles = set()
             self.process_pids = set()
+            self.handle_map = dict()
             self.lastprocess = process
 
         if call["api"] == "OpenProcess" and call["status"] == True:
             if self.get_argument(call, "ProcessId") != process["process_id"]:
-                self.process_handles.add(call["return"])
-                self.process_pids.add(self.get_argument(call, "ProcessId"))
+                handle = call["return"]
+                pid = str(self.get_argument(call, "ProcessId"))
+                self.process_handles.add(handle)
+                self.process_pids.add(pid)
+                self.handle_map[handle] = pid
         elif call["api"] == "NtOpenProcess" and call["status"] == True:
             if self.get_argument(call, "ProcessIdentifier") != process["process_id"]:
-                self.process_handles.add(self.get_argument(call, "ProcessHandle"))
-                self.process_pids.add(self.get_argument(call, "ProcessIdentifier"))
-        elif call["api"] == "CreateProcessInternalW":
-            if self.get_argument(call, "ProcessId") != process["process_id"]:
-                self.process_handles.add(self.get_argument(call, "ProcessHandle"))
-                self.process_pids.add(self.get_argument(call, "ProcessId"))
+                handle = self.get_argument(call, "ProcessHandle")
+                pid = str(self.get_argument(call, "ProcessIdentifier"))
+                self.process_handles.add(handle)
+                self.process_pids.add(pid)
+                self.handle_map[handle] = pid
         elif (call["api"] == "NtMapViewOfSection") and self.sequence == 0:
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
                 self.sequence = 2
         elif (call["api"] == "VirtualAllocEx" or call["api"] == "NtAllocateVirtualMemory") and self.sequence == 0:
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
                 self.sequence = 1
-        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "WriteProcessMemory") and self.sequence == 1:
+        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64" or call["api"] == "WriteProcessMemory") and self.sequence == 1:
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
                 self.sequence = 2
-        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "WriteProcessMemory") and self.sequence == 2:
-            if self.get_argument(call, "ProcessHandle") in self.process_handles:
+        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64"  or call["api"] == "WriteProcessMemory") and self.sequence == 2:
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle in self.process_handles:
                 addr = int(self.get_argument(call, "BaseAddress"), 16)
                 buf = self.get_argument(call, "Buffer")
                 if addr >= 0x7c900000 and addr < 0x80000000 and buf.startswith("\\xe9"):
                     self.description = "Code injection via WriteProcessMemory-modified NTDLL code in a remote process"
+                    procname = self.get_name_from_pid(self.handle_map[handle])
+                    desc = "{0}({1}) -> {2}({3})".format(process["process_name"], str(process["process_id"]),
+                                                         procname, self.handle_map[handle])
+                    self.data.append({"Injection": desc})
                     return True
         elif (call["api"] == "CreateRemoteThread" or call["api"].startswith("NtCreateThread")) and self.sequence == 2:
-            if self.get_argument(call, "ProcessHandle") in self.process_handles:
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle in self.process_handles:
+                procname = self.get_name_from_pid(self.handle_map[handle])
+                desc = "{0}({1}) -> {2}({3})".format(process["process_name"], str(process["process_id"]),
+                                                     procname, self.handle_map[handle])
+                self.data.append({"Injection": desc})
                 return True
-        elif call["api"] == "NtQueueApcThread" and self.sequence == 2:
-            if self.get_argument(call, "ProcessId") in self.process_pids:
+        elif call["api"].startswith("NtQueueApcThread") and self.sequence == 2:
+            if str(self.get_argument(call, "ProcessId")) in self.process_pids:
                 self.description = "Code injection with NtQueueApcThread in a remote process"
+                desc = "{0}({1}) -> {2}({3})".format(self.lastprocess["process_name"], str(self.lastprocess["process_id"]),
+                                                     process["process_name"], str(process["process_id"]))
+                self.data.append({"Injection": desc})
                 return True
+

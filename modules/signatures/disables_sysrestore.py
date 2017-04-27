@@ -13,8 +13,14 @@ class DisablesSystemRestore(Signature):
     minimum = "1.2"
 
     def run(self):
-        if self.check_write_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\SystemRestore\\\\DisableSR$", regex=True):
-            return True
+        keys = [
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\SystemRestore\\\\DisableSR$",
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Policies\\\\Microsoft\\\\Windows\\ NT\\\\SystemRestore\\\\DisableSR$",
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Policies\\\\Microsoft\\\\Windows\\ NT\\\\SystemRestore\\\\DisableConfig$"
+        ]
+        for check in keys:
+            if self.check_write_key(pattern=check, regex=True):
+                return True
 
         return False
 

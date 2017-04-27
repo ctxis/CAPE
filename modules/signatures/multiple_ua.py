@@ -32,26 +32,28 @@ class Multiple_UA(Signature):
     filter_apinames = set(["InternetOpenA", "InternetOpenW"])
 
     def on_call(self, call, process):
-        # Dict whitelist with process name as key, and useragent as value
+        # Dict whitelist with process name as key, and useragents as values
         whitelist = {
-            "AcroRd32.exe": "Mozilla/3.0 (compatible; Acrobat 5.0; Windows)",
-            "iexplore.exe": "VCSoapClient",
+            "acrord32.exe": ["Mozilla/3.0 (compatible; Acrobat 5.0; Windows)"],
+            "iexplore.exe": ["VCSoapClient", "Shockwave Flash"],
         }
         ua = self.get_argument(call, "Agent")
-        proc = process["process_name"]
-        if proc in whitelist.keys() and ua == whitelist[proc]:
-            pass
+        proc = process["process_name"].lower()
+        if proc in whitelist.keys() and ua in whitelist[proc]:
+            return None
+
         else:
             if ua not in self.useragents:
-                self.useragents.append(ua)
-                self.procs.append((process["process_name"], ua))
+                if self.results["target"]["category"] == "file" or proc != "iexplore.exe":
+                    self.useragents.append(ua)
+                    self.procs.append((process["process_name"], ua))
 
     def on_complete(self):
-        ret = False
-        if len(self.useragents) > 1:
-            ret = True
-            for item in self.procs:
-                self.data.append({"Process" : item[0]})
-                self.data.append({"User-Agent" : item[1]})
+        if len(self.useragents) < 2:
+            return False
 
-        return ret
+        for item in self.procs:
+            self.data.append({"Process" : item[0]})
+            self.data.append({"User-Agent" : item[1]})
+
+        return True

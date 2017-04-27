@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2014 Lord Alfred Remorin, Accuvant Inc. (bspengler@accuvant.com)
+# Copyright (C) 2013-2014 Lord Alfred Remorin, Optiv Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,20 +28,26 @@ class Polymorphic(Signature):
     description = "Creates a slightly modified copy of itself"
     severity = 3
     categories = ["persistence"]
-    authors = ["lordr", "Accuvant"]
+    authors = ["lordr", "Optiv"]
     minimum = "1.2"
 
+    filter_analysistypes = set(["file"])
+
     def run(self):
+        package = self.results["info"]["package"]
+
         found_polymorphic = False
-        if self.results["target"]["category"] == "file":
-            target_ssdeep = self.results["target"]["file"]["ssdeep"]
-            target_sha1 = self.results["target"]["file"]["sha1"]
-            target_size = self.results["target"]["file"]["size"]
+        target_ssdeep = self.results["target"]["file"]["ssdeep"]
+        target_sha1 = self.results["target"]["file"]["sha1"]
+        target_size = self.results["target"]["file"]["size"]
 
-            if target_ssdeep == "" or target_ssdeep == None:
-                return False
+        if target_ssdeep == "" or target_ssdeep == None:
+            return False
 
+        if self.results.get("dropped", []):
             for drop in self.results["dropped"]:
+                if package == "xls" and len(drop["guest_paths"]) == 1 and drop["guest_paths"][0].endswith("\\Temp\\" + self.results["target"]["file"]["name"]):
+                    continue
                 if drop["sha1"] == target_sha1:
                     continue
                 if fabs(target_size - drop["size"]) >= 1024:

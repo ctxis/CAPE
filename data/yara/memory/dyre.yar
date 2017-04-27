@@ -9,6 +9,7 @@ rule DyreCfgServerList
     meta:
         author = "KillerInstinct"
         description = "Configuration element for Dyre server list"
+		malfamily = "dyre"
 
     strings:
         $buf = /\<serverlist\>.*\<\/serverlist\>/s
@@ -22,6 +23,7 @@ rule DyreCfgInjectsList
     meta:
         author = "KillerInstinct"
         description = "Configuration element for Dyre web injects"
+		malfamily = "dyre"
 
     strings:
         $buf = /\<litem\>.*\<\/litem\>/s
@@ -35,6 +37,7 @@ rule DyreCfgRedirectList
     meta:
         author = "KillerInstinct"
         description = "Configuration element for Dyre redirects list"
+		malfamily = "dyre"
 
     strings:
         $buf = /\<rpcgroup\>.*\<\/rpcgroup\>/s

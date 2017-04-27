@@ -1,4 +1,5 @@
-# Copyright (C) 2015 Will Metcalf (william.metcalf@gmail.com)#
+# Copyright (C) 2015 Will Metcalf (william.metcalf@gmail.com)
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -12,8 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+try:
+    import re2 as re
+except ImportError:
+    import re
+
 from lib.cuckoo.common.abstracts import Signature
-import re
 
 class MartiansIE(Signature):
     name = "ie_martian_children"
@@ -33,8 +38,8 @@ class MartiansIE(Signature):
 
     def find_martians(self,ptree,pwlist):
        result = []
-       if ptree[0]["children"]:
-           children = self.go_deeper(ptree[0])
+       if ptree["children"]:
+           children = self.go_deeper(ptree)
            for child in children:
                match_found = False
                for entry in pwlist:
@@ -45,12 +50,22 @@ class MartiansIE(Signature):
        return result
 
     def run(self):
-        self.ie_paths_re = re.compile(r"^c:\\program files\\internet explorer(?:\s\(x86\))?\\iexplore.exe$",re.I)
+        if self.results["target"]["category"] == "file":
+            return False
+ 
+        self.ie_paths_re = re.compile(r"^c:\\program files(?:\s\(x86\))?\\internet explorer\\iexplore.exe$",re.I)
         #run through re.escape()
         self.white_list_re = ["^C\\:\\\\Program Files(?:\s\\(x86\\))?\\\\Adobe\\\\Reader\\ \\d+\\.\\d+\\\\Reader\\\\AcroRd32\\.exe$",
                          "^C\\:\\\\Program Files(?:\s\\(x86\\))?\\\\Java\\\\jre\\d+\\\\bin\\\\j(?:avaw?|p2launcher)\\.exe$",
                          "^C\\:\\\\Program Files(?:\s\\(x86\\))?\\\\Microsoft SilverLight\\\\(?:\\d+\\.)+\\d\\\\agcp.exe$",
-                         "^C\\:\\\\Windows\\\\System32\\\\ntvdm.exe$",
+                         "^C\\:\\\\Windows\\\\System32\\\\ntvdm\\.exe$",
+                         "^C\\:\\\\Windows\\\\system32\\\\rundll32\\.exe$",
+                         "^C\\:\\\\Windows\\\\syswow64\\\\rundll32\\.exe$",
+                         "^C\\:\\\\Windows\\\\system32\\\\drwtsn32\\.exe$",
+                         "^C\\:\\\\Windows\\\\syswow64\\\\drwtsn32\\.exe$",
+                         "^C\\:\\\\Windows\\\\system32\\\\dwwin\\.exe$",
+                         "^C\\:\\\\Windows\\\\system32\\\\WerFault\\.exe$",
+                         "^C\\:\\\\Windows\\\\syswow64\\\\WerFault\\.exe$"
                         ]
         #means we can be evaded but also means we can have relatively tight paths between 32-bit and 64-bit
         self.white_list_re_compiled = []
@@ -58,15 +73,16 @@ class MartiansIE(Signature):
             self.white_list_re_compiled.append(re.compile(entry,re.I))
         self.white_list_re_compiled.append(self.ie_paths_re)
 
-        # get the path of the initial monitored executable
+        # Sometimes if we get a service loaded we get out of order processes in tree need iterate over IE processes get the path of the initial monitored executable
         self.initialpath = None
         processes = self.results["behavior"]["processtree"]
         if len(processes):
-            self.initialpath = processes[0]["module_path"].lower()
-        if self.initialpath and self.ie_paths_re.match(self.initialpath) and processes[0].has_key("children"):
-           self.martians = self.find_martians(processes,self.white_list_re_compiled)
-           if len(self.martians) > 0:
-               for martian in self.martians:
-                   self.data.append({"ie_martian": martian})
-               return True 
+            for p in processes:
+                initialpath = p["module_path"].lower()
+                if initialpath and self.ie_paths_re.match(initialpath) and p.has_key("children"):
+                    self.martians = self.find_martians(p,self.white_list_re_compiled)
+                    if len(self.martians) > 0:
+                        for martian in self.martians:
+                            self.data.append({"ie_martian": martian})
+                        return True 
         return False

@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,9 +20,19 @@ class VMwareDetectKeys(Signature):
     description = "Detects VMware through the presence of a registry key"
     severity = 3
     categories = ["anti-vm"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
-        return self.check_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?VMWare,\\ Inc\..*",
-                              regex=True)
+        indicators = [
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?VMWare,\\ Inc\..*",
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Clients\\\\StartMenuInternet\\\\VMWAREHOSTOPEN.EXE$",
+            ".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?\\\\Microsoft\\\\ESENT\\\\Process\\\\vmtoolsd$",
+            ".*\\\\SYSTEM\\\\(CurrentControlSet|ControlSet001)\\\\Control\\\\CriticalDeviceDatabase\\\\root#vmwvmcihostdev$",
+        ]
+
+        for indicator in indicators:
+            if self.check_key(pattern=indicator, regex=True):
+                return True
+
+        return False

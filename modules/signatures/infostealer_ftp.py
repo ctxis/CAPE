@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2014 Claudio "nex" Guarnieri (@botherder), Accuvant Inc. (bspengler@accuvant.com)
+# Copyright (C) 2012-2014 Claudio "nex" Guarnieri (@botherder), Optiv Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ class FTPStealer(Signature):
     description = "Harvests credentials from local FTP client softwares"
     severity = 3
     categories = ["infostealer"]
-    authors = ["nex", "Accuvant"]
+    authors = ["nex", "Optiv"]
     minimum = "1.2"
 
     def run(self):
@@ -33,8 +33,8 @@ class FTPStealer(Signature):
             ".*\\\\FTPRush\\\\RushSite\.xml$",
             ".*\\\\VanDyke\\\\Config\\\\Sessions\\\\.*",
             ".*\\\\Far\\ Manager\\\\.*",
-            ".*\\\\FTP\\ Explorer\\\\.*"
-            ".*\\\\FTP\\ Commander.*"
+            ".*\\\\FTP\\ Explorer\\\\.*",
+            ".*\\\\FTP\\ Commander.*",
             ".*\\\\SmartFTP\\\\.*",
             ".*\\\\TurboFTP\\\\.*",
             ".*\\\\FTPRush\\\\.*",
@@ -42,6 +42,7 @@ class FTPStealer(Signature):
             ".*\\\\FTPGetter\\\\.*",
             ".*\\\\ALFTP\\\\.*",
             ".*\\\\Ipswitch\\\\WS_FTP\\\\.*",
+            ".*\\\\cftp\\\\ftplist.txt$",
         ]
         registry_indicators = [
             ".*\\\\Software\\\\(Wow6432Node\\\\)?Far.*\\\\Hosts$",

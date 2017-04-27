@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ class DeletesSelf(Signature):
     description = "Deletes its original binary from disk"
     severity = 3
     categories = ["persistence"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -28,17 +28,17 @@ class DeletesSelf(Signature):
         Signature.__init__(self, *args, **kwargs)
         # get the path of the initial monitored executable
         self.initialpath = None
-        processes = self.results["behavior"]["processes"]
-        if len(processes):
-            self.initialpath = processes[0]["module_path"].lower()
+        initialproc = self.get_initial_process()
+        if initialproc:
+            self.initialpath = initialproc["module_path"].lower()
 
-    filter_apinames = set(["NtDeleteFile","DeleteFileA", "DeleteFileW", "MoveFileWithProgressW"])
+    filter_apinames = set(["NtDeleteFile","DeleteFileA", "DeleteFileW", "MoveFileWithProgressW","MoveFileWithProgressTransactedW"])
 
     def on_call(self, call, process):
         if not call["status"]:
             return None
 
-        if call["api"] != "MoveFileWithProgressW":
+        if call["api"] != "MoveFileWithProgressW" and call["api"] != "MoveFileWithProgressTransactedW":
             filename = self.get_argument(call, "FileName").lower()
             if filename == self.initialpath:
                 return True

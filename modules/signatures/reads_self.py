@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -66,10 +66,13 @@ class ReadsSelf(Signature):
     name = "reads_self"
     description = "Reads data out of its own binary image"
     severity = 2
+    confidence = 30
     categories = ["generic"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
+
+    filter_analysistypes = set(["file"])
 
     FilePositionInformation = 14
 
@@ -78,10 +81,18 @@ class ReadsSelf(Signature):
         self.lastprocess = 0
         self.lastres = None
         self.processes = []
+        self.is_office = False
+        office_pkgs = ["ppt","doc","xls","eml","js"]
+        if any(e in self.results["info"]["package"] for e in office_pkgs):
+            self.is_office = True
+
 
     filter_apinames = set(["NtOpenFile","NtCreateFile","NtClose","NtReadFile","NtSetInformationFile"])
 
     def on_call(self, call, process):
+        if self.is_office:
+            return False
+
         if process is not self.lastprocess:
             self.lastprocess = process
             self.lastres = ProcResults(process)
@@ -100,7 +111,8 @@ class ReadsSelf(Signature):
             if handle in self.lastres.handles:
                 obj = self.lastres.handles[handle]
                 length = self.get_raw_argument(call, "Length")
-                self.lastres.reads.append((obj.fpos, obj.fpos + length))
+                if (obj.fpos, obj.fpos + length) not in self.lastres.reads:
+                    self.lastres.reads.append((obj.fpos, obj.fpos + length))
                 obj.read(length)
         elif call["api"] == "NtSetInformationFile" and call["status"]:
             handle = int(self.get_argument(call, "FileHandle"), 16)

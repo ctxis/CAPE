@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,8 +9,8 @@ class InjectionExtension(Signature):
     description = "Attempted to execute a copy of itself but requires an .exe extension to work"
     severity = 3
     categories = ["injection"]
-    authors = ["Accuvant"]
-    minimum = "1.0"
+    authors = ["Optiv"]
+    minimum = "1.3"
     evented = True
 
     def __init__(self, *args, **kwargs):
@@ -26,4 +26,9 @@ class InjectionExtension(Signature):
                 apiarg1 = self.get_argument(call, "ApplicationName")
                 apiarg2 = self.get_argument(call, "CommandLine")
                 if apiarg1.endswith(procname) or apiarg2.endswith(procname):
+                    createdpid = str(self.get_argument(call, "ProcessId"))
+                    desc = "{0}({1}) -> {2}({3})".format(process["process_name"],
+                        process["process_id"], self.get_name_from_pid(createdpid),
+                        createdpid)
+                    self.data.append({"Injection": desc})
                     return True

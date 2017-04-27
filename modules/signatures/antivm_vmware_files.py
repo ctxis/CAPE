@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,13 +20,17 @@ class VMwareDetectFiles(Signature):
     description = "Detects VMware through the presence of a file"
     severity = 3
     categories = ["anti-vm"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
 
     def run(self):
         indicators = [
             ".*\\\\drivers\\\\vmmouse\.sys$",
             ".*\\\\drivers\\\\vmhgfs\.sys$",
+            ".*\\\\vmguestlib\.dll$",
+            ".*\\\\VMware\\ Tools\\\\TPAutoConnSvc\.exe$",
+            ".*\\\\VMware\\ Tools\\\\TPAutoConnSvc\.exe\.dll$",
+            ".*\\\\Program\\ Files(\\ \(x86\))?\\\\VMware\\\\VMware\\ Tools.*",
         ]
 
         for indicator in indicators:

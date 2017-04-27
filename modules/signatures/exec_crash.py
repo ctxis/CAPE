@@ -27,13 +27,10 @@ class Crash(Signature):
     filter_apinames = set(["LdrLoadDll"])
 
     def on_call(self, call, process):
-        res = self.check_argument_call(
+        if self.check_argument_call(
             call,
             pattern=".*faultrep\.dll$",
             name="FileName",
             api="LdrLoadDll",
-            regex=True
-        )
-
-        if res:
+            regex=True):
             return True

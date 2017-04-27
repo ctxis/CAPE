@@ -1,4 +1,4 @@
-# Copyright (C) 2015 Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -9,7 +9,7 @@ class DeletesShadowCopies(Signature):
     description = "Attempts to delete volume shadow copies"
     severity = 3
     categories = ["ransomware"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -23,8 +23,12 @@ class DeletesShadowCopies(Signature):
             cmdline = self.get_argument(call, "CommandLine").lower()
             if "vssadmin" in cmdline and "delete" in cmdline and "shadows" in cmdline:
                 return True
+            elif "wmic" in cmdline and "shadowcopy" in cmdline and "delete" in cmdline:
+                return True
         elif call["api"] == "ShellExecuteExW":
             filepath = self.get_argument(call, "FilePath").lower()
             params = self.get_argument(call, "Parameters").lower()
             if "vssadmin" in filepath and "delete" in params and "shadows" in params:
+                return True
+            elif "wmic" in filepath and "shadowcopy" in params and "delete" in params:
                 return True

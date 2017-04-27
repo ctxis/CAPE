@@ -1,4 +1,4 @@
-# Copyright (C) 2013 Claudio "nex" Guarnieri (@botherder), Accuvant, Inc. (bspengler@accuvant.com)
+# Copyright (C) 2013 Claudio "nex" Guarnieri (@botherder), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ class NetworkBIND(Signature):
     description = "Starts servers listening on {0}"
     severity = 2
     categories = ["bind"]
-    authors = ["nex", "Accuvant"]
+    authors = ["nex", "Optiv"]
     minimum = "1.0"
     evented = True
 

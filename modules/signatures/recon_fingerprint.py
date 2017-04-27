@@ -1,4 +1,4 @@
-# Copyright (C) 2012 Claudio "nex" Guarnieri (@botherder)
+# Copyright (C) 2012,2015 Claudio "nex" Guarnieri (@botherder), Optiv, Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,32 +17,24 @@ from lib.cuckoo.common.abstracts import Signature
 
 class Fingerprint(Signature):
     name = "recon_fingerprint"
-    description = "Collects information to fingerprint the system (MachineGuid, DigitalProductId, SystemBiosDate)"
+    description = "Collects information to fingerprint the system"
     severity = 3
+    confidence = 75
     categories = ["recon"]
-    authors = ["nex"]
-    minimum = "1.0"
-    evented = True
+    authors = ["nex", "Optiv"]
+    minimum = "1.2"
 
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.threshold = 3
-        self.matches = 0
-
-    filter_categories = set(["registry"])
-
-    def on_call(self, call, process):
+    def run(self):
         indicators = [
-            "MachineGuid",
-            "DigitalProductId",
-            "SystemBiosDate"
+            ".*\\\\Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\DigitalProductId$",
+            ".*\\\\Microsoft\\\\Windows\\ NT\\\\CurrentVersion\\\\ProductId$",
+            ".*\\\\Microsoft\\\\Internet\\ Explorer\\\\Registration\\\\ProductId$",
+            ".*\\\\Microsoft\\\\Cryptography\\\\MachineGuid$",
+            ".*\\\\HARDWARE\\\\DESCRIPTION\\\\System\\\\SystemBIOSDate$",
         ]
 
-        for argument in call["arguments"]:
-            for indicator in indicators:
-                if argument["value"] == indicator:
-                    indicators.remove(indicator)
-                    self.matches += 1
-
-        if self.matches >= self.threshold:
-            return True
+        for indicator in indicators:
+            if self.check_read_key(pattern=indicator, regex=True):
+                return True
+ 
+        return False

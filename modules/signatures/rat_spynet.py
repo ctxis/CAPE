@@ -1,4 +1,4 @@
-# Copyright (C) 2014 @threatlead
+# Copyright (C) 2014,2016 @threatlead, Brad Spengler
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+try:
+    import re2 as re
+except ImportError:
+    import re
+
 from lib.cuckoo.common.abstracts import Signature
 
 class SpynetRat(Signature):
@@ -21,14 +26,14 @@ class SpynetRat(Signature):
     severity = 3
     categories = ["rat"]
     families = ["spynet"]
-    authors = ["threatlead", "nex"]
+    authors = ["threatlead", "nex", "Brad Spengler"]
     references = [
         "https://malwr.com/analysis/ZDQ1NjBhNWIzNTdkNDRhNjhkZTFmZTBkYTU2YjMwNzg/",
         "https://malwr.com/analysis/MjkxYmE2YzczNzcwNGJiZjljNDcwMzA2ZDkyNDU2Y2M/",
         "https://malwr.com/analysis/N2E3NWRiNDMyYjIwNGE0NTk3Y2E5NWMzN2UwZTVjMzI/",
         "https://malwr.com/analysis/N2Q2NWY0Y2MzOTM0NDEzNmE1MTdhOThiNTQxMzhiNzk/"   
     ]
-    minimum = "0.5"
+    minimum = "1.2"
 
     def run(self):
         indicators = [
@@ -46,11 +51,20 @@ class SpynetRat(Signature):
                 return True
 
         keys = [
-            ".*\\SpyNet\\.*",
+            ".*\\\\SpyNet\\\\.*",
         ]
-
+        whitelist = [
+            ".*\\\\SOFTWARE\\\\Policies\\\\Microsoft\\\\Windows Defender\\\\.*",
+        ]
         for key in keys:
-            if self.check_key(pattern=key, regex=True):
-                return True
+            keymatch = self.check_write_key(pattern=key, regex=True)
+            if keymatch:
+                is_good = True
+                for white in whitelist:
+                    if re.match(white, keymatch, re.IGNORECASE):
+                        is_good = False
+                        break
+                if is_good:
+                    return True
         
         return False

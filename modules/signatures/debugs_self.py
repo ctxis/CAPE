@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Accuvant Inc. (bspengler@accuvant.com)
+# Copyright (C) 2014 Optiv Inc. (brad.spengler@optiv.com)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ class DebugsSelf(Signature):
     description = "Debugs itself to thwart analysis"
     severity = 3
     categories = ["stealth"]
-    authors = ["Accuvant"]
+    authors = ["Optiv"]
     minimum = "1.2"
     evented = True
 
@@ -34,7 +34,7 @@ class DebugsSelf(Signature):
        applicationname = self.get_argument(call, "ApplicationName").lower()
        pid = self.get_argument(call, "ProcessId")
        if createflags & 1:
-           for proc in results["behavior"]["processes"]:
+           for proc in self.results["behavior"]["processes"]:
                if proc["process_id"] == pid and proc["module_path"].lower() == process["module_path"].lower():
                    # DEBUG_PROCESS on a copy of ourselves
                    return True

@@ -18,7 +18,7 @@ from lib.cuckoo.common.abstracts import Signature
 class NetworkICMP(Signature):
     name = "network_icmp"
     description = "Generates some ICMP traffic"
-    severity = 4
+    severity = 3
     categories = ["icmp"]
     authors = ["David Maciejak"]
     minimum = "1.0"
@@ -26,7 +26,9 @@ class NetworkICMP(Signature):
     def run(self):
         if "network" in self.results:
             if "icmp" in self.results["network"]:
-                if len(self.results["network"]["icmp"]) > 0:
-                    return True
+                for icmp in self.results["network"]["icmp"]:
+                    # ignore dest unreachable
+                    if icmp["type"] != 3:
+                        return True
 
         return False

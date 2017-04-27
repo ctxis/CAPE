@@ -25,6 +25,8 @@ class AntiSandboxSleep(Signature):
             if sleepy != None:
                 current_proc = process["process_name"]
                 skip = self.get_argument(call, "Status")
+                if skip and skip == "Infinite":
+                    return None
                 if skip and skip != "Skipped":
                     skip = "Slept"
                 new = (current_proc, sleepy, skip)
@@ -51,7 +53,7 @@ class AntiSandboxSleep(Signature):
                     procs[pname]["Actual"] += int(sleep)
 
         for process in procs:
-            if procs[process]["Attempted"] >= 210000:
+            if procs[process]["Attempted"] >= 250000:
                 ret = True
                 actual = str(procs[process]["Actual"] / 1000)
                 attempted = str(procs[process]["Attempted"] / 1000)
