@@ -36,6 +36,12 @@ CAPE has config parsers for the following malware families, whose payloads are e
     - RedLeaf
 
 The publicly available decoders from malwareconfig.com are also included in CAPE. This includes, among many others, Sakula, DarkComet and PoisonIvy.
+
+CAPE also has Yara signatures to detect payloads that are extracted by a behavioural package. This list is growing, and includes:
+    - WanaCry
+    - Emotet
+    - Cerber
+    - Dridex
     
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
