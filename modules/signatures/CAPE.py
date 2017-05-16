@@ -24,8 +24,10 @@ OPTIONAL_HEADER_MAGIC_PE_PLUS   = 0x20b
 IMAGE_FILE_EXECUTABLE_IMAGE     = 0x0002
 PE_HEADER_LIMIT                 = 0x200
 
-PLUGX_SIGNATURE		            = 0x5658
+EXECUTABLE_FLAGS                = 0x10 | 0x20 | 0x40 | 0x80
 EXTRACTION_MIN_SIZE             = 0x1001
+
+PLUGX_SIGNATURE		            = 0x5658
 
 class CAPE_Compression(Signature):
     name = "Compression"
@@ -98,22 +100,22 @@ class CAPE_Extraction(Signature):
     
     def on_call(self, call, process):
         if call["api"] == "NtAllocateVirtualMemory":
-            protection = self.get_argument(call, "Protection")
+            protection = int(self.get_raw_argument(call, "Protection"), 0)
             regionsize = int(self.get_raw_argument(call, "RegionSize"), 0)
             handle = self.get_argument(call, "ProcessHandle")
-            if handle == "0xffffffff" and protection == "0x00000040" and regionsize >= EXTRACTION_MIN_SIZE:
+            if handle == "0xffffffff" and protection & EXECUTABLE_FLAGS and regionsize >= EXTRACTION_MIN_SIZE:
                 return True
         if call["api"] == "VirtualProtectEx":
-            protection = self.get_argument(call, "Protection")
+            protection = int(self.get_raw_argument(call, "Protection"), 0)
             size = int(self.get_raw_argument(call, "Size"), 0)
             handle = self.get_argument(call, "ProcessHandle")
-            if handle == "0xffffffff" and protection == "0x00000040" and size >= EXTRACTION_MIN_SIZE:
+            if handle == "0xffffffff" and protection & EXECUTABLE_FLAGS and size >= EXTRACTION_MIN_SIZE:
                 return True
         elif call["api"] == "NtProtectVirtualMemory":
-            protection = self.get_argument(call, "NewAccessProtection")
+            protection = int(self.get_raw_argument(call, "NewAccessProtection"), 0)
             size = int(self.get_raw_argument(call, "NumberOfBytesProtected"), 0)
             handle = self.get_argument(call, "ProcessHandle")
-            if handle == "0xffffffff" and protection == "0x00000040" and size >= EXTRACTION_MIN_SIZE:
+            if handle == "0xffffffff" and protection & EXECUTABLE_FLAGS and size >= EXTRACTION_MIN_SIZE:
                 return True
 
 class CAPE_InjectionCreateRemoteThread(Signature):

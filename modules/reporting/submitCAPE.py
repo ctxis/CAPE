@@ -86,6 +86,9 @@ class SubmitCAPE(Report):
         db = Database()
         detections = set()
 
+        if self.task_options and 'disable_cape=1' in self.task_options:        
+            return
+            
         parent_package = report["info"].get("package")
         if parent_package in cape_package_list:
             # we only want to trigger detections from 'straight' runs, behavioural packages or unpackers

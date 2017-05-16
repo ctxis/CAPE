@@ -329,8 +329,12 @@ class File:
                 if self.guest_paths:
                     filepath = self.guest_paths[0]
                 rules = yara.compile(rulepath, externals={"filepath":filepath, "filename":filename})
-            except:
-                rules = yara.compile(rulepath)
+            except yara.SyntaxError as e:
+                if 'duplicated identifier' in e.args[0]:
+                    log.warning("Duplicate rule in %s, rulepath")
+                    log.warning(e.args[0])
+                else:
+                    rules = yara.compile(rulepath)
             matches = rules.match(self.file_path)
 
             # This is ancient, and breaks CAPE, so removing.

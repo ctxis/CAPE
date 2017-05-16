@@ -25,7 +25,7 @@ from lib.cuckoo.common.constants import CUCKOO_ROOT, CUCKOO_VERSION
 from lib.cuckoo.common.exceptions import CuckooStartupError
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.utils import create_folders, store_temp_file, delete_folder
-from lib.cuckoo.core.database import Database, Task, TASK_RUNNING, TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING, TASK_RECOVERED, TASK_REPORTED
+from lib.cuckoo.core.database import Database, Task, TASK_RUNNING, TASK_PENDING, TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING, TASK_RECOVERED, TASK_REPORTED
 from lib.cuckoo.core.plugins import import_plugin, import_package, list_plugins
 
 log = logging.getLogger()
@@ -400,7 +400,7 @@ def cuckoo_clean_failed_tasks():
                     delete_folder(os.path.join(CUCKOO_ROOT, "storage", "analyses",
                             "%s" % int(new["id"])))
                 else:
-                    print "failed to remove faile task %s from DB" % (int(new["id"]))
+                    print "failed to remove failed task %s from DB" % (int(new["id"]))
 
 def cuckoo_clean_bson_suri_logs():
     """Clean up raw suri log files probably not needed if storing in mongo. Does not remove extracted files
@@ -604,3 +604,44 @@ def cuckoo_clean_sorted_pcap_dump():
                         done = True
             else:
                 done = True
+
+def cuckoo_clean_pending_tasks():
+    """Clean up pending tasks 
+    It deletes all stored data from file system and configured databases (SQL
+    and MongoDB for pending tasks.
+    """
+    # Init logging.
+    # This need to init a console logger handler, because the standard
+    # logger (init_logging()) logs to a file which will be deleted.
+    create_structure()
+    init_console_logging()
+
+    # Initialize the database connection.
+    db = Database()
+
+    # Check if MongoDB reporting is enabled and drop that if it is.
+    cfg = Config("reporting")
+    if cfg.mongodb and cfg.mongodb.enabled:
+        from pymongo import MongoClient
+        host = cfg.mongodb.get("host", "127.0.0.1")
+        port = cfg.mongodb.get("port", 27017)
+        mdb = cfg.mongodb.get("db", "cuckoo")
+        try:
+            results_db = MongoClient(host, port)[mdb]
+        except:
+            log.warning("Unable to connect to MongoDB database: %s", mdb)
+            return 
+
+        pending_tasks = db.list_tasks(status=TASK_PENDING)
+        for e in pending_tasks:
+            new = e.to_dict()
+            print int(new["id"])
+            try:
+                results_db.analysis.remove({"info.id": int(new["id"])})
+            except:
+                print "failed to remove analysis info (may not exist) %s" % (int(new["id"]))
+            if db.delete_task(new["id"]):
+                delete_folder(os.path.join(CUCKOO_ROOT, "storage", "analyses",
+                        "%s" % int(new["id"])))
+            else:
+                print "failed to remove pending task %s from DB" % (int(new["id"]))
