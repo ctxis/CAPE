@@ -7,7 +7,7 @@ import shutil
 
 from lib.common.abstracts import Package
 
-class Azzy_dll(Package):
+class Sedreco_dll(Package):
     """DLL analysis package."""
     PATHS = [
         ("SystemRoot", "system32", "rundll32.exe"),
@@ -17,7 +17,8 @@ class Azzy_dll(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.options["dll"] = "Azzy.dll"
+        self.options["dll"] = "Sedreco.dll"
+        self.options["dll_64"] = "Sedreco_x64.dll"
         
         if self.config.timeout > 10:
             self.config.timeout = 10
@@ -27,7 +28,8 @@ class Azzy_dll(Package):
         function = self.options.get("function", "Start")
         arguments = self.options.get("arguments")
         loadername = self.options.get("loader")
-        self.options["dll"] = "Azzy.dll"
+        self.options["dll"] = "Sedreco.dll"
+        self.options["dll_64"] = "Sedreco_x64.dll"
 
         # Check file extension.
         ext = os.path.splitext(path)[-1].lower()

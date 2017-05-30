@@ -31,10 +31,10 @@ from lib.cuckoo.core.database import Database
 log = logging.getLogger(__name__)
 
 cape_package_list = [
-        "Azzy", "Azzy_dll", "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
+        "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
         "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Injection", "Injection_dll", "Injection_doc", 
-        "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Shellcode-Extraction", 
-        "UPX", "UPX_dll"
+        "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
+        "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
     ];
 
 def pirpi_password(strings):
@@ -48,34 +48,37 @@ class SubmitCAPE(Report):
         #if cape_yara["name"] == "Pirpi":
         #    detections.add('PirpiPassword')
 
-        if cape_yara["name"] == "Azzy" and 'Azzy' not in detections:
+        if cape_yara["name"] == "Sedreco" and 'Sedreco' not in detections:
             encrypt1 = cape_yara["addresses"].get("encrypt1")
             encrypt2 = cape_yara["addresses"].get("encrypt2")
+            encrypt64_1 = cape_yara["addresses"].get("encrypt64_1")
             if encrypt1:
                 self.task_options_stack.append("CAPE_var1={0}".format(encrypt1))
             if encrypt2:
                 self.task_options_stack.append("CAPE_var2={0}".format(encrypt2))
-            detections.add('Azzy')
+            if encrypt64_1:
+                self.task_options_stack.append("CAPE_var3={0}".format(encrypt64_1))
+            detections.add('Sedreco')
             
         #if cape_yara["name"] == "EvilGrab":
         #    detections.add('EvilGrab')                            
 
-        if cape_yara["name"] == "Dridex":
-            crypt_32_1 = cape_yara["addresses"].get("crypt_32_v1")
-            crypt_32_2 = cape_yara["addresses"].get("crypt_32_v2")
-            crypt_32_3 = cape_yara["addresses"].get("crypt_32_v3")
-            
-            crypt_64_1 = cape_yara["addresses"].get("crypt_64_v1")
-    
-            if crypt_32_1:
-                self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_1))
-            if crypt_32_2:
-                self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_2))
-            if crypt_32_3:
-                self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_3))
-            if crypt_64_1:
-                self.task_options_stack.append("CAPE_var1={0}".format(crypt_64_1))
-            detections.add('Dridex')
+        #if cape_yara["name"] == "Dridex":
+        #    crypt_32_1 = cape_yara["addresses"].get("crypt_32_v1")
+        #    crypt_32_2 = cape_yara["addresses"].get("crypt_32_v2")
+        #    crypt_32_3 = cape_yara["addresses"].get("crypt_32_v3")
+        #    
+        #    crypt_64_1 = cape_yara["addresses"].get("crypt_64_v1")
+        #
+        #    if crypt_32_1:
+        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_1))
+        #    if crypt_32_2:
+        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_2))
+        #    if crypt_32_3:
+        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_3))
+        #    if crypt_64_1:
+        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_64_1))
+        #    detections.add('Dridex')
     
     def run(self, results):
         self.task_options_stack = []
@@ -245,11 +248,11 @@ class SubmitCAPE(Report):
         if 'EvilGrab' in detections:
             package = 'EvilGrab'	
             
-        if 'Azzy' in detections:
+        if 'Sedreco' in detections:
             if parent_package=='dll':
-                package = 'Azzy_dll'
+                package = 'Sedreco_dll'
             else:
-                package = 'Azzy'
+                package = 'Sedreco'
             
         self.task_options = self.task["options"]
         # we want to switch off automatic process dumps in CAPE submissions

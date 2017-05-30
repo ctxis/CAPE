@@ -25,7 +25,7 @@ CAPE also has a package which can dynamically unpack samples that use 'hacked' (
 Currently CAPE has specific packages dumping configuration and payloads for the following malware families:
     - PlugX
     - EvilGrab
-    - Azzy
+    - Sedreco
     
 Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on CAPE's primary config parsing framework, DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). Parsers may also be written using the RATDecoders framework from malwareconfig.com. Thanks to DC3 and Kevin Breen/TechAnarchy for these frameworks.
 
@@ -41,7 +41,10 @@ CAPE also has Yara signatures to detect payloads that are extracted by a behavio
     - WanaCry
     - Emotet
     - Cerber
+    - Locky
     - Dridex
+    - NetTraveler
+    - ZeroT
     
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
@@ -53,6 +56,8 @@ Processes, modules and memory regions can variously be dumped by CAPE through us
 
 Executable modules are fixed on being dumped, and may also have their imports automatically reconstructed (based on Scylla).
 
-It is derived from spender-sandbox, which is derived from Cuckoo Sandbox, so thanks to Brad Spengler, Claudio Guarnieri, and the countless other Cuckoo contributors without whom this work would not be possible.
+The repository containing the code for the monitor DLLs which form the basis of these packages is a distinct one: https://github.com/ctxis/capemon. This repository is organised in branches for the various packages.
+
+CAPE is derived from spender-sandbox, which is derived from Cuckoo Sandbox, so thanks to Brad Spengler, Claudio Guarnieri, and the countless other Cuckoo contributors without whom this work would not be possible.
 
 Please contribute to this project by helping create new packages for further malware families, packers, techniques or configuration parsers. Alternatively contact us for further details of CAPE development.

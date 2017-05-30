@@ -96,9 +96,10 @@ class CAPE_Extraction(Signature):
 
     filter_apinames = set(["NtAllocateVirtualMemory","NtProtectVirtualMemory","VirtualProtectEx"])
 
-    # PAGE_EXECUTE_READWRITE = 0x00000040
-    
     def on_call(self, call, process):
+    
+        if process["process_name"] == "WINWORD.EXE":
+            return False
         if call["api"] == "NtAllocateVirtualMemory":
             protection = int(self.get_raw_argument(call, "Protection"), 0)
             regionsize = int(self.get_raw_argument(call, "RegionSize"), 0)

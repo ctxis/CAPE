@@ -24,5 +24,5 @@ class Injection_PS1(Package):
             path += ".ps1"
 
         args = "-NoProfile -ExecutionPolicy bypass -File \"{0}\"".format(path)
-        return self.debug(powershell, args, path)
+        return self.execute(powershell, args, path)
         

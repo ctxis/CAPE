@@ -7,7 +7,7 @@ import shutil
 
 from lib.common.abstracts import Package
 
-class Azzy(Package):
+class Sedreco(Package):
     """DLL analysis package."""
     PATHS = [
         ("SystemRoot", "system32", "rundll32.exe"),
@@ -17,7 +17,8 @@ class Azzy(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.options["dll"] = "Azzy.dll"
+        self.options["dll"] = "Sedreco.dll"
+        self.options["dll_64"] = "Sedreco_x64.dll"
         
         if self.config.timeout > 10:
             self.config.timeout = 10
@@ -26,7 +27,8 @@ class Azzy(Package):
         args = self.options.get("arguments")
         appdata = self.options.get("appdata")
         runasx86 = self.options.get("runasx86")
-        self.options["dll"] = "Azzy.dll"
+        self.options["dll"] = "Sedreco.dll"
+        self.options["dll_64"] = "Sedreco_x64.dll"        
         
         # If the file doesn't have an extension, add .exe
         # See CWinApp::SetCurrentHandles(), it will throw

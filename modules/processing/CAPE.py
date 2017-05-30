@@ -60,7 +60,7 @@ PLUGX_PAYLOAD           = 0x10
 PLUGX_CONFIG            = 0x11    
 EVILGRAB_PAYLOAD        = 0x14
 EVILGRAB_DATA           = 0x15
-AZZY_DATA               = 0x20
+SEDRECO_DATA            = 0x20
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -105,7 +105,8 @@ def upx_unpack(raw_data):
     
     if ret == 0:
         sha256 = hash_file(hashlib.sha256, upxfile.name)
-        os.rename(upxfile.name, sha256)
+        newname = os.path.join(os.path.dirname(upxfile.name), sha256)
+        os.rename(upxfile.name, newname)
         log.info("CAPE: UPX - Statically unpacked binary %s.", sha256)
         return sha256
     elif ret == 127:
@@ -123,7 +124,7 @@ class CAPE(Processing):
 
     cape_config = {}
     
-    def process_file(self, file_path, CAPE_files, append_file):
+    def process_file(self, file_path, CAPE_output, append_file):
         """Process file.
         @return: file_info
         """
@@ -266,33 +267,33 @@ class CAPE(Processing):
                     append_file = True
                 else:
                     append_file = False
-            # Azzy
-            if file_info["cape_type_code"] == AZZY_DATA:
-                cape_name = "Azzy"
-                cape_config["cape_type"] = "Azzy Config"
+            # Sedreco
+            if file_info["cape_type_code"] == SEDRECO_DATA:
+                cape_name = "Sedreco"
+                cape_config["cape_type"] = "Sedreco Config"
                 if not "cape_config" in cape_config:
                     cape_config["cape_config"] = {}
                 if len(metastrings) > 4:
-                    AzzyConfigIndex = metastrings[4]
-                if AzzyConfigIndex == '0x0':
+                    SedrecoConfigIndex = metastrings[4]
+                if SedrecoConfigIndex == '0x0':
                     ConfigItem = "Timer1"
-                elif AzzyConfigIndex == '0x1':
+                elif SedrecoConfigIndex == '0x1':
                     ConfigItem = "Timer2"
-                elif AzzyConfigIndex == '0x2':
+                elif SedrecoConfigIndex == '0x2':
                     ConfigItem = "Computer Name"
-                elif AzzyConfigIndex == '0x3':
+                elif SedrecoConfigIndex == '0x3':
                     ConfigItem = "C&C1"
-                elif AzzyConfigIndex == '0x4':
+                elif SedrecoConfigIndex == '0x4':
                     ConfigItem = "C&C2"
-                elif AzzyConfigIndex == '0x5':
+                elif SedrecoConfigIndex == '0x5':
                     ConfigItem = "Operation Name"
-                elif AzzyConfigIndex == '0x6':
+                elif SedrecoConfigIndex == '0x6':
                     ConfigItem = "Keylogger MaxBuffer"
-                elif AzzyConfigIndex == '0x7':
+                elif SedrecoConfigIndex == '0x7':
                     ConfigItem = "Keylogger MaxTimeout"
-                elif AzzyConfigIndex == '0x8':
+                elif SedrecoConfigIndex == '0x8':
                     ConfigItem = "Keylogger Flag"
-                elif AzzyConfigIndex == '0x9':
+                elif SedrecoConfigIndex == '0x9':
                     ConfigItem = "C&C3"
                 else: 
                     ConfigItem = "Unknown"
@@ -359,7 +360,7 @@ class CAPE(Processing):
                     infofd.close()
 
                     # Recursive process of unpacked file
-                    upx_extract = self.process_file(newname, CAPE_files, True)
+                    upx_extract = self.process_file(newname, CAPE_output, True)
                     if upx_extract["type"]:
                         upx_extract["cape_type"] = "UPX-extracted "
                         type_strings = upx_extract["type"].split()
@@ -437,7 +438,7 @@ class CAPE(Processing):
             #    self.results["cape"].append(cape_name)
 
         if append_file == True:
-            CAPE_files.append(file_info)
+            CAPE_output.append(file_info)
         return file_info
     
     def run(self):
@@ -447,8 +448,7 @@ class CAPE(Processing):
         global cape_config
         cape_config = {}
         self.key = "CAPE"
-        output = ""
-        CAPE_files = []
+        CAPE_output = []
         
         # Process dynamically dumped CAPE files
         for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
@@ -456,30 +456,30 @@ class CAPE(Processing):
                 file_path = os.path.join(dir_name, file_name)
         # We want to exclude duplicate files from display in ui
                 if len(file_name) <= 64:
-                    self.process_file(file_path, CAPE_files, True)
+                    self.process_file(file_path, CAPE_output, True)
                 else:
-                    self.process_file(file_path, CAPE_files, False)
+                    self.process_file(file_path, CAPE_output, False)
         # We want to process procdumps too just in case they might
         # be detected as payloads and trigger config parsing
         for dir_name, dir_names, file_names in os.walk(self.procdump_path):
             for file_name in file_names:
                 file_path = os.path.join(dir_name, file_name)
         # the files by default in the CAPE tab
-                self.process_file(file_path, CAPE_files, False)
+                self.process_file(file_path, CAPE_output, False)
         # We want to process dropped files too 
         for dir_name, dir_names, file_names in os.walk(self.dropped_path):
             for file_name in file_names:
                 file_path = os.path.join(dir_name, file_name)
-                self.process_file(file_path, CAPE_files, False)
+                self.process_file(file_path, CAPE_output, False)
         # We set append_file to False as we don't wan't to include
         # Finally static processing of submitted file
         if self.task["category"] == "file":
             if not os.path.exists(self.file_path):
                 raise CuckooProcessingError("Sample file doesn't exist: \"%s\"" % self.file_path)
             
-            self.process_file(self.file_path, CAPE_files, False)
+            self.process_file(self.file_path, CAPE_output, False)
             
         if "cape_config" in cape_config:
-            CAPE_files.append(cape_config)
+            CAPE_output.append(cape_config)
         
-        return CAPE_files
+        return CAPE_output
