@@ -4,7 +4,6 @@ rule Adzok
 		author = " Kevin Breen <kevin@techanarchy.net>"
 		Description = "Adzok Rat"
 		Versions = "Free 1.0.0.3,"
-		date = "2015/05"
 		ref = "http://malwareconfig.com/stats/Adzok"
 		maltype = "Remote Access Trojan"
 		filetype = "jar"

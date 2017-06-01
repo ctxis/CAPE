@@ -2,7 +2,6 @@ rule ShadowTech
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
-		date = "2014/04"
 		ref = "http://malwareconfig.com/stats/ShadowTech"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"

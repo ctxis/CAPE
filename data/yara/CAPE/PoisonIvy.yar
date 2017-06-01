@@ -3,7 +3,6 @@ rule PoisonIvy
 	// Modified for CAPE in 2017/03
     meta:
 		author = "Kevin Breen <kevin@techanarchy.net>"
-		date = "2014/04"
 		ref = "http://malwareconfig.com/stats/PoisonIvy"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"

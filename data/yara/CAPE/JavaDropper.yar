@@ -2,7 +2,6 @@ rule JavaDropper
 {
     meta:
 	    author = " Kevin Breen <kevin@techanarchy.net>"
-	    date = "2015/10"
 	    ref = "http://malwareconfig.com/stats/AlienSpy"
 	    maltype = "Remote Access Trojan"
 	    filetype = "exe"

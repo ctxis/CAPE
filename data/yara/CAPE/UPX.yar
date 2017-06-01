@@ -2,7 +2,6 @@ rule UPX
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
-		date = "2014/04"
 
 	strings:
 		$a = "UPX0"

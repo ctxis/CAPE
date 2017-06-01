@@ -2,7 +2,6 @@ rule Imminent
 {
     meta:
         author = " Kevin Breen <kevin@techanarchy.net>"
-        date = "2014/04"
         ref = "http://malwareconfig.com/stats/Imminent"
         maltype = "Remote Access Trojan"
         filetype = "exe"

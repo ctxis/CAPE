@@ -2,7 +2,6 @@ rule Sub7Nation
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
-		date = "2014/04"
 		ref = "http://malwareconfig.com/stats/Sub7Nation"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"

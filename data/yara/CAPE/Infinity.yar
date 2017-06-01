@@ -2,7 +2,6 @@ rule Infinity
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
-		date = "2014/04"
 		ref = "http://malwareconfig.com/stats/Infinity"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"

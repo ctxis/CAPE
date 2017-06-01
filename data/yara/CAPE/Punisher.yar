@@ -2,7 +2,6 @@ rule Punisher
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
-		date = "2014/04"
 		ref = "http://malwareconfig.com/stats/Punisher"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"

@@ -2,7 +2,6 @@ rule HawkEye
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
-		date = "2015/06"
 		ref = "http://malwareconfig.com/stats/HawkEye"
 		maltype = "KeyLogger"
 		filetype = "exe"

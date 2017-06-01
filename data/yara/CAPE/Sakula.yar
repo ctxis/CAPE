@@ -2,7 +2,6 @@ rule Sakula
 {
     meta:
         description = "Sakula v1.0"
-        date = "2015-10-13"
         author = "Airbus Defence and Space Cybersecurity CSIRT - Yoann Francou / NCC Group David Cannings"
     strings:
         $s1 = "%d_of_%d_for_%s_on_%s"

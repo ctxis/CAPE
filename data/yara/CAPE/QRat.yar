@@ -2,7 +2,6 @@ rule QRat
 {
     meta:
         author = "Kevin Breen @KevTheHermit"
-        date = "2015/08"
         ref = "http://malwareconfig.com"
         maltype = "Remote Access Trojan"
         filetype = "jar"

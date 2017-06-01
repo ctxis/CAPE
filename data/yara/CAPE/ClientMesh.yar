@@ -2,7 +2,6 @@ rule ClientMesh
 {
     meta:
         author = "Kevin Breen <kevin@techanarchy.net>"
-        date = "2014/06"
         ref = "http://malwareconfig.com/stats/ClientMesh"
         family = "torct"
 

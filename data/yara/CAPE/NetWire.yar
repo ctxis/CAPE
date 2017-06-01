@@ -2,7 +2,6 @@ rule NetWire
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net> & David Cannings"
-		date = "2014/04"
 		ref = "http://malwareconfig.com/stats/NetWire"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
