@@ -784,12 +784,10 @@ class PipeHandler(Thread):
                 # In case of FILE_NEW, the client is trying to notify the creation
                 # of a new file.
                 elif command.startswith("FILE_NEW:"):
-                    FILES_LIST_LOCK.acquire()
                     # We extract the file path.
                     file_path = unicode(command[9:].decode("utf-8"))
-                    # We add the file to the list.
-                    add_file(file_path)
-                    FILES_LIST_LOCK.release()
+                    # We dump immediately.
+                    dump_file(file_path)
                 elif command.startswith("FILE_CAPE:"):
                     # We extract the file path.
                     file_path = unicode(command[10:].decode("utf-8"))
