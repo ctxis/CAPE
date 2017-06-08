@@ -45,12 +45,14 @@ CAPE also has Yara signatures to detect payloads that are extracted by a behavio
     - Dridex
     - NetTraveler
     - ZeroT
+    - Jaff
+    - T5000
     
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.
 
-The CAPE debugger allows four breakpoints to be set on each malware thread to detect on read, write or execute of a memory region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code or via Yara signatures.
+The CAPE debugger allows four breakpoints to be set on each malware thread to detect on read, write or execute of a memory region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code, API hooks or Yara signatures.
 
 Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API. These dumps can then be scanned and parsed for configuration information.
 
