@@ -14,7 +14,10 @@ import os
 import json
 import zipfile
 import tempfile
+import zlib
 
+from bson.binary import Binary
+from bson.binary import Binary
 from django.conf import settings
 from wsgiref.util import FileWrapper
 from django.http import HttpResponse, StreamingHttpResponse
@@ -284,6 +287,7 @@ def index(request, page=1):
     paging["urls_page_range"] = urls_pages
     paging["pcaps_page_range"] = pcaps_pages
     paging["current_page"] = page
+    analyses_files.sort(key=lambda x: x["id"], reverse=True)
     return render(request, "analysis/index.html",
             {"files": analyses_files, "urls": analyses_urls, "pcaps": analyses_pcaps,
              "paging": paging, "config": enabledconf})
@@ -741,6 +745,37 @@ def report(request, task_id):
         return render(request, "error.html",
                                   {"error": "The specified analysis does not exist"})
 
+    children = 0
+    # decompress CAPE data    
+    if "CAPE" in report:
+        try:
+            report["CAPE"] = json.loads(zlib.decompress(report["CAPE"]))
+            session = db.Session()
+            children = [c for c in session.query(Task.id,Task.package).filter(Task.parent_id == task_id)]
+        except:
+            # backward compatability
+            pass
+
+    # decompress behaviour analysis (enhanced & summary)
+    if "enhanced" in report["behavior"]:
+        try:
+            report["behavior"]["enhanced"] = json.loads(zlib.decompress(report["behavior"]["enhanced"]))
+        except:
+            # backward compatibility
+            pass
+    if "summary" in report["behavior"]:
+        try:
+            report["behavior"]["summary"] = json.loads(zlib.decompress(report["behavior"]["summary"]))
+	except:
+	    pass
+
+    # decompress virustotal
+    if "virustotal" in report:
+        try:
+            report["virustotal"] = json.loads(zlib.decompress(report["virustotal"]))
+        except:
+            pass
+
     if settings.MOLOCH_ENABLED and "suricata" in report:
         suricata = report["suricata"]
         if settings.MOLOCH_BASE[-1] != "/":
@@ -805,6 +840,7 @@ def report(request, task_id):
 
     return render(request, "analysis/report.html",
                              {"analysis": report,
+                              "children" : children,
                               "domainlookups": domainlookups,
                               "iplookups": iplookups,
                               "similar": similarinfo,

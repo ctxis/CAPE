@@ -4,11 +4,18 @@
 
 import logging
 import os
+import json
+import six
+import imagehash
+import zlib
 
 from lib.cuckoo.common.abstracts import Report
 from lib.cuckoo.common.exceptions import CuckooDependencyError
 from lib.cuckoo.common.exceptions import CuckooReportError
 from lib.cuckoo.common.objects import File
+from bson import ObjectId
+from bson.binary import Binary
+from PIL import Image
 
 try:
     from pymongo import MongoClient
@@ -18,6 +25,46 @@ except ImportError:
     HAVE_MONGO = False
 
 log = logging.getLogger(__name__)
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
+
+def deduplicate_images(userpath, hashfunc = imagehash.average_hash):
+    """
+    remove duplicate images from a path
+    :userpath: path of the image files
+    :hashfunc: type of image hashing method
+    """
+    def is_image(filename):
+        img_ext = [".jpg", ".png", ".gif", ".bmp", ".gif"]
+        f = filename.lower()
+        return any(f.endswith(ext) for ext in img_ext)
+
+    #log.debug("Deduplicate images...{}".format(userpath))
+    """
+    Available hashs functions:
+        ahash:      Average hash
+        phash:      Perceptual hash
+        dhash:      Difference hash
+        whash-haar: Haar wavelet hash
+        whash-db4:  Daubechies wavelet hash
+    """
+    dd_img_set = []
+
+    image_filenames = [os.path.join(userpath, path) for path in os.listdir(userpath) if is_image(path)]
+    images = {}
+    for img in sorted(image_filenames):
+        hash = hashfunc(Image.open(img))
+        images[hash] = images.get(hash, []) + [img]
+    for k, img_list in six.iteritems(images):
+        #if len(img_list) > 1:
+        dd_img_set.append(os.path.basename(img_list[0]))
+            #print(",".join(img_list))
+    dd_img_set.sort()
+    return dd_img_set
 
 class MongoDB(Report):
     """Stores report in MongoDB."""
@@ -43,6 +90,9 @@ class MongoDB(Report):
             raise CuckooReportError("Cannot connect to MongoDB")
 
     def debug_dict_size(self, dct):
+        if type(dct) == list:
+            dct = dct[0]
+
         totals = dict((k, 0) for k in dct)
         def walk(root, key, val):
             if isinstance(val, dict):
@@ -93,8 +143,23 @@ class MongoDB(Report):
 
         # Add screenshot paths
         report["shots"] = []
+        report["deduplicated_shots"] = []
+
+        hashmethod = "whash-db4"
+        if hashmethod == 'ahash':
+            hashfunc = imagehash.average_hash
+        elif hashmethod == 'phash':
+            hashfunc = imagehash.phash
+        elif hashmethod == 'dhash':
+            hashfunc = imagehash.dhash
+        elif hashmethod == 'whash-haar':
+            hashfunc = imagehash.whash
+        elif hashmethod == 'whash-db4':
+            hashfunc = lambda img: imagehash.whash(img, mode='db4')     # sg_052017
+
         shots_path = os.path.join(self.analysis_path, "shots")
         if os.path.exists(shots_path):
+            report["deduplicated_shots"] = [f.replace(".jpg","") for f in deduplicate_images(userpath=shots_path, hashfunc=hashfunc)] #sg_052017
             shots = [shot for shot in os.listdir(shots_path)
                      if shot.endswith(".jpg")]
             for shot_file in sorted(shots):
@@ -176,6 +241,31 @@ class MongoDB(Report):
         # Note: Silently ignores the creation if the index already exists.
         self.db.analysis.create_index("info.id", background=True)
 
+	# In case data exceeds mongodb limit of 16MB,
+	# be prepared to save into a json file
+	save_json_analyses = os.path.join(self.analysis_path, "analyses.json")
+	json_data = JSONEncoder().encode(report)
+
+	# Compress CAPE output
+	if "CAPE" in report:
+		cape_json = json.dumps(report["CAPE"]).encode('utf8')
+        	compressed_CAPE = zlib.compress(cape_json)
+        	report["CAPE"] = Binary(compressed_CAPE)
+                #log.debug("CAPE output size before compression: {}, after compression: {}".format(len(cape_json), len(compressed_CAPE)))
+
+	# Compress behavioural analysis (enhanced & summary)
+	if "enhanced" in report["behavior"]:
+		compressed_behavior_enhanced = zlib.compress(JSONEncoder().encode(report["behavior"]["enhanced"]).encode('utf8'))
+		report["behavior"]["enhanced"] = Binary(compressed_behavior_enhanced)
+	if "summary" in report["behavior"]:
+		compressed_behavior_summary = zlib.compress(JSONEncoder().encode(report["behavior"]["summary"]).encode('utf8'))
+                report["behavior"]["summary"] = Binary(compressed_behavior_summary)
+
+	# Compress virustotal results
+	if "virustotal" in report:
+		compressed_vt = zlib.compress(JSONEncoder().encode(report["virustotal"]).encode('utf8'))
+        report["virustotal"] = Binary(compressed_vt)	
+
         # Store the report and retrieve its object id.
         try:
             self.db.analysis.save(report)
@@ -193,6 +283,15 @@ class MongoDB(Report):
                 while error_saved:
                     log.warn("results['%s']['%s'] deleted due to >16MB size (%dMB)" %
                              (parent_key, child_key, int(psize) / 1048576))
+
+                    if type(report) == list:
+                        report = report[0]
+
+                    with open(save_json_analyses, "w") as f:
+                        f.write(json_data)
+                    log.warn("results['%s']['%s'](%dMB) > saved as %s" %
+                             (parent_key, child_key, int(psize) / 1048576, save_json_analyses))
+
                     del report[parent_key][child_key]
                     try:
                         self.db.analysis.save(report)

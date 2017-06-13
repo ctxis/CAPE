@@ -433,7 +433,8 @@ class CAPE(Processing):
             cape_config["cape_name"] = format(cape_name)
             if not "cape" in self.results:
                 #self.results["cape"] = []
-                self.results["cape"] = cape_name
+                if cape_name != "UPX":
+                    self.results["cape"] = cape_name
             #if cape_name not in self.results["cape"]:
             #    self.results["cape"].append(cape_name)
 

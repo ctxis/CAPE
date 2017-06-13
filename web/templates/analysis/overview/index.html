@@ -1,4 +1,11 @@
 {% include "analysis/overview/_info.html" %}
+{% if children|length > 0 %}
+<hr />
+    <h4>Related CAPE Tasks</h4>
+    {% for child in children %}
+        Task <a href="/submit/status/{{ child.0 }}/">#{{ child.0 }}: {{ child.1 }}</a><br/>
+    {% endfor %}
+{% endif %}
 <hr />
 {% if analysis.info.category != "pcap" %}
 {% if analysis.info.category == "file" and analysis.target %}
@@ -7,7 +14,7 @@
     {% include "analysis/overview/_url.html" %}
 {% endif %}
 {% endif %}
-<hr />
+<hr/>
 {% include "analysis/overview/_signatures.html" %}
 {% if analysis.info.category != "pcap" %}
 {% if analysis.usage %}

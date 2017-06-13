@@ -262,6 +262,10 @@ class SubmitCAPE(Report):
             self.task_options=','.join(self.task_options_stack)            
             
         if package:
+            self.task_custom="Parent_Task_ID:%s" % report["info"]["id"]
+            if report["info"].has_key("custom") and report["info"]["custom"]:
+                self.task_custom = "%s Parent_Custom:%s" % (self.task_custom,report["info"]["custom"])
+
             task_id = db.add_path(file_path=self.task["target"],
                                     package=package,
                                     timeout=self.task["timeout"],
@@ -272,7 +276,8 @@ class SubmitCAPE(Report):
                                     memory=self.task["memory"],
                                     enforce_timeout=self.task["enforce_timeout"],
                                     clock=None,
-                                    tags=None)
+                                    tags=None,
+                                    parent_id=int(report["info"]["id"]))
             if task_id:
                 log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(self.task["target"], package, task_id))
             else:
@@ -281,6 +286,11 @@ class SubmitCAPE(Report):
         else: # nothing submitted, only 'dumpers' left
             if parent_package == "Extraction" or parent_package == "Injection" or parent_package == "Compression":
                 return            
+
+            self.task_custom="Parent_Task_ID:%s" % report["info"]["id"]
+            if report["info"].has_key("custom") and report["info"]["custom"]:
+                self.task_custom = "%s Parent_Custom:%s" % (self.task_custom,report["info"]["custom"])
+
             for dumper in detections:
                 task_id = db.add_path(file_path=self.task["target"],
                                 package=dumper,
@@ -292,7 +302,8 @@ class SubmitCAPE(Report):
                                 memory=self.task["memory"],
                                 enforce_timeout=self.task["enforce_timeout"],
                                 clock=None,
-                                tags=None)
+                                tags=None,
+                                parent_id=int(report["info"]["id"]))
                 if task_id:
                     log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(self.task["target"], dumper, task_id))
                 else:
