@@ -6,7 +6,7 @@ CAPE can detect a number of malware techniques or behaviours, as well as specifi
 
 This detection then triggers a second run with a specific package, in order to extract the malware payload and possibly its configuration, for further analysis.
 
-CAPE works by controlling malware via a bespoke debugger and API hooks. Detection to trigger a CAPE package can be based from on 'Cuckoo' (API) or Yara signatures. The debugger uses Yara signatures or API hooks to allow breakpoints to be set on individual instructions, memory regions or function calls. Once a region of interest is reached, it can be manipulated and dumped for processing and analysis, and possibly configuration parsing.
+CAPE works by controlling malware via a bespoke debugger and API hooks. Detection to trigger a CAPE package can be based on 'Cuckoo' (API) or Yara signatures. The debugger uses Yara signatures or API hooks to allow breakpoints to be set on individual instructions, memory regions or function calls. Once a region of interest is reached, it can be manipulated and dumped for processing and analysis, and possibly configuration parsing.
 
 The techniques or behaviours that CAPE detects and has packages for include:
     - Process injection
