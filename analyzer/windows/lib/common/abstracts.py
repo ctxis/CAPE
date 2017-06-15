@@ -193,10 +193,10 @@ class Package(object):
         all running processes.
         """
         # Process dumping is now handled in-process (CAPE)
-        #if self.options.get("procmemdump"):
-        #    for pid in self.pids:
-        #        p = Process(pid=pid)
-        #        p.dump_memory()
+        if self.options.get("procmemdump"):
+            for pid in self.pids:
+                p = Process(pid=pid)
+                p.dump_memory()
         
         return True
 

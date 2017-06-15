@@ -96,15 +96,20 @@ def index(request):
                 options += ","
             options += "tor=yes"
 
-        if request.POST.get("process_memory"):
+        if request.POST.get("process_dump"):
             if options:
                 options += ","
-            options += "procmemdump=0"
+            options += "procdump=0"
         else:
             if options:
                 options += ","
-            options += "procmemdump=1"
+            options += "procdump=1"
         
+        if request.POST.get("process_memory"):
+            if options:
+                options += ","
+            options += "procmemdump=yes"
+
         if request.POST.get("import_reconstruction"):
             if options:
                 options += ","

@@ -603,10 +603,12 @@ class PipeHandler(Thread):
                         if event_handle:
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
-                            # Process dumping is now handled in-process (CAPE)
-                            #if self.options.get("procmemdump"):
-                            #    p = Process(pid=process_id)
-                            #    p.dump_memory()
+                            # CAPE replaces this with its own process dumps,
+                            # with 'procmemory' processing module off, and
+                            # 'procdump' enabled instead.
+                            if self.options.get("procmemdump"):
+                                p = Process(pid=process_id)
+                                p.dump_memory()
                             dump_files()
                     PROCESS_LOCK.release()
                 # Handle case of malware terminating a process -- notify the target
@@ -624,9 +626,9 @@ class PipeHandler(Thread):
                         else:
                             log.info("Notified of termination of process with pid %u.", process_id)
                             # dump the memory of exiting processes
-                            #if self.options.get("procmemdump"):
-                            #    p = Process(pid=process_id)
-                            #    p.dump_memory()
+                            if self.options.get("procmemdump"):
+                                p = Process(pid=process_id)
+                                p.dump_memory()
                             # make sure process is aware of the termination
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)

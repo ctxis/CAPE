@@ -621,8 +621,8 @@ class Process:
                 if optname in cfgoptions:
                     config.write("{0}={1}\n".format(optname, cfgoptions[optname]))
 
-            if "procmemdump" in cfgoptions:
-                config.write("procmemdump={0}\n".format(cfgoptions["procmemdump"]))
+            if "procdump" in cfgoptions:
+                config.write("procdump={0}\n".format(cfgoptions["procdump"]))
             if "import_reconstruction" in cfgoptions:
                 config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
             if "CAPE_var1" in cfgoptions:

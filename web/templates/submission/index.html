@@ -307,10 +307,15 @@ $(document).ready( function() {
                                 <label for="form_custom">Custom</label>
                                 <input type="text" class="form-control" id="form_custom" name="custom" />
                             </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="process_dump" /> Disable dump of all processes
+                                </label>
+                            </div>
                             {% if config.procmemory %}
                             <div class="checkbox">
                                 <label>
-                                    <input type="checkbox" name="process_memory" /> Disable dump of all processes
+                                    <input type="checkbox" name="process_memory" /> Cuckoo process memory dump <span class="text-muted"><small>(the procmemory processing module from spender-sandbox)</small></span>
                                 </label>
                             </div>
                             {% endif %}
