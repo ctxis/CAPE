@@ -222,6 +222,8 @@ class CAPE(Processing):
                     for key, value in plugx_config.items():
                         cape_config["cape_config"].update({key: [value]})
                     cape_name = "PlugX"
+                else:
+                    log.error("CAPE: PlugX config parsing failure - size many not be handled.")
                 append_file = False
             if file_info["cape_type_code"] == PLUGX_PAYLOAD:
                 file_info["cape_type"] = "PlugX Payload"

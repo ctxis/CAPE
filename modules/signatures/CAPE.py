@@ -341,7 +341,6 @@ class CAPE_PlugX(Signature):
         Signature.__init__(self, *args, **kwargs)
         self.compressed_binary = False
         self.config_copy = False
-        self.plugx = False
 
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
@@ -371,39 +370,4 @@ class CAPE_PlugX(Signature):
 
     def on_complete(self):
         if self.config_copy == True and self.compressed_binary == True:
-            self.plugx = True
             return True
-
-class CAPE_PlugX_fuzzy(Signature):
-    name = "PlugX fuzzy"
-    description = "CAPE detection: PlugX (fuzzy match)"
-    severity = 1
-    categories = ["chinese", "malware"]
-    families = ["plugx"]
-    authors = ["kevoreilly"]
-    minimum = "1.3"
-    evented = True
-
-    filter_apinames = set(["RtlDecompressBuffer", "memcpy"])
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.compressed_binary = False
-        self.config_copy = False
-        self.plugx = False
-
-    def on_call(self, call, process):
-        if call["api"] == "RtlDecompressBuffer":
-            buf = self.get_raw_argument(call, "UncompressedBuffer")
-            dos_header = buf[:64]
-            if struct.unpack("<H", dos_header[0:2])[0] == IMAGE_DOS_SIGNATURE:
-                self.compressed_binary = True
-            elif struct.unpack("<H", dos_header[0:2])[0] == PLUGX_SIGNATURE:
-                self.plugx = True
-
-    def on_complete(self):
-        if self.config_copy == True and self.compressed_binary == True:
-            self.plugx = True
-        if self.plugx == True:
-            return True
-            

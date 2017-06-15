@@ -28,6 +28,7 @@ docs/book/src/_build/
 # Ignore Django secret_key
 web/web/secret_key.py
 
+cuckoo.v11.suo
 cuckoo.v12.suo
 
 # Ignore yara rules

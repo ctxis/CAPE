@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 cape_package_list = [
         "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
         "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Injection", "Injection_dll", "Injection_doc", 
-        "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
+        "Injection_pdf", "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
         "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
     ];
 
@@ -93,10 +93,6 @@ class SubmitCAPE(Report):
             return
             
         parent_package = report["info"].get("package")
-        if parent_package in cape_package_list:
-            # we only want to trigger detections from 'straight' runs, behavioural packages or unpackers
-            if parent_package != "Extraction" and parent_package != "Injection" and parent_package != "Compression" and parent_package != "UPX":
-                return
             
         ##### Initial static hits from CAPE's yara signatures
         #####
@@ -141,6 +137,9 @@ class SubmitCAPE(Report):
                             continue
                         if parent_package=='zip':
                             detections.add('Injection_zip')    
+                            continue
+                        if parent_package=='pdf':
+                            detections.add('Injection_pdf')    
                             continue
                         detections.add('Injection')
                 
@@ -205,10 +204,6 @@ class SubmitCAPE(Report):
                             continue
                         detections.add('PlugX_fuzzy')    
                                             
-                elif entry["name"] == "Derusbi":
-                    if report["info"].has_key("package"):
-                        detections.add('Derusbi')
-                    
                 elif entry["name"] == "EvilGrab":
                     if report["info"].has_key("package"):
                         detections.add('EvilGrab')
@@ -241,9 +236,6 @@ class SubmitCAPE(Report):
             package = 'PlugX_doc'
         elif 'PlugX_dll' in detections:
             package = 'PlugX_dll'
-            
-        if 'Derusbi' in detections:
-            package = 'Derusbi'	
             
         if 'EvilGrab' in detections:
             package = 'EvilGrab'	
@@ -284,7 +276,7 @@ class SubmitCAPE(Report):
                 log.warn("Error adding CAPE task to database: {0}".format(package))
             
         else: # nothing submitted, only 'dumpers' left
-            if parent_package == "Extraction" or parent_package == "Injection" or parent_package == "Compression":
+            if parent_package in cape_package_list:
                 return            
 
             self.task_custom="Parent_Task_ID:%s" % report["info"]["id"]
