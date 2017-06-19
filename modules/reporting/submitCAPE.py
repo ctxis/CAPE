@@ -127,7 +127,7 @@ class SubmitCAPE(Report):
         #####
         if "signatures" in results:
             for entry in results["signatures"]:
-                if entry["name"] == "InjectionCreateRemoteThread" or entry["name"] == "InjectionProcessHollowing" or entry["name"] == "InjectionSetWindowLong":
+                if entry["name"] == "InjectionCreateRemoteThread" or entry["name"] == "InjectionProcessHollowing" or entry["name"] == "InjectionSetWindowLong" or entry["name"] == "InjectionInterProcess":
                     if report["info"].has_key("package"):
                         if parent_package=='doc':
                             detections.add('Injection_doc')    

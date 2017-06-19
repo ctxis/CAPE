@@ -292,6 +292,34 @@ class CAPE_InjectionSetWindowLong(Signature):
             if self.sharedmap == True and self.windowfound == True:
                 return True
                 
+class CAPE_Injection(Signature):
+    name = "InterProcessInjection"
+    description = "CAPE detection: Injection (inter-process)"
+    severity = 1
+    categories = ["injection"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.lastprocess = None
+
+    filter_categories = set(["process"])
+
+    def on_call(self, call, process):
+        if process is not self.lastprocess:
+            self.process_handles = set()
+            self.lastprocess = process
+
+        if call["api"] == "CreateProcessInternalW":
+            phandle = self.get_argument(call, "ProcessHandle")
+            pid = self.get_argument(call, "ProcessId")
+            self.process_handles.add(phandle)
+        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64" or call["api"] == "WriteProcessMemory" or call["api"] == "NtMapViewOfSection"):
+            if self.get_argument(call, "ProcessHandle") in self.process_handles:
+                return True
+      
 class CAPE_EvilGrab(Signature):
     name = "EvilGrab"
     description = "CAPE detection: EvilGrab"
