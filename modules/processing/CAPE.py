@@ -14,6 +14,7 @@
     
 import sys
 import os
+import json
 import binascii
 import logging
 try:
@@ -61,6 +62,8 @@ PLUGX_CONFIG            = 0x11
 EVILGRAB_PAYLOAD        = 0x14
 EVILGRAB_DATA           = 0x15
 SEDRECO_DATA            = 0x20
+CERBER_CONFIG           = 0x30
+CERBER_PAYLOAD          = 0x31
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -303,6 +306,36 @@ class CAPE(Processing):
                 if ConfigData:
                     cape_config["cape_config"].update({ConfigItem: [ConfigData]}) 
                 append_file = False
+            # Cerber
+            if file_info["cape_type_code"] == CERBER_CONFIG:
+                file_info["cape_type"] = "Cerber Config"
+                cape_config["cape_type"] = "Cerber Config"
+                cape_name = "Cerber"
+                if not "cape_config" in cape_config:
+                    cape_config["cape_config"] = {}
+                ConfigItem = "JSON Data"
+                parsed = json.loads(filedata.rstrip(b'\0'))
+                ConfigData = json.dumps(parsed, indent=4, sort_keys=True)
+                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                append_file = True
+            if file_info["cape_type_code"] == CERBER_PAYLOAD:
+                file_info["cape_type"] = "Cerber Payload"
+                cape_config["cape_type"] = "Cerber Payload"
+                cape_name = "Cerber"
+                type_strings = file_info["type"].split()
+                if type_strings[0] == ("PE32+"):
+                    file_info["cape_type"] += ": 64-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                if type_strings[0] == ("PE32"):
+                    file_info["cape_type"] += ": 32-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                append_file = True
             # UPX
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"

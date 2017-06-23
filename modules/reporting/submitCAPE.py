@@ -31,7 +31,7 @@ from lib.cuckoo.core.database import Database
 log = logging.getLogger(__name__)
 
 cape_package_list = [
-        "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
+        "Cerber", "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
         "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Injection", "Injection_dll", "Injection_doc", 
         "Injection_pdf", "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
         "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
@@ -60,8 +60,8 @@ class SubmitCAPE(Report):
                 self.task_options_stack.append("CAPE_var3={0}".format(encrypt64_1))
             detections.add('Sedreco')
             
-        #if cape_yara["name"] == "EvilGrab":
-        #    detections.add('EvilGrab')                            
+        if cape_yara["name"] == "Cerber":
+            detections.add('Cerber')                            
 
         #if cape_yara["name"] == "Dridex":
         #    crypt_32_1 = cape_yara["addresses"].get("crypt_32_v1")
@@ -246,6 +246,9 @@ class SubmitCAPE(Report):
             else:
                 package = 'Sedreco'
             
+        if 'Cerber' in detections:
+            package = 'Cerber'	
+            
         self.task_options = self.task["options"]
         # we want to switch off automatic process dumps in CAPE submissions
         if self.task_options and 'procdump=1' in self.task_options:
@@ -253,7 +256,7 @@ class SubmitCAPE(Report):
         if self.task_options_stack:
             self.task_options=','.join(self.task_options_stack)            
             
-        if package:
+        if package and package != parent_package:
             self.task_custom="Parent_Task_ID:%s" % report["info"]["id"]
             if report["info"].has_key("custom") and report["info"]["custom"]:
                 self.task_custom = "%s Parent_Custom:%s" % (self.task_custom,report["info"]["custom"])
