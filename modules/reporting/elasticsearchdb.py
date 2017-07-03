@@ -21,7 +21,7 @@ logging.getLogger("elasticsearch").setLevel(logging.WARNING)
 
 class ElasticsearchDB(Report):
     """Stores report in Elastic Search."""
-    order = 9998
+    order = 9997
 
     def connect(self):
         """Connects to Elasticsearch database, loads options and set connectors.

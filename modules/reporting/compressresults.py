@@ -23,7 +23,7 @@ class CompressResults(Report):
         saving into MongoDB. This helps with the restriction 
         of MongoDB document size of 16MB.
     """
-    order = 9997
+    order = 9998
     # the order will change here when the order of
     # elastic & mongo python files order changes
 
