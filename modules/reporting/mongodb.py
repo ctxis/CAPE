@@ -156,7 +156,7 @@ class MongoDB(Report):
                 if entry["name"] == "office_martian_children":
                     report["f_mlist_cnt"] = len(entry["data"])
 
-        #Other info we want Quick access to from the web UI
+        # Other info we want quick access to from the web UI
         if results.has_key("virustotal") and results["virustotal"] and results["virustotal"].has_key("positives") and results["virustotal"].has_key("total"):
             report["virustotal_summary"] = "%s/%s" % (results["virustotal"]["positives"],results["virustotal"]["total"])
         if results.has_key("suricata") and results["suricata"]:
@@ -183,31 +183,38 @@ class MongoDB(Report):
             self.db.analysis.save(report)
         except InvalidDocument as e:
             parent_key, psize = self.debug_dict_size(report)[0]
-            child_key, csize = self.debug_dict_size(report[parent_key])[0]
             if not self.options.get("fix_large_docs", False):
                 # Just log the error and problem keys
                 log.error(str(e))
                 log.error("Largest parent key: %s (%d MB)" % (parent_key, int(psize) / 1048576))
-                log.error("Largest child key: %s (%d MB)" % (child_key, int(csize) / 1048576))
             else:
                 # Delete the problem keys and check for more
                 error_saved = True
                 while error_saved:
-                    log.warn("results['%s']['%s'] deleted due to >16MB size (%dMB)" %
-                             (parent_key, child_key, int(psize) / 1048576))
-
                     if type(report) == list:
                         report = report[0]
 
-                    del report[parent_key][child_key]
                     try:
-                        self.db.analysis.save(report)
+                        if type(report[parent_key]) == list:
+                            for j, parent_dict in enumerate(report[parent_key]):
+                                child_key, csize = self.debug_dict_size(parent_dict)[0]
+                                del report[parent_key][j][child_key]
+                                log.warn("results['%s']['%s'] deleted due to >16MB" % (parent_key, child_key))
+                        else:
+                            child_key, csize = self.debug_dict_size(report[parent_key])
+                            del report[parent_key][child_key]
+                            log.warn("results['%s']['%s'] deleted due to >16MB" % (parent_key, child_key))
+
+                        try:
+                            self.db.analysis.save(report)
+                            error_saved = False
+                        except InvalidDocument as e:
+                            parent_key, psize = self.debug_dict_size(report)[0]
+                            log.error(str(e))
+                            log.error("Largest parent key: %s (%d MB)" % (parent_key, int(psize) / 1048576))
+                    except Exception as e:
+                        log.error("Failed to delete child key: %s" % str(e))
                         error_saved = False
-                    except InvalidDocument as e:
-                        parent_key, psize = self.debug_dict_size(report)[0]
-                        child_key, csize = self.debug_dict_size(report[parent_key])[0]
-                        log.error(str(e))
-                        log.error("Largest parent key: %s (%d MB)" % (parent_key, int(psize) / 1048576))
-                        log.error("Largest child key: %s (%d MB)" % (child_key, int(csize) / 1048576))
 
         self.conn.close()
+    

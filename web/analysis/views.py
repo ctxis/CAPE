@@ -756,7 +756,14 @@ def report(request, task_id):
         session = db.Session()
         children = [c for c in session.query(Task.id,Task.package).filter(Task.parent_id == task_id)]
 
-    # If compressed, decompress behaviour analysis (enhanced & summary)
+    # If compressed, decompress procdump, behaviour analysis (enhanced & summary)
+    if "procdump" in report:
+        try:
+            report["procdump"] = json.loads(zlib.decompress(report["procdump"]))
+        except:
+            # In case compressresults processing module is not enabled
+            pass
+    
     if "enhanced" in report["behavior"]:
         try:
             report["behavior"]["enhanced"] = json.loads(zlib.decompress(report["behavior"]["enhanced"]))

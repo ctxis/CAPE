@@ -35,6 +35,12 @@ class CompressResults(Report):
             compressed_CAPE = zlib.compress(cape_json)
             results["CAPE"] = Binary(compressed_CAPE)
 
+        # compress procdump
+        if "procdump" in results:
+            procdump_json = json.dumps(results["procdump"]).encode('utf8')
+            compressed_procdump = zlib.compress(procdump_json)
+            results["procdump"] = Binary(compressed_procdump)
+
         # compress behaviour analysis (enhanced & summary)
         if "enhanced" in results["behavior"]:
             compressed_behavior_enhanced = zlib.compress(JSONEncoder().encode(results["behavior"]["enhanced"]).encode('utf8'))
