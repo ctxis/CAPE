@@ -144,4 +144,7 @@ def logo():
     print(" www.cuckoosandbox.org")
     print(" Copyright (c) 2010-2015")
     print
+    print(" CAPE: Config and Payload Extraction")
+    print(" github.com/ctxis/CAPE")
+    print
     sys.stdout.flush()

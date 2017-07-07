@@ -761,7 +761,6 @@ def report(request, task_id):
         try:
             report["procdump"] = json.loads(zlib.decompress(report["procdump"]))
         except:
-            # In case compressresults processing module is not enabled
             pass
     
     if "enhanced" in report["behavior"]:
