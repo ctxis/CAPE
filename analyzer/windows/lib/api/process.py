@@ -620,6 +620,7 @@ class Process:
             for optname in simple_optnames:
                 if optname in cfgoptions:
                     config.write("{0}={1}\n".format(optname, cfgoptions[optname]))
+                    log.info("Option '%s' with value '%s' sent to monitor", optname, cfgoptions[optname])
 
             if "procdump" in cfgoptions:
                 config.write("procdump={0}\n".format(cfgoptions["procdump"]))
@@ -725,35 +726,40 @@ class Process:
             config.write("file-of-interest={0}\n".format(interest))
             config.write("shutdown-mutex={0}\n".format(SHUTDOWN_MUTEX))
             config.write("terminate-event={0}{1}\n".format(TERMINATE_EVENT, self.pid))
-            if nosleepskip:
+            
+            if nosleepskip or ("force-sleepskip" not in cfgoptions and len(interest) > 2 and interest[1] != ':' and interest[0] != '\\' and Process.process_num <= 2):
                 config.write("force-sleepskip=0\n")
-            elif "force-sleepskip" in cfgoptions:
-                config.write("force-sleepskip={0}\n".format(cfgoptions["force-sleepskip"]))
-            if "full-logs" in cfgoptions:
-                config.write("full-logs={0}\n".format(cfgoptions["full-logs"]))
-            if "no-stealth" in cfgoptions:
-                config.write("no-stealth={0}\n".format(cfgoptions["no-stealth"]))
-            if "buffer-max" in cfgoptions:
-                config.write("buffer-max={0}\n".format(cfgoptions["buffer-max"]))
-            if "large-buffer-max" in cfgoptions:
-                config.write("large-buffer-max={0}\n".format(cfgoptions["large-buffer-max"]))
-            if "serial" in cfgoptions:
-                config.write("serial={0}\n".format(cfgoptions["serial"]))
-            if "sysvol_ctimelow" in cfgoptions:
-                config.write("sysvol_ctimelow={0}\n".format(cfgoptions["sysvol_ctimelow"]))
-            if "sysvol_ctimehigh" in cfgoptions:
-                config.write("sysvol_ctimehigh={0}\n".format(cfgoptions["sysvol_ctimehigh"]))
-            if "sys32_ctimelow" in cfgoptions:
-                config.write("sys32_ctimelow={0}\n".format(cfgoptions["sys32_ctimelow"]))
-            if "sys32_ctimehigh" in cfgoptions:
-                config.write("sys32_ctimehigh={0}\n".format(cfgoptions["sys32_ctimehigh"]))
-            if "norefer" not in cfgoptions:
-                config.write("referrer={0}\n".format(get_referrer_url(interest)))
-            if firstproc:
-                Process.first_process = False
 
-            if "procmemdump" in cfgoptions:
-                config.write("procmemdump={0}\n".format(cfgoptions["procmemdump"]))
+            if "norefer" not in cfgoptions and "referrer" not in cfgoptions:
+                config.write("referrer={0}\n".format(get_referrer_url(interest)))
+
+            simple_optnames = [
+                "force-sleepskip",
+                "full-logs",
+                "force-flush",
+                "no-stealth",
+                "buffer-max",
+                "large-buffer-max",
+                "serial",
+                "sysvol_ctimelow",
+                "sysvol_ctimehigh",
+                "sys32_ctimelow",
+                "sys32_ctimehigh",
+                "debug",
+                "disable_hook_content",
+                "hook-type",
+                "exclude-apis",
+                "exclude-dlls",
+                "referrer",
+                ]
+            
+            for optname in simple_optnames:
+                if optname in cfgoptions:
+                    config.write("{0}={1}\n".format(optname, cfgoptions[optname]))
+                    log.info("Option '%s' with value '%s' sent to monitor", optname, cfgoptions[optname])
+
+            if "procdump" in cfgoptions:
+                config.write("procdump={0}\n".format(cfgoptions["procdump"]))
             if "import_reconstruction" in cfgoptions:
                 config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
             if "CAPE_var1" in cfgoptions:
