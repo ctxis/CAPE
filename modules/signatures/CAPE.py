@@ -98,7 +98,7 @@ class CAPE_Extraction(Signature):
 
     def on_call(self, call, process):
     
-        if process["process_name"] == "WINWORD.EXE":
+        if process["process_name"] == "WINWORD.EXE" or process["process_name"] == "EXCEL.EXE" or process["process_name"] == "POWERPNT.EXE":
             return False
         if call["api"] == "NtAllocateVirtualMemory":
             protection = int(self.get_raw_argument(call, "Protection"), 0)
