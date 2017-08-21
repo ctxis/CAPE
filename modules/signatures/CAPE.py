@@ -293,7 +293,7 @@ class CAPE_InjectionSetWindowLong(Signature):
                 return True
                 
 class CAPE_Injection(Signature):
-    name = "InterProcessInjection"
+    name = "InjectionInterProcess"
     description = "CAPE detection: Injection (inter-process)"
     severity = 1
     categories = ["injection"]
