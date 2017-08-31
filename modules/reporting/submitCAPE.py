@@ -31,7 +31,7 @@ from lib.cuckoo.core.database import Database
 log = logging.getLogger(__name__)
 
 cape_package_list = [
-        "Cerber", "Compression", "Compression_dll", "Compression_doc", "EvilGrab", "Extraction", 
+        "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "EvilGrab", "Extraction", 
         "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Injection", "Injection_dll", "Injection_doc", 
         "Injection_pdf", "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
         "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
@@ -164,6 +164,9 @@ class SubmitCAPE(Report):
                 
                 elif entry["name"] == "Compression":
                     if report["info"].has_key("package"):
+                        if parent_package=='zip':
+                            detections.add('Compression_zip')    
+                            continue                            
                         if parent_package=='dll' or parent_package=='regsvr':
                             detections.add('Compression_dll')    
                             continue                            
