@@ -437,7 +437,7 @@ class CAPE(Processing):
                 malwareconfig_loaded = True
                 log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
             except ImportError:
-                #log.info("CAPE: No malwareconfig.com parser for %s", cape_name)
+                log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
                 malwareconfig_loaded = False
             
             # Get config data
