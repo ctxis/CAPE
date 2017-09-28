@@ -1404,3 +1404,52 @@ def comments(request, task_id):
         return render(request, "error.html",
                                   {"error": "Invalid Method"})
 
+@conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
+def configdownload(request, task_id, cape_name):
+    db = Database()
+    cd = "text/plain"
+    task = db.view_task(task_id)
+    if not task:
+        return render(request, "error.html", {"error": "Task ID {} does not existNone".format(task_id)})
+
+    rtmp = None
+    if enabledconf["mongodb"]:
+        rtmp = results_db.analysis.find_one({"info.id": int(task_id)}, sort=[("_id", pymongo.DESCENDING)])
+    if es_as_db:
+        rtmp = es.search(index=fullidx, doc_type="analysis", q="info.id: \"%s\"" % str(task_id))["hits"]["hits"]
+        if len(rtmp) > 1:
+            rtmp = rtmp[-1]["_source"]
+        elif len(rtmp) == 1:
+            rtmp = rtmp[0]["_source"]
+        else:
+            pass
+
+    if rtmp:
+        if "CAPE" in rtmp:
+            try:
+                rtmp["CAPE"] = json.loads(zlib.decompress(rtmp["CAPE"]))
+            except:
+                # In case compress results processing module is not enabled
+                pass
+            for cape in rtmp["CAPE"]:
+                if "cape_name" in cape and cape["cape_name"] == cape_name:
+                    filename = cape['cape_name'] + "_config.txt"
+                    tempdir = tempfile.mkdtemp(prefix="capeconfig_", dir=settings.TEMP_PATH)
+                    filepath = os.path.join(settings.TEMP_PATH, tempdir, filename)
+                    try:
+                        with open(filepath, 'w') as outfile:
+                            cape_conf = cape["cape_config"]
+                            for key in cape_conf:
+                                outfile.write("{}\t{}\n".format(key, cape_conf[key]))
+
+                        resp = StreamingHttpResponse(FileWrapper(open(filepath), 8192), content_type=cd)
+                        resp["Content-Length"] = os.path.getsize(filepath)
+                        resp["Content-Disposition"] = "attachment; filename=" + filename
+                        return resp
+                    except Exception as e:
+                        return render(request, "error.html", {"error": "{}".format(e)})
+        else:
+            return render(request, "error.html", {"error": "CAPE for task {} does not exist.".format(task_id)})
+    else:
+        return render(request, "error.html",
+                      {"error": "Could not retrieve results for task {} from db.".format(task_id)})
