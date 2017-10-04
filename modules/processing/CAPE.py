@@ -415,7 +415,7 @@ class CAPE(Processing):
             # Attempt to import a parser for the yara hit
             # DC3-MWCP
             try:
-                mwcp = malwareconfigreporter.malwareconfigreporter()
+                mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
                 kwargs = {}
                 mwcp.run_parser(cape_name, data=filedata, **kwargs)
                 if mwcp.errors == []:
@@ -429,16 +429,18 @@ class CAPE(Processing):
                     mwcp_loaded = False
             except ImportError:
                 mwcp_loaded = False
+                
             # malwareconfig
-            try:
-                malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
-                file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
-                module = imp.load_module(cape_name, file, pathname, description)
-                malwareconfig_loaded = True
-                log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
-            except ImportError:
-                log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
-                malwareconfig_loaded = False
+            if mwcp_loaded == False:
+                try:
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                    file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
+                    module = imp.load_module(cape_name, file, pathname, description)
+                    malwareconfig_loaded = True
+                    log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
+                except ImportError:
+                    log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
+                    malwareconfig_loaded = False
             
             # Get config data
             if mwcp_loaded:
