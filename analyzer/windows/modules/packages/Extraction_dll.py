@@ -45,5 +45,5 @@ class Extraction_dll(Package):
             shutil.copy(rundll32, newname)
             rundll32 = newname
 
-        return self.debug(rundll32, args, path)
+        return self.execute(rundll32, args, path)
         

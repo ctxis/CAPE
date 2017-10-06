@@ -33,4 +33,4 @@ class Extraction(Package):
             os.rename(path, new_path)
             path = new_path
         
-        return self.debug(path, arguments, path)
+        return self.execute(path, arguments, path)
