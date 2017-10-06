@@ -130,6 +130,6 @@ class Extraction_zip(Package):
         if file_name.lower().endswith(".lnk"):
             cmd_path = self.get_path("cmd.exe")
             cmd_args = "/c start /wait \"\" \"{0}\"".format(file_path)
-            return self.debug(cmd_path, cmd_args, file_path)
+            return self.execute(cmd_path, cmd_args, file_path)
         else:
-            return self.debug(file_path, self.options.get("arguments"), file_path)
+            return self.execute(file_path, self.options.get("arguments"), file_path)

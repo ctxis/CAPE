@@ -38,4 +38,4 @@ class Extraction_Regsvr(Package):
         if arguments:
             args += " {0}".format(arguments)
 
-        return self.debug(regsvr32, args, path)
+        return self.execute(regsvr32, args, path)
