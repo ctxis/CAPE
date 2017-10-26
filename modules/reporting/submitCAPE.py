@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "EvilGrab", "Extraction", 
-        "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Injection", "Injection_dll", "Injection_doc", 
+        "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll", "Injection_doc", 
         "Injection_pdf", "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
         "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
     ];
@@ -153,6 +153,9 @@ class SubmitCAPE(Report):
                             continue
                         if parent_package=='zip':
                             detections.add('Extraction_zip')    
+                            continue
+                        if parent_package=='ps1':
+                            detections.add('Extraction_ps1')    
                             continue
                         if parent_package=='dll':
                             detections.add('Extraction_dll')    
