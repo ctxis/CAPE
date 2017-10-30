@@ -356,10 +356,8 @@ class CAPE(Processing):
         # Process CAPE Yara hits
         for hit in file_info["cape_yara"]:
             try:
-                file_info["cape_type"] = hit["meta"]["cape_type"]                      
-                if "payload" in file_info["cape_type"].lower():
-                    cape_name = hit["name"]
-                elif "config" in file_info["cape_type"].lower():
+                if "payload" in hit["meta"]["cape_type"].lower() or "config" in hit["meta"]["cape_type"].lower():
+                    file_info["cape_type"] = hit["meta"]["cape_type"]                      
                     cape_name = hit["name"]
             except:
                 pass
@@ -367,18 +365,19 @@ class CAPE(Processing):
                 cape_name = hit["name"]
                 file_info["cape_type"] = cape_name + " Payload"
             type_strings = file_info["type"].split()
-            if type_strings[0] == ("PE32+"):
-                file_info["cape_type"] += ": 64-bit "
-                if type_strings[2] == ("(DLL)"):
-                    file_info["cape_type"] += "DLL"
-                else:
-                    file_info["cape_type"] += "executable"
-            if type_strings[0] == ("PE32"):
-                file_info["cape_type"] += ": 32-bit "
-                if type_strings[2] == ("(DLL)"):
-                    file_info["cape_type"] += "DLL"
-                else:
-                    file_info["cape_type"] += "executable"  
+            if "-bit" not in file_info["cape_type"]:
+                if type_strings[0] == ("PE32+"):
+                    file_info["cape_type"] += ": 64-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                if type_strings[0] == ("PE32"):
+                    file_info["cape_type"] += ": 32-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"  
             # UPX Check and unpack
             if cape_name == 'UPX':
                 log.info("CAPE: Found UPX Packed sample - attempting to unpack")
