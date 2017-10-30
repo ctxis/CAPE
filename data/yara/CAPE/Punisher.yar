@@ -1,4 +1,4 @@
-rule    
+rule Punisher
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
