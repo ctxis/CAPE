@@ -5,6 +5,7 @@ rule jRat
 		ref = "http://malwareconfig.com/stats/jRat"
 		maltype = "Remote Access Trojan"
 		filetype = "Java"
+        cape_type = "jRat Payload"
 
     strings:
         $meta = "META-INF"

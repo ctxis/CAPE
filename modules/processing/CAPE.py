@@ -355,10 +355,16 @@ class CAPE(Processing):
         
         # Process CAPE Yara hits
         for hit in file_info["cape_yara"]:
-            cape_name = hit["name"]
             try:
                 file_info["cape_type"] = hit["meta"]["cape_type"]                      
+                if "payload" in file_info["cape_type"].lower():
+                    cape_name = hit["name"]
+                elif "config" in file_info["cape_type"].lower():
+                    cape_name = hit["name"]
             except:
+                pass
+            if cape_name == '':
+                cape_name = hit["name"]
                 file_info["cape_type"] = cape_name + " Payload"
             type_strings = file_info["type"].split()
             if type_strings[0] == ("PE32+"):

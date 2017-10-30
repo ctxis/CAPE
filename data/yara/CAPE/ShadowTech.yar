@@ -5,6 +5,7 @@ rule ShadowTech
 		ref = "http://malwareconfig.com/stats/ShadowTech"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "ShadowTech Payload"
 
 	strings:
 		$a = "ShadowTech" nocase

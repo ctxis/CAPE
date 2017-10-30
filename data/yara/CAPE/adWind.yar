@@ -5,6 +5,7 @@ rule adWind
 		ref = "http://malwareconfig.com/stats/AAR"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "adWind Payload"
 
 	strings:
 		$meta = "META-INF"

@@ -5,6 +5,7 @@ rule NanoCore
         ref = "http://malwareconfig.com/stats/NanoCore"
         maltype = "Remote Access Trojan"
         filetype = "exe"
+        cape_type = "NanoCore Payload"
 
     strings:
         $a = "NanoCore"

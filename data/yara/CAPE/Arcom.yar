@@ -5,6 +5,7 @@ rule Arcom
 		ref = "http://malwareconfig.com/stats/Arcom"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Arcom Payload"
         
     strings:
         $a1 = "CVu3388fnek3W(3ij3fkp0930di"

@@ -5,6 +5,7 @@ rule Paradox
 		ref = "http://malwareconfig.com/stats/Paradox"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Paradox Payload"
 
 	strings:
 		$a = "ParadoxRAT"

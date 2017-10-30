@@ -5,6 +5,7 @@ rule NetWire
 		ref = "http://malwareconfig.com/stats/NetWire"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "NetWire Payload"
 		
     strings:
 
@@ -19,4 +20,3 @@ rule NetWire
     condition:
         all of them
 }
-

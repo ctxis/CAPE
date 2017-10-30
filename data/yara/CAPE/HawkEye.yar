@@ -5,6 +5,7 @@ rule HawkEye
 		ref = "http://malwareconfig.com/stats/HawkEye"
 		maltype = "KeyLogger"
 		filetype = "exe"
+        cape_type = "HawkEye Payload"
 
 	strings:
 		$key = "HawkEyeKeylogger" wide

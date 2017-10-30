@@ -5,6 +5,7 @@ rule Infinity
 		ref = "http://malwareconfig.com/stats/Infinity"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Infinity Payload"
 
 	strings:
 		$a = "CRYPTPROTECT_PROMPTSTRUCT"

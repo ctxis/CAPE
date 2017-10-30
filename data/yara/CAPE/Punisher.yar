@@ -1,10 +1,11 @@
-rule Punisher
+rule    
 {
 	meta:
 		author = " Kevin Breen <kevin@techanarchy.net>"
 		ref = "http://malwareconfig.com/stats/Punisher"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Punisher Payload"
 
 	strings:
 		$a = "abccba"

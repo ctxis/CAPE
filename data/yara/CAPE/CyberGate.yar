@@ -6,6 +6,7 @@ rule CyberGate
 		ref = "http://malwareconfig.com/stats/CyberGate"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "CyberGate Payload"
 
 	strings:
 		$string1 = {23 23 23 23 40 23 23 23 23 E8 EE E9 F9 23 23 23 23 40 23 23 23 23}

@@ -6,6 +6,7 @@ rule Bandook
 		ref = "http://malwareconfig.com/stats/bandook"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Bandook Payload"
         
     strings:
     		$a = "aaaaaa1|"

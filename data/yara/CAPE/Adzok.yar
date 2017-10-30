@@ -7,6 +7,7 @@ rule Adzok
 		ref = "http://malwareconfig.com/stats/Adzok"
 		maltype = "Remote Access Trojan"
 		filetype = "jar"
+        cape_type = "Adzok Payload"
 
 	strings:
 		$a1 = "config.xmlPK"

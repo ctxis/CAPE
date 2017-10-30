@@ -5,6 +5,7 @@ rule SpyGate
 		ref = "http://malwareconfig.com/stats/SpyGate"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "SpyGate Payload"
 
 	strings:
 		$split = "abccba"

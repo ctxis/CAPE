@@ -5,6 +5,7 @@ rule QRat
         ref = "http://malwareconfig.com"
         maltype = "Remote Access Trojan"
         filetype = "jar"
+        cape_type = "QRat Payload"
         
     strings:
         $a0 = "e-data"

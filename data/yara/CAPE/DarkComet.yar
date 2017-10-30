@@ -5,6 +5,7 @@ rule DarkComet
 		ref = "http://malwareconfig.com/stats/DarkComet"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "DarkComet Payload"
 
 	strings:
 		// Versions 2x

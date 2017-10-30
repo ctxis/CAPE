@@ -5,6 +5,7 @@ rule unrecom
 		ref = "http://malwareconfig.com/stats/AAR"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "unrecom Payload"
 
 	strings:
 		$meta = "META-INF"

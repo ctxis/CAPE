@@ -6,6 +6,7 @@ rule Vertex
 		ref = "http://malwareconfig.com/stats/Vertex"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Vertex Payload"
 
 	strings:
 		$string1 = "DEFPATH"

@@ -5,6 +5,7 @@ rule Sub7Nation
 		ref = "http://malwareconfig.com/stats/Sub7Nation"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Sub7Nation Payload"
 
 	strings:
 		$a = "EnableLUA /t REG_DWORD /d 0 /f"

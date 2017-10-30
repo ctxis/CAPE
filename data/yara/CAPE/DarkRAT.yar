@@ -5,6 +5,7 @@ rule DarkRAT
 		ref = "http://malwareconfig.com/stats/DarkRAT"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "DarkRAT Payload"
 
 	strings:
 		$a = "@1906dark1996coder@"

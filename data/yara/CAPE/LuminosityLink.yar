@@ -5,6 +5,7 @@ rule LuminosityLink
         ref = "http://malwareconfig.com/stats/LuminosityLink"
         maltype = "Remote Access Trojan"
         filetype = "exe"
+        cape_type = "LuminosityLink Payload"
 
     strings:
         $a = "SMARTLOGS" wide

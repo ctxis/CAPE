@@ -5,6 +5,7 @@ rule njRat
 		ref = "http://malwareconfig.com/stats/njRat"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "njRat Payload"
  
 	strings:
 

@@ -5,6 +5,7 @@ rule AlienSpy
         ref = "http://malwareconfig.com/stats/AlienSpy"
         maltype = "Remote Access Trojan"
         filetype = "jar"
+        cape_type = "AlienSpy Payload"
 
     strings:
         $PK = "PK"

@@ -5,6 +5,7 @@ rule Greame
 		ref = "http://malwareconfig.com/stats/Greame"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Greame Payload"
 		
 	strings:
     		$a = {23 23 23 23 40 23 23 23 23 E8 EE E9 F9 23 23 23 23 40 23 23 23 23}

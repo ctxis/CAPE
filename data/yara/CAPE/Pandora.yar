@@ -5,6 +5,7 @@ rule Pandora
 		ref = "http://malwareconfig.com/stats/Pandora"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Pandora Payload"
 
 	strings:
 		$a = "Can't get the Windows version"

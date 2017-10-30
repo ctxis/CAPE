@@ -5,6 +5,7 @@ rule Imminent
         ref = "http://malwareconfig.com/stats/Imminent"
         maltype = "Remote Access Trojan"
         filetype = "exe"
+        cape_type = "Imminent Payload"
 
     strings:
         $v1a = "DecodeProductKey"

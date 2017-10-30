@@ -5,6 +5,7 @@ rule LuxNet
 		ref = "http://malwareconfig.com/stats/LuxNet"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "LuxNet Payload"
 
 	strings:
 		$a = "GetHashCode"

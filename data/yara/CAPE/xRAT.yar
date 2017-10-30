@@ -5,6 +5,7 @@ rule xRAT
         ref = "http://malwareconfig.com/stats/xRat"
         maltype = "Remote Access Trojan"
         filetype = "exe"
+        cape_type = "xRAT Payload"
 
     strings:
         $v1a = "DecodeProductKey"

@@ -5,6 +5,7 @@ rule SmallNet
 		ref = "http://malwareconfig.com/stats/SmallNet"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "SmallNet Payload"
 		
 	strings:
 		$split1 = "!!<3SAFIA<3!!"

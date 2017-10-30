@@ -6,6 +6,7 @@ rule PredatorPain
 		ref = "http://malwareconfig.com/stats/PredatorPain"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "PredatorPain Payload"
 
 	strings:
 		$string1 = "holderwb.txt" wide

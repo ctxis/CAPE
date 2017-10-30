@@ -5,6 +5,7 @@ rule LostDoor
 		ref = "http://malwareconfig.com/stats/LostDoor"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "LostDoor Payload"
         
     strings:
     	$a0 = {0D 0A 2A 45 44 49 54 5F 53 45 52 56 45 52 2A 0D 0A}

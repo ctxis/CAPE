@@ -5,6 +5,7 @@ rule BlackNix
 		ref = "http://malwareconfig.com/stats/BlackNix"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "BlackNix Payload"
         
     strings:
 		$a1 = "SETTINGS" wide

@@ -5,6 +5,7 @@ rule JavaDropper
 	    ref = "http://malwareconfig.com/stats/AlienSpy"
 	    maltype = "Remote Access Trojan"
 	    filetype = "exe"
+        cape_type = "JavaDropper Payload"
 
     strings:
 	    $jar = "META-INF/MANIFEST.MF"

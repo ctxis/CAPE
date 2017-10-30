@@ -3,6 +3,8 @@ rule Sakula
     meta:
         description = "Sakula v1.0"
         author = "Airbus Defence and Space Cybersecurity CSIRT - Yoann Francou / NCC Group David Cannings"
+        cape_type = "Sakula Payload"
+        
     strings:
         $s1 = "%d_of_%d_for_%s_on_%s"
         $s2 = "/c ping 127.0.0.1 & del /q \"%s\""

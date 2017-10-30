@@ -5,6 +5,7 @@ rule Ap0calypse
 		ref = "http://malwareconfig.com/stats/Ap0calypse"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Ap0calypse Payload"
 
 	strings:
 		$a = "Ap0calypse"

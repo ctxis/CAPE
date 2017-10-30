@@ -5,6 +5,7 @@ rule BlueBanana
 		ref = "http://malwareconfig.com/stats/BlueBanana"
 		maltype = "Remote Access Trojan"
 		filetype = "Java"
+        cape_type = "BlueBanana Payload"
 
 	strings:
 		$meta = "META-INF"

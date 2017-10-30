@@ -5,6 +5,7 @@ rule Plasma
         ref = "http://malwareconfig.com/stats/Plasma"
         maltype = "Remote Access Trojan"
         filetype = "exe"
+        cape_type = "Plasma Payload"
 
     strings:
         $a = "Miner: Failed to Inject." wide

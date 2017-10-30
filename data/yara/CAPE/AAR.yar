@@ -5,7 +5,8 @@ rule AAR
 		ref = "http://malwareconfig.com/stats/AAR"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
-
+        cape_type = "AAR Payload"
+        
 	strings:
 		$a = "Hashtable"
 		$b = "get_IsDisposed"

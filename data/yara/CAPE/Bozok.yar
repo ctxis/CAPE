@@ -5,6 +5,7 @@ rule Bozok
 		ref = "http://malwareconfig.com/stats/Bozok"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "Bozok Payload"
 
 	strings:
 		$a = "getVer" nocase

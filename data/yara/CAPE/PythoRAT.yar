@@ -5,6 +5,7 @@ rule PythoRAT
 		ref = "http://malwareconfig.com/stats/PythoRAT"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "PythoRAT Payload"
 
 	strings:
 		$a = "TKeylogger"

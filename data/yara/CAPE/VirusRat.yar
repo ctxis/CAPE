@@ -5,6 +5,7 @@ rule VirusRat
 		ref = "http://malwareconfig.com/stats/VirusRat"
 		maltype = "Remote Access Trojan"
 		filetype = "exe"
+        cape_type = "VirusRat Payload"
 
 	strings:
 		$string0 = "virustotal"
