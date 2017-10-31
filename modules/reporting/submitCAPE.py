@@ -106,19 +106,19 @@ class SubmitCAPE(Report):
                     for entry in file["cape_yara"]:
                         self.process_cape_yara(entry, detections)
                         
-        if results["procdump"]:
+        if "procdump" in results:
             for file in results["procdump"]:
                 if "cape_yara" in file:
                     for entry in file["cape_yara"]:
                         self.process_cape_yara(entry, detections)
         
-        if results["CAPE"]:
+        if "CAPE" in results:
             for file in results["CAPE"]:
                 if "cape_yara" in file:
                     for entry in file["cape_yara"]:
                         self.process_cape_yara(entry, detections)
                             
-        if results["dropped"]:
+        if "dropped" in results:
             for file in results["dropped"]:
                 if "cape_yara" in file:
                     for entry in file["cape_yara"]:
