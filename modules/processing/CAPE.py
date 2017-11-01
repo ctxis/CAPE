@@ -110,8 +110,8 @@ def upx_harness(raw_data):
         sha256 = hash_file(hashlib.sha256, upxfile.name)
         newname = os.path.join(os.path.dirname(upxfile.name), sha256)
         os.rename(upxfile.name, newname)
-        log.info("CAPE: UPX - Statically unpacked binary %s.", sha256)
-        return sha256
+        log.info("CAPE: UPX - Statically unpacked binary %s.", upxfile.name)
+        return newname
     elif ret == 127:
         log.error("CAPE: Error - UPX not installed.")
     elif ret == 2:
@@ -121,50 +121,49 @@ def upx_harness(raw_data):
         
     os.unlink(upxfile.name)
     return
-
-def upx_unpack(file_data):
-    unpacked_file = upx_unpack(file_data)
-    if unpacked_file and os.path.exists(unpacked_file):
-        unpacked_yara = File(unpacked_file).get_yara(CAPE_YARA_RULEPATH)
-        for unpacked_hit in unpacked_yara:
-            unpacked_name = unpacked_hit["name"]
-            if unpacked_name == 'UPX':
-                # Failed to unpack
-                log.info("CAPE: Failed to unpack UPX")
-                os.unlink(unpacked_file)
-                break
-        if not os.path.exists(self.CAPE_path):
-            os.makedirs(self.CAPE_path)
-        newname = os.path.join(self.CAPE_path, os.path.basename(unpacked_file))
-        os.rename(unpacked_file, newname)
-        infofd = open(newname + "_info.txt", "a")
-        infofd.write(os.path.basename(unpacked_file) + "\n")
-        infofd.close()
-
-        # Recursive process of unpacked file
-        upx_extract = self.process_file(newname, CAPE_output, True)
-        if upx_extract["type"]:
-            upx_extract["cape_type"] = "UPX-extracted "
-            type_strings = upx_extract["type"].split()
-            if type_strings[0] == ("PE32+"):
-                upx_extract["cape_type"] += " 64-bit "
-                if type_strings[2] == ("(DLL)"):
-                    upx_extract["cape_type"] += "DLL"
-                else:
-                    upx_extract["cape_type"] += "executable"
-            if type_strings[0] == ("PE32"):
-                upx_extract["cape_type"] += " 32-bit "
-                if type_strings[2] == ("(DLL)"):
-                    upx_extract["cape_type"] += "DLL"
-                else:
-                    upx_extract["cape_type"] += "executable"  
-    
         
 class CAPE(Processing):
     """CAPE output file processing."""
 
     cape_config = {}
     
+    def upx_unpack(self, file_data, CAPE_output):
+        unpacked_file = upx_harness(file_data)
+        if unpacked_file and os.path.exists(unpacked_file):
+            unpacked_yara = File(unpacked_file).get_yara(CAPE_YARA_RULEPATH)
+            for unpacked_hit in unpacked_yara:
+                unpacked_name = unpacked_hit["name"]
+                if unpacked_name == 'UPX':
+                    # Failed to unpack
+                    log.info("CAPE: Failed to unpack UPX")
+                    os.unlink(unpacked_file)
+                    break
+            if not os.path.exists(self.CAPE_path):
+                os.makedirs(self.CAPE_path)
+            newname = os.path.join(self.CAPE_path, os.path.basename(unpacked_file))
+            os.rename(unpacked_file, newname)
+            infofd = open(newname + "_info.txt", "a")
+            infofd.write(os.path.basename(unpacked_file) + "\n")
+            infofd.close()
+
+            # Recursive process of unpacked file
+            upx_extract = self.process_file(newname, CAPE_output, True)
+            if upx_extract["type"]:
+                upx_extract["cape_type"] = "UPX-extracted "
+                type_strings = upx_extract["type"].split()
+                if type_strings[0] == ("PE32+"):
+                    upx_extract["cape_type"] += " 64-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        upx_extract["cape_type"] += "DLL"
+                    else:
+                        upx_extract["cape_type"] += "executable"
+                if type_strings[0] == ("PE32"):
+                    upx_extract["cape_type"] += " 32-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        upx_extract["cape_type"] += "DLL"
+                    else:
+                        upx_extract["cape_type"] += "executable"  
+        
     def process_file(self, file_path, CAPE_output, append_file):
         """Process file.
         @return: file_info
@@ -396,7 +395,7 @@ class CAPE(Processing):
             # Check to see if file is packed with UPX
             if hit["name"] == "UPX":
                 log.info("CAPE: Found UPX Packed sample - attempting to unpack")
-                upx_unpack(file_data)
+                self.upx_unpack(file_data, CAPE_output)
                 
             # Check for a payload or config hit
             try:
@@ -422,24 +421,26 @@ class CAPE(Processing):
                         
             # Attempt to import a parser for the hit
             # DC3-MWCP
-            try:
-                mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
-                kwargs = {}
-                mwcp.run_parser(cape_name, data=file_data, **kwargs)
-                if mwcp.errors == []:
-                    log.info("CAPE: Imported DC3-MWCP parser %s", cape_name)
-                    mwcp_loaded = True
-                else:
-                    error_lines = mwcp.errors[0].split("\n")
-                    for line in error_lines:
-                        if line.startswith('ImportError: '):
-                            log.info("CAPE: DC3-MWCP parser: %s", line.split(': ')[1])
-                    mwcp_loaded = False
-            except ImportError:
-                mwcp_loaded = False
+            mwcp_loaded = False
+            if cape_name:
+                try:
+                    mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
+                    kwargs = {}
+                    mwcp.run_parser(cape_name, data=file_data, **kwargs)
+                    if mwcp.errors == []:
+                        log.info("CAPE: Imported DC3-MWCP parser %s", cape_name)
+                        mwcp_loaded = True
+                    else:
+                        error_lines = mwcp.errors[0].split("\n")
+                        for line in error_lines:
+                            if line.startswith('ImportError: '):
+                                log.info("CAPE: DC3-MWCP parser: %s", line.split(': ')[1])
+                except ImportError:
+                    pass
                 
             # malwareconfig
-            if mwcp_loaded == False:
+            malwareconfig_loaded = False
+            if cape_name and mwcp_loaded == False:
                 try:
                     malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
@@ -448,7 +449,6 @@ class CAPE(Processing):
                     log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
                 except ImportError:
                     log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
-                    malwareconfig_loaded = False
             
             # Get config data
             if mwcp_loaded:
@@ -474,9 +474,12 @@ class CAPE(Processing):
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
             
+            if cape_config["cape_config"] == {}:
+                del cape_config["cape_config"]
+            
         if cape_name:
             if "cape_config" in cape_config:
-                cape_config["cape_name"] = format(cape_name)
+                    cape_config["cape_name"] = format(cape_name)
             if not "cape" in self.results:
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name
