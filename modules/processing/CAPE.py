@@ -95,7 +95,7 @@ def convert(data):
     else:
         return data
 
-def upx_unpack(raw_data):
+def upx_harness(raw_data):
     upxfile = tempfile.NamedTemporaryFile(delete=False)
     upxfile.write(raw_data)
     upxfile.close()
@@ -121,6 +121,44 @@ def upx_unpack(raw_data):
         
     os.unlink(upxfile.name)
     return
+
+def upx_unpack(file_data):
+    unpacked_file = upx_unpack(file_data)
+    if unpacked_file and os.path.exists(unpacked_file):
+        unpacked_yara = File(unpacked_file).get_yara(CAPE_YARA_RULEPATH)
+        for unpacked_hit in unpacked_yara:
+            unpacked_name = unpacked_hit["name"]
+            if unpacked_name == 'UPX':
+                # Failed to unpack
+                log.info("CAPE: Failed to unpack UPX")
+                os.unlink(unpacked_file)
+                break
+        if not os.path.exists(self.CAPE_path):
+            os.makedirs(self.CAPE_path)
+        newname = os.path.join(self.CAPE_path, os.path.basename(unpacked_file))
+        os.rename(unpacked_file, newname)
+        infofd = open(newname + "_info.txt", "a")
+        infofd.write(os.path.basename(unpacked_file) + "\n")
+        infofd.close()
+
+        # Recursive process of unpacked file
+        upx_extract = self.process_file(newname, CAPE_output, True)
+        if upx_extract["type"]:
+            upx_extract["cape_type"] = "UPX-extracted "
+            type_strings = upx_extract["type"].split()
+            if type_strings[0] == ("PE32+"):
+                upx_extract["cape_type"] += " 64-bit "
+                if type_strings[2] == ("(DLL)"):
+                    upx_extract["cape_type"] += "DLL"
+                else:
+                    upx_extract["cape_type"] += "executable"
+            if type_strings[0] == ("PE32"):
+                upx_extract["cape_type"] += " 32-bit "
+                if type_strings[2] == ("(DLL)"):
+                    upx_extract["cape_type"] += "DLL"
+                else:
+                    upx_extract["cape_type"] += "executable"  
+    
         
 class CAPE(Processing):
     """CAPE output file processing."""
@@ -157,11 +195,11 @@ class CAPE(Processing):
 
         # Get the file data
         with open(file_info["path"], "r") as file_open:
-            filedata = file_open.read(buf + 1)
-        if len(filedata) > buf:
-            file_info["data"] = binascii.b2a_hex(filedata[:buf] + " <truncated>")
+            file_data = file_open.read(buf + 1)
+        if len(file_data) > buf:
+            file_info["data"] = binascii.b2a_hex(file_data[:buf] + " <truncated>")
         else:
-            file_info["data"] = binascii.b2a_hex(filedata)
+            file_info["data"] = binascii.b2a_hex(file_data)
             
         metastrings = metastring.split(",")
         if len(metastrings) > 1:
@@ -219,7 +257,7 @@ class CAPE(Processing):
             if file_info["cape_type_code"] == PLUGX_CONFIG:
                 file_info["cape_type"] = "PlugX Config"
                 plugx_parser = plugx.PlugXConfig()
-                plugx_config = plugx_parser.parse_config(filedata, len(filedata))
+                plugx_config = plugx_parser.parse_config(file_data, len(file_data))
                 if not "cape_config" in cape_config and plugx_config:
                     cape_config["cape_config"] = {}
                     for key, value in plugx_config.items():
@@ -266,7 +304,7 @@ class CAPE(Processing):
                     cape_config["cape_config"] = {}
                 if file_info["size"] == 256 or file_info["size"] == 260:
                     ConfigItem = "filepath"
-                    ConfigData = format(filedata)
+                    ConfigData = format(file_data)
                     cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
                 if file_info["size"] > 0x1000:
                     append_file = True
@@ -302,7 +340,7 @@ class CAPE(Processing):
                     ConfigItem = "C&C3"
                 else: 
                     ConfigItem = "Unknown"
-                ConfigData = format(filedata)
+                ConfigData = format(file_data)
                 if ConfigData:
                     cape_config["cape_config"].update({ConfigItem: [ConfigData]}) 
                 append_file = False
@@ -314,7 +352,7 @@ class CAPE(Processing):
                 if not "cape_config" in cape_config:
                     cape_config["cape_config"] = {}
                 ConfigItem = "JSON Data"
-                parsed = json.loads(filedata.rstrip(b'\0'))
+                parsed = json.loads(file_data.rstrip(b'\0'))
                 ConfigData = json.dumps(parsed, indent=4, sort_keys=True)
                 cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
                 append_file = True
@@ -336,7 +374,7 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"
                 append_file = True
-            # UPX
+            # UPX package output
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"
                 type_strings = file_info["type"].split()
@@ -355,15 +393,18 @@ class CAPE(Processing):
         
         # Process CAPE Yara hits
         for hit in file_info["cape_yara"]:
+            # Check to see if file is packed with UPX
+            if hit["name"] == "UPX":
+                log.info("CAPE: Found UPX Packed sample - attempting to unpack")
+                upx_unpack(file_data)
+                
+            # Check for a payload or config hit
             try:
                 if "payload" in hit["meta"]["cape_type"].lower() or "config" in hit["meta"]["cape_type"].lower():
                     file_info["cape_type"] = hit["meta"]["cape_type"]                      
                     cape_name = hit["name"]
             except:
                 pass
-            if cape_name == '':
-                cape_name = hit["name"]
-                file_info["cape_type"] = cape_name + " Payload"
             type_strings = file_info["type"].split()
             if "-bit" not in file_info["cape_type"]:
                 if type_strings[0] == ("PE32+"):
@@ -378,51 +419,13 @@ class CAPE(Processing):
                         file_info["cape_type"] += "DLL"
                     else:
                         file_info["cape_type"] += "executable"  
-            # UPX Check and unpack
-            if cape_name == 'UPX':
-                log.info("CAPE: Found UPX Packed sample - attempting to unpack")
-                unpacked_file = upx_unpack(filedata)
-                if unpacked_file and os.path.exists(unpacked_file):
-                    unpacked_yara = File(unpacked_file).get_yara(CAPE_YARA_RULEPATH)
-                    for unpacked_hit in unpacked_yara:
-                        unpacked_name = unpacked_hit["name"]
-                        if unpacked_name == 'UPX':
-                            # Failed to unpack
-                            log.info("CAPE: Failed to unpack UPX")
-                            os.unlink(unpacked_file)
-                            break
-                    if not os.path.exists(self.CAPE_path):
-                        os.makedirs(self.CAPE_path)
-                    newname = os.path.join(self.CAPE_path, os.path.basename(unpacked_file))
-                    os.rename(unpacked_file, newname)
-                    infofd = open(newname + "_info.txt", "a")
-                    infofd.write(os.path.basename(unpacked_file) + "\n")
-                    infofd.close()
-
-                    # Recursive process of unpacked file
-                    upx_extract = self.process_file(newname, CAPE_output, True)
-                    if upx_extract["type"]:
-                        upx_extract["cape_type"] = "UPX-extracted "
-                        type_strings = upx_extract["type"].split()
-                        if type_strings[0] == ("PE32+"):
-                            upx_extract["cape_type"] += " 64-bit "
-                            if type_strings[2] == ("(DLL)"):
-                                upx_extract["cape_type"] += "DLL"
-                            else:
-                                upx_extract["cape_type"] += "executable"
-                        if type_strings[0] == ("PE32"):
-                            upx_extract["cape_type"] += " 32-bit "
-                            if type_strings[2] == ("(DLL)"):
-                                upx_extract["cape_type"] += "DLL"
-                            else:
-                                upx_extract["cape_type"] += "executable"  
-                
-            # Attempt to import a parser for the yara hit
+                        
+            # Attempt to import a parser for the hit
             # DC3-MWCP
             try:
                 mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
                 kwargs = {}
-                mwcp.run_parser(cape_name, data=filedata, **kwargs)
+                mwcp.run_parser(cape_name, data=file_data, **kwargs)
                 if mwcp.errors == []:
                     log.info("CAPE: Imported DC3-MWCP parser %s", cape_name)
                     mwcp_loaded = True
@@ -461,24 +464,22 @@ class CAPE(Processing):
                 try:
                     if not "cape_config" in cape_config:
                         cape_config["cape_config"] = {}
-                    malwareconfig_config = module.config(filedata)
+                    malwareconfig_config = module.config(file_data)
                     if isinstance(malwareconfig_config, list):
-                        for (key, value) in module.config(filedata)[0].iteritems():
+                        for (key, value) in module.config(file_data)[0].iteritems():
                             cape_config["cape_config"].update({key: [value]}) 
                     elif isinstance(malwareconfig_config, dict):
-                        for (key, value) in module.config(filedata).iteritems():
+                        for (key, value) in module.config(file_data).iteritems():
                             cape_config["cape_config"].update({key: [value]}) 
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
             
         if cape_name:
-            cape_config["cape_name"] = format(cape_name)
+            if "cape_config" in cape_config:
+                cape_config["cape_name"] = format(cape_name)
             if not "cape" in self.results:
-                #self.results["cape"] = []
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name
-            #if cape_name not in self.results["cape"]:
-            #    self.results["cape"].append(cape_name)
 
         if append_file == True:
             CAPE_output.append(file_info)
@@ -507,6 +508,7 @@ class CAPE(Processing):
         for dir_name, dir_names, file_names in os.walk(self.procdump_path):
             for file_name in file_names:
                 file_path = os.path.join(dir_name, file_name)
+        # We set append_file to False as we don't wan't to include
         # the files by default in the CAPE tab
                 self.process_file(file_path, CAPE_output, False)
         # We want to process dropped files too 
@@ -514,7 +516,6 @@ class CAPE(Processing):
             for file_name in file_names:
                 file_path = os.path.join(dir_name, file_name)
                 self.process_file(file_path, CAPE_output, False)
-        # We set append_file to False as we don't wan't to include
         # Finally static processing of submitted file
         if self.task["category"] == "file":
             if not os.path.exists(self.file_path):
