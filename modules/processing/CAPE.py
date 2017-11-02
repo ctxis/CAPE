@@ -474,8 +474,9 @@ class CAPE(Processing):
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
             
-            if cape_config["cape_config"] == {}:
-                del cape_config["cape_config"]
+            if "cape_config" in cape_config:
+                if cape_config["cape_config"] == {}:
+                    del cape_config["cape_config"]
             
         if cape_name:
             if "cape_config" in cape_config:
