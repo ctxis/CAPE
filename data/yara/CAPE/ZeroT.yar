@@ -11,11 +11,6 @@ rule ZeroT
         $string4 = "cmd /c ipconfig ata & tasklist >/all >"
         $string5 = "Zero.T"
     condition:
-        //check for MZ Signature at offset 0
-        uint16(0) == 0x5A4D 
-
-        and 
-        
-        all of them
+        uint16(0) == 0x5A4D and all of them
 }
 

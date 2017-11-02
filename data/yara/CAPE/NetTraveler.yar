@@ -10,10 +10,5 @@ rule NetTraveler
         $string3 = "Memory: Total:%dMB,Left:%dMB (for %.2f%s)"
         
     condition:
-        //check for MZ Signature at offset 0
-        uint16(0) == 0x5A4D 
-
-        and 
-        
-        all of them
+        uint16(0) == 0x5A4D and all of them
 }
