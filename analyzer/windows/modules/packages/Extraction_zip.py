@@ -33,6 +33,7 @@ class Extraction_zip(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "Extraction.dll"
+        self.options["dll_64"] = "Extraction_x64.dll"
 
         log.info("Timeout: " + str(self.config.timeout))
         
@@ -107,7 +108,6 @@ class Extraction_zip(Package):
         exe_regex = re.compile('(\.exe|\.scr|\.msi|\.bat|\.lnk)$',flags=re.IGNORECASE)
         zipinfos = self.get_infos(path)
         self.extract_zip(path, root, password, 0)
-        self.options["dll"] = "Extraction.dll"
 
         file_name = self.options.get("file")
         # If no file name is provided via option, take the first file.

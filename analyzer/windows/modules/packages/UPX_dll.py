@@ -22,7 +22,7 @@ class UPX_dll(Package):
 
     def start(self, path):
         rundll32 = self.get_path("rundll32.exe")
-        function = self.options.get("function", "DllMain")
+        function = self.options.get("function", "#1")
         arguments = self.options.get("arguments")
         loadername = self.options.get("loader")
 
