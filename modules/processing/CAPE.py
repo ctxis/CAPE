@@ -14,6 +14,7 @@
     
 import sys
 import os
+import shutil
 import json
 import binascii
 import logging
@@ -141,7 +142,7 @@ class CAPE(Processing):
             if not os.path.exists(self.CAPE_path):
                 os.makedirs(self.CAPE_path)
             newname = os.path.join(self.CAPE_path, os.path.basename(unpacked_file))
-            os.rename(unpacked_file, newname)
+            shutil.move(unpacked_file, newname)
             infofd = open(newname + "_info.txt", "a")
             infofd.write(os.path.basename(unpacked_file) + "\n")
             infofd.close()
