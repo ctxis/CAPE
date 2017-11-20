@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "EvilGrab", "Extraction", 
         "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll", "Injection_doc", 
-        "Injection_pdf", "Injection_zip", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
+        "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
         "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
     ];
 
