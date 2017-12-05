@@ -131,12 +131,13 @@ class CAPE_InjectionCreateRemoteThread(Signature):
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
         self.lastprocess = None
+        self.write_detected = False
+        self.remote_thread = False
 
     filter_categories = set(["process","threading"])
 
     def on_call(self, call, process):
         if process is not self.lastprocess:
-            self.sequence = 0
             self.process_handles = set()
             self.process_pids = set()
             self.lastprocess = process
@@ -153,17 +154,15 @@ class CAPE_InjectionCreateRemoteThread(Signature):
             if self.get_argument(call, "ProcessId") != process["process_id"]:
                 self.process_handles.add(self.get_argument(call, "ProcessHandle"))
                 self.process_pids.add(self.get_argument(call, "ProcessId"))
-        elif (call["api"] == "NtMapViewOfSection") and self.sequence == 0:
+        elif (call["api"] == "NtMapViewOfSection"):
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
-                self.sequence = 2
-        elif (call["api"] == "VirtualAllocEx" or call["api"] == "NtAllocateVirtualMemory") and self.sequence == 0:
+                self.write_detected = True
+        elif (call["api"] == "VirtualAllocEx" or call["api"] == "NtAllocateVirtualMemory"):
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
-                self.sequence = 1
-        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64" or call["api"] == "WriteProcessMemory") and self.sequence == 1:
+                self.write_detected = True
+        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64" or call["api"] == "WriteProcessMemory"):
             if self.get_argument(call, "ProcessHandle") in self.process_handles:
-                self.sequence = 2
-        elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64"  or call["api"] == "WriteProcessMemory") and self.sequence == 2:
-            if self.get_argument(call, "ProcessHandle") in self.process_handles:
+                self.write_detected = True
                 addr = int(self.get_argument(call, "BaseAddress"), 16)
                 buf = self.get_argument(call, "Buffer")
                 if addr >= 0x7c900000 and addr < 0x80000000 and buf.startswith("\\xe9"):
@@ -173,21 +172,25 @@ class CAPE_InjectionCreateRemoteThread(Signature):
                     #                                     procname, self.handle_map[handle])
                     self.data.append({"Injection": desc})
                     return True
-        elif (call["api"] == "CreateRemoteThread" or call["api"].startswith("NtCreateThread")) and self.sequence == 2:
+        elif (call["api"] == "CreateRemoteThread" or call["api"].startswith("NtCreateThread") or call["api"].startswith("NtCreateThreadEx")):
             handle = self.get_argument(call, "ProcessHandle")
             if handle in self.process_handles:
                 #procname = self.get_name_from_pid(self.handle_map[handle])
                 #desc = "{0}({1}) -> {2}({3})".format(process["process_name"], str(process["process_id"]),
                 #                                     procname, self.handle_map[handle])
                 #self.data.append({"Injection": desc})
-                return True
-        elif call["api"].startswith("NtQueueApcThread") and self.sequence == 2:
+                self.remote_thread = True
+        elif call["api"].startswith("NtQueueApcThread"):
             if str(self.get_argument(call, "ProcessId")) in self.process_pids:
                 #self.description = "Code injection with NtQueueApcThread in a remote process"
                 #desc = "{0}({1}) -> {2}({3})".format(self.lastprocess["process_name"], str(self.lastprocess["process_id"]),
                 #                                     process["process_name"], str(process["process_id"]))
                 #self.data.append({"Injection": desc})
-                return True
+                self.remote_thread = True
+
+    def on_complete(self):
+        if self.write_detected == True and self.remote_thread == True:
+            return True
 
 class CAPE_InjectionProcessHollowing(Signature):
     name = "InjectionProcessHollowing"
