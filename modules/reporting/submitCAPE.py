@@ -34,7 +34,7 @@ cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "EvilGrab", "Extraction", 
         "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll", "Injection_doc", 
         "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
-        "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll"
+        "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll", "Ursnif"
     ];
 
 def pirpi_password(strings):
@@ -62,23 +62,16 @@ class SubmitCAPE(Report):
             
         if cape_yara["name"] == "Cerber":
             detections.add('Cerber')                            
-
-        #if cape_yara["name"] == "Dridex":
-        #    crypt_32_1 = cape_yara["addresses"].get("crypt_32_v1")
-        #    crypt_32_2 = cape_yara["addresses"].get("crypt_32_v2")
-        #    crypt_32_3 = cape_yara["addresses"].get("crypt_32_v3")
-        #    
-        #    crypt_64_1 = cape_yara["addresses"].get("crypt_64_v1")
-        #
-        #    if crypt_32_1:
-        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_1))
-        #    if crypt_32_2:
-        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_2))
-        #    if crypt_32_3:
-        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_32_3))
-        #    if crypt_64_1:
-        #        self.task_options_stack.append("CAPE_var1={0}".format(crypt_64_1))
-        #    detections.add('Dridex')
+            
+        if cape_yara["name"] == "Ursnif" and 'Ursnif' not in detections:
+            decrypt32 = cape_yara["addresses"].get("decrypt32")
+            decrypt64 = cape_yara["addresses"].get("decrypt64")
+            if decrypt32:
+                self.task_options_stack.append("CAPE_var1={0}".format(decrypt32))
+                detections.add('Ursnif')
+            elif decrypt64:
+                self.task_options_stack.append("CAPE_var1={0}".format(decrypt64))
+                detections.add('Ursnif')
     
     def run(self, results):
         self.task_options_stack = []
@@ -259,6 +252,9 @@ class SubmitCAPE(Report):
             
         if 'Cerber' in detections:
             package = 'Cerber'	
+            
+        if 'Ursnif' in detections:
+            package = 'Ursnif'	
             
         # we want to switch off automatic process dumps in CAPE submissions
         if self.task_options and 'procdump=1' in self.task_options:

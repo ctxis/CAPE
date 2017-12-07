@@ -16,7 +16,10 @@ rule Ursnif
         $c2 = {8B 70 EC 33 70 F8 33 70 08 33 30 83 C0 04 33 F1 81 F6 B9 79 37 9E C1 C6 0B 89 70 08 41 81 F9 84 00 00 00 72 DB}
         
         $d1 = "MSVCcvidMRLE"
+ 
+        $decrypt32 = {A3 28 B2 ?? ?? 3D 4E 3B 55 EE 74 29 8B 53 0C 8B 43 10 6A 01 56 03 D7 E8 61 21 00 00 C7 45 FC 0C 00 00 00 EB 10}
+        $decrypt64 = {89 0D C6 57 03 00 81 F9 4E 3B 55 EE 74 28 8B 4F 0C 8B 57 10 44 8D 45 0D 48 03 CE 45 8B CE E8 F9 6D 02 00 BB 0C 00 00 00 EB 0C}
         
     condition:
-        uint16(0) == 0x5A4D and (all of ($a*)) or ((all of ($b*)) and (all of ($c*)) or (all of ($d*)))
+        uint16(0) == 0x5A4D and ($decrypt32) or ($decrypt64) or (all of ($a*)) or ((all of ($b*)) and (all of ($c*)) or (all of ($d*)))
 }
