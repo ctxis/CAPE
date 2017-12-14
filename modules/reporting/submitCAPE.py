@@ -64,13 +64,17 @@ class SubmitCAPE(Report):
             detections.add('Cerber')                            
             
         if cape_yara["name"] == "Ursnif" and 'Ursnif' not in detections:
-            decrypt32 = cape_yara["addresses"].get("decrypt32")
-            decrypt64 = cape_yara["addresses"].get("decrypt64")
-            if decrypt32:
-                self.task_options_stack.append("CAPE_var1={0}".format(decrypt32))
+            decrypt32_1 = cape_yara["addresses"].get("decrypt32_1")
+            decrypt64_1 = cape_yara["addresses"].get("decrypt64_1")
+            decrypt64_2 = cape_yara["addresses"].get("decrypt64_2")
+            if decrypt32_1:
+                self.task_options_stack.append("CAPE_var1={0}".format(decrypt32_1))
                 detections.add('Ursnif')
-            elif decrypt64:
-                self.task_options_stack.append("CAPE_var1={0}".format(decrypt64))
+            elif decrypt64_1:
+                self.task_options_stack.append("CAPE_var1={0}".format(decrypt64_1))
+                detections.add('Ursnif')
+            elif decrypt64_2:
+                self.task_options_stack.append("CAPE_var1={0}".format(decrypt64_2))
                 detections.add('Ursnif')
     
     def run(self, results):
