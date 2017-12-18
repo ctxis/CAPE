@@ -817,6 +817,7 @@ class PipeHandler(Thread):
                         old_fname, new_fname = command[10:].split("::", 1)
                         move_file(unicode(old_fname.decode("utf-8")),
                                   unicode(new_fname.decode("utf-8")))
+                        dump_file(unicode(new_fname.decode("utf-8")))
                     FILES_LIST_LOCK.release()
                 else:
                     log.warning("Received unknown command from cuckoomon: %s", command)
