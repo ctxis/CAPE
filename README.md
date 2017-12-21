@@ -1,12 +1,12 @@
-## CAPE: Config And Payload Extraction
+## CAPE: Malware Configuration And Payload Extraction
 
-CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate the process of malware analysis with the goal of extracting payloads and configuration from malware. This allows CAPE to detect malware based on payload signatures, as well as automating many of the goals of malware analysis and threat intelligence.
+CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate the process of malware analysis with the goal of extracting payloads and configuration from malware. This allows CAPE to detect malware based on payload signatures, as well as automating many of the goals of malware reverse engineering and threat intelligence.
 
 CAPE can detect a number of malware techniques or behaviours, as well as specific malware families, from its initial run on a sample. 
 
 This detection may then trigger a further run with a specific package, in order to extract the malware payload and possibly its configuration, for further analysis.
 
-CAPE works by controlling malware via a bespoke debugger and API hooks. Detection to trigger a CAPE package can be based on 'Cuckoo' (API) or Yara signatures. The debugger uses Yara signatures or API hooks to allow breakpoints to be set on individual instructions, memory regions or function calls. Once a region of interest is reached, it can be manipulated and dumped for processing and analysis, and possibly configuration parsing.
+CAPE works by controlling malware via a bespoke debugger and API hooks. Detection to trigger a CAPE package can be based on API or Yara signatures. The debugger uses Yara signatures or API hooks to allow breakpoints to be set on individual instructions, memory regions or function calls. Once a region of interest is reached, it can be manipulated and dumped for processing and analysis, and possibly configuration parsing.
 
 The techniques or behaviours that CAPE detects and has packages for include:
 - Process injection
@@ -27,7 +27,8 @@ Currently CAPE has specific packages dumping configuration and payloads for the 
 - EvilGrab
 - Sedreco
 - Cerber
-    
+- Ursnif
+
 CAPE has config parsers/decoders for the following malware families, whose payloads are extracted by a behavioural package:
 - RedLeaf
 - ChChes
@@ -40,13 +41,13 @@ CAPE has config parsers/decoders for the following malware families, whose paylo
 Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on either of CAPE's config parsing frameworks, the RATDecoders framework from malwareconfig.com and DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). The many parsers/decoders from malwareconfig.com are also included, comprising among many others: Sakula, Trickbot, DarkComet, PredatorPain and PoisonIvy. Thanks to Kevin Breen/TechAnarchy for this framework and parsers (https://github.com/kevthehermit/RATDecoders), and to DC3 for their framework (https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP).
 
 CAPE also has Yara signatures to detect payloads that are extracted by a behavioural package. This list is growing, and includes:
-- QtBot, ZeroT, WanaCry, Sedreco, NetTraveler, Locky, Emotet, Cerber, Ursnif, EternalRomance, Enfal, BadRabbit, Magniber, Redsip, RCSession, Hancitor, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, RedLeaf, ChChes, EvilGrab, HttpBrowser
+- QtBot, ZeroT, WanaCry, Sedreco, NetTraveler, Locky, Emotet, Cerber, Ursnif, Enfal, BadRabbit, Magniber, Redsip, RCSession, Hancitor, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, RedLeaf, ChChes, EvilGrab, HttpBrowser, IcedID, Scarab
     
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.
 
-The CAPE debugger allows four breakpoints to be set on read, write or execute of a memory region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code, API hooks or Yara signatures.
+The CAPE debugger allows four breakpoints to be set on read, write or execute of a memory address or region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code, API hooks or Yara signatures. Thanks to the embedded distorm library the debugger can output the disassembly of instructions during single-step mode or when breakpoints are hit.
 
 Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API. These dumps can then be scanned and parsed for configuration information.
 
