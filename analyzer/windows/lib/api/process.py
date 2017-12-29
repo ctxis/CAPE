@@ -614,6 +614,7 @@ class Process:
                 "hook-type",
                 "exclude-apis",
                 "exclude-dlls",
+                "dump-on-api",
                 "referrer",
                 ]
             
