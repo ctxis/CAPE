@@ -67,6 +67,12 @@
                         <td>{{file.virtual_address}}</td>
                     </tr>                
                 {% endif %}
+                {% if file.cape_type_code == 5 %}
+                    <tr>
+                        <th>Section Handle</th>
+                        <td>{{file.section_handle}}</td>
+                    </tr>                
+                {% endif %}
                 {% if file.cape_type_code == 3 or file.cape_type_code == 4 %}
                     <tr>
                         <th>Target Process</th>

@@ -13,6 +13,7 @@ The techniques or behaviours that CAPE detects and has packages for include:
     - Shellcode injection
     - DLL injection
     - Process Hollowing
+    - Process Doppelganging
 - Decompression of executable modules in memory
 - Extraction of executable modules or shellcode in memory
 
@@ -38,11 +39,13 @@ CAPE has config parsers/decoders for the following malware families, whose paylo
 - TrickBot
 - RCSession/Screech
 
-Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on either of CAPE's config parsing frameworks, the RATDecoders framework from malwareconfig.com and DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). The many parsers/decoders from malwareconfig.com are also included, comprising among many others: Sakula, Trickbot, DarkComet, PredatorPain and PoisonIvy. Thanks to Kevin Breen/TechAnarchy for this framework and parsers (https://github.com/kevthehermit/RATDecoders), and to DC3 for their framework (https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP).
-
 CAPE also has Yara signatures to detect payloads that are extracted by a behavioural package. This list is growing, and includes:
 - QtBot, ZeroT, WanaCry, Sedreco, NetTraveler, Locky, Emotet, Cerber, Ursnif, Enfal, BadRabbit, Magniber, Redsip, RCSession, Hancitor, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, RedLeaf, ChChes, EvilGrab, HttpBrowser, IcedID, Scarab
     
+Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on either of CAPE's config parsing frameworks, the RATDecoders framework from malwareconfig.com and DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). The many parsers/decoders from malwareconfig.com are also included, comprising among many others: Sakula, Trickbot, DarkComet, PredatorPain and PoisonIvy. Thanks to Kevin Breen/TechAnarchy for this framework and parsers (https://github.com/kevthehermit/RATDecoders), and to DC3 for their framework (https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP).
+
+A utility package 'DumpOnAPI' is included which allows a module to be dumped when it calls a specific API function which can be specified in the web interface. This can be useful for quickly unpacking/dumping novel samples.
+
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.

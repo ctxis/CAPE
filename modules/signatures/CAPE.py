@@ -402,3 +402,36 @@ class CAPE_PlugX(Signature):
     def on_complete(self):
         if self.config_copy == True and self.compressed_binary == True:
             return True
+
+class CAPE_Doppelganging(Signature):
+    name = "Doppelganging"
+    description = "CAPE detection: Process Doppelganging"
+    severity = 1
+    categories = ["injection"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.lastprocess = None
+        
+    filter_categories = set(["process", "thread", "filesystem",])
+
+    def on_call(self, call, process):
+        if process is not self.lastprocess:
+            self.section_handles = set()
+            self.lastprocess = process
+            self.filehandle = None
+            self.sectionhandle = None
+
+        if call["api"] == "CreateFileTransactedA" or call["api"] == "CreateFileTransactedW":
+            self.filehandle = self.get_argument(call, "FileHandle")
+        elif call["api"] == "NtCreateSection":
+            if self.filehandle and self.filehandle == self.get_argument(call, "FileHandle"):
+                self.sectionhandle = self.get_argument(call, "SectionHandle")
+        elif call["api"] == "NtCreateProcessEx":
+            if self.get_argument(call, "SectionHandle") == self.sectionhandle:
+                return True
+      
+            

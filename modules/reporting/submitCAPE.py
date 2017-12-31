@@ -31,10 +31,10 @@ from lib.cuckoo.core.database import Database
 log = logging.getLogger(__name__)
 
 cape_package_list = [
-        "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "DumpOnAPI", "EvilGrab", "Extraction", 
-        "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll", "Injection_doc", 
-        "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", 
-        "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll", "Ursnif"
+        "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "DumpOnAPI", "Doppelganging", "EvilGrab",
+        "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll",
+        "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc",
+        "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll", "Ursnif"
     ];
 
 def pirpi_password(strings):
@@ -177,6 +177,10 @@ class SubmitCAPE(Report):
                             detections.add('Compression_doc')    
                             continue                            
                         detections.add('Compression')
+                    
+                elif entry["name"] == "Doppelganging":
+                    if report["info"].has_key("package"):
+                        detections.add('Doppelganging')
                     
         ##### Specific malware family packages
         #####

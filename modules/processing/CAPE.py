@@ -56,6 +56,7 @@ PROCDUMP                = 0
 COMPRESSION             = 1
 INJECTION_PE            = 3
 INJECTION_SHELLCODE     = 4
+INJECTION_SECTION       = 5
 EXTRACTION_PE           = 8
 EXTRACTION_SHELLCODE    = 9
 PLUGX_PAYLOAD           = 0x10
@@ -232,6 +233,10 @@ class CAPE(Processing):
                     file_info["target_path"] = metastrings[4]
                     file_info["target_process"] = metastrings[4].split("\\")[-1]
                     file_info["target_pid"] = metastrings[5]
+            if file_info["cape_type_code"] == INJECTION_SECTION:
+                file_info["cape_type"] = "Injected Section"
+                if len(metastrings) > 4:
+                    file_info["section_handle"] = metastrings[4]
             if file_info["cape_type_code"] == EXTRACTION_PE:
                 file_info["cape_type"] = "Extracted PE Image"
                 if len(metastrings) > 4:
