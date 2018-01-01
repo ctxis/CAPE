@@ -29,6 +29,7 @@ Currently CAPE has specific packages dumping configuration and payloads for the 
 - Sedreco
 - Cerber
 - Ursnif
+- TrickBot
 
 CAPE has config parsers/decoders for the following malware families, whose payloads are extracted by a behavioural package:
 - RedLeaf
@@ -36,7 +37,6 @@ CAPE has config parsers/decoders for the following malware families, whose paylo
 - HttpBrowser
 - Enfal
 - PoisonIvy
-- TrickBot
 - RCSession/Screech
 
 CAPE also has Yara signatures to detect payloads that are extracted by a behavioural package. This list is growing, and includes:

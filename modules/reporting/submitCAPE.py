@@ -34,7 +34,7 @@ cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "DumpOnAPI", "Doppelganging", "EvilGrab",
         "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll",
         "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc",
-        "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "UPX", "UPX_dll", "Ursnif"
+        "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "UPX", "UPX_dll", "Ursnif"
     ];
 
 def pirpi_password(strings):
@@ -77,6 +77,9 @@ class SubmitCAPE(Report):
                 self.task_options_stack.append("CAPE_var1={0}".format(decrypt64_2))
                 detections.add('Ursnif')
     
+        if cape_yara["name"] == "TrickBot":
+            detections.add('TrickBot')
+
     def run(self, results):
         self.task_options_stack = []
         self.task_options = None
@@ -261,6 +264,9 @@ class SubmitCAPE(Report):
         if 'Cerber' in detections:
             package = 'Cerber'	
             
+        if 'TrickBot' in detections:
+            package = 'TrickBot'
+
         if 'Ursnif' in detections:
             package = 'Ursnif'	
             
