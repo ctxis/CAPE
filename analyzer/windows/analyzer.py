@@ -55,8 +55,8 @@ PROCESS_LIST = []
 PROTECTED_PATH_LIST = []
 AUX_ENABLED = []
 PROCESS_LOCK = Lock()
-DEFAULT_DLL = None
-DEFAULT_DLL_64 = None
+MONITOR_DLL = None
+MONITOR_DLL_64 = None
 
 SERVICES_PID = None
 MONITORED_SERVICES = False
@@ -341,8 +341,8 @@ class PipeHandler(Thread):
         """Run handler.
         @return: operation status.
         """
-        global DEFAULT_DLL
-        global DEFAULT_DLL_64
+        global MONITOR_DLL
+        global MONITOR_DLL_64
         global MONITORED_SERVICES
         global MONITORED_WMI
         global MONITORED_DCOM
@@ -416,7 +416,7 @@ class PipeHandler(Thread):
                     if process_id:
                         if process_id not in (PID, PPID):
                             if process_id not in PROCESS_LIST:
-                                proc = Process(pid=process_id,thread_id=thread_id)
+                                proc = Process(options=self.options,config=self.config,pid=process_id,thread_id=thread_id)
                                 filepath = proc.get_filepath()
                                 filename = os.path.basename(filepath)
 
@@ -440,10 +440,10 @@ class PipeHandler(Thread):
                         MONITORED_DCOM = True
                         dcom_pid = pid_from_service_name("DcomLaunch")
                         if dcom_pid:
-                            servproc = Process(pid=dcom_pid,suspended=False)
+                            servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -465,10 +465,10 @@ class PipeHandler(Thread):
                             MONITORED_DCOM = True
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
-                                servproc = Process(pid=dcom_pid,suspended=False)
+                                servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                                 servproc.set_critical()
                                 filepath = servproc.get_filepath()
-                                servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
@@ -479,10 +479,10 @@ class PipeHandler(Thread):
 
                         wmi_pid = pid_from_service_name("winmgmt")
                         if wmi_pid:
-                            servproc = Process(pid=wmi_pid,suspended=False)
+                            servproc = Process(options=self.options,config=self.config,pid=wmi_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -506,10 +506,10 @@ class PipeHandler(Thread):
 
                         sched_pid = pid_from_service_name("schedule")
                         if sched_pid:
-                            servproc = Process(pid=sched_pid,suspended=False)
+                            servproc = Process(options=self.options,config=self.config,pid=sched_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -532,9 +532,9 @@ class PipeHandler(Thread):
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
                                 add_critical_pid(dcom_pid)
-                                servproc = Process(pid=dcom_pid,suspended=False)
+                                servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                                 filepath = servproc.get_filepath()
-                                servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
@@ -545,10 +545,10 @@ class PipeHandler(Thread):
 
                         bits_pid = pid_from_service_name("BITS")
                         if bits_pid:
-                            servproc = Process(pid=bits_pid,suspended=False)
+                            servproc = Process(options=self.options,config=self.config,pid=bits_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -571,14 +571,14 @@ class PipeHandler(Thread):
                         # if tasklist previously failed to get the services.exe PID we'll be
                         # unable to inject
                         if SERVICES_PID:
-                            servproc = Process(pid=SERVICES_PID,suspended=False)
+                            servproc = Process(options=self.options,config=self.config,pid=SERVICES_PID,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
                             is_64bit = servproc.is_64bit()
                             if is_64bit:
-                                servproc.inject(dll=DEFAULT_DLL_64, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(dll=MONITOR_DLL_64, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             else:
-                                servproc.inject(dll=DEFAULT_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(1000)
@@ -654,8 +654,8 @@ class PipeHandler(Thread):
 
                     # Set the current DLL to the default one provided
                     # at submission.
-                    dll = DEFAULT_DLL
-                    dll_64 = DEFAULT_DLL_64
+                    dll = MONITOR_DLL
+                    dll_64 = MONITOR_DLL_64
                     suspended = False
                     # We parse the process ID.
                     data = command[8:]
@@ -686,8 +686,9 @@ class PipeHandler(Thread):
                             # polluted logs.
                             if process_id not in PROCESS_LIST:
                                 # Open the process and inject the DLL.
-                                # Hope it enjoys it.
-                                proc = Process(pid=process_id,
+                                proc = Process(options=self.options,
+                                               config=self.config,
+                                               pid=process_id,
                                                thread_id=thread_id,
                                                suspended=suspended)
 
@@ -729,8 +730,8 @@ class PipeHandler(Thread):
 
                     # Set the current DLL to the default one provided
                     # at submission.
-                    dll = DEFAULT_DLL
-                    dll_64 = DEFAULT_DLL_64
+                    dll = MONITOR_DLL
+                    dll_64 = MONITOR_DLL_64
                     suspended = True
                     # We parse the process ID.
                     data = command[9:]
@@ -755,7 +756,9 @@ class PipeHandler(Thread):
                             # polluted logs.
                             if process_id not in PROCESS_LIST:
                                 # Open the process and inject the DLL.
-                                proc = Process(pid=process_id,
+                                proc = Process(options=self.options,
+                                               config=self.config,
+                                               pid=process_id,
                                                thread_id=thread_id,
                                                suspended=suspended)
 
@@ -843,12 +846,12 @@ class PipeServer(Thread):
     new processes being spawned and for files being created or deleted.
     """
 
-    def __init__(self, config, pipe_name=PIPE):
+    def __init__(self, config, options, pipe_name=PIPE):
         """@param pipe_name: Cuckoo PIPE server name."""
         Thread.__init__(self)
         self.pipe_name = pipe_name
         self.config = config
-        self.options = config.get_options()
+        self.options = options
         self.do_run = True
 
     def stop(self):
@@ -937,20 +940,14 @@ class Analyzer:
 
     def prepare(self):
         """Prepare env for analysis."""
-        global DEFAULT_DLL
-        global DEFAULT_DLL_64
+        global MONITOR_DLL
+        global MONITOR_DLL_64
         global SERVICES_PID
         global HIDE_PIDS
 
         # Get SeDebugPrivilege for the Python process. It will be needed in
         # order to perform the injections.
         grant_debug_privilege()
-
-        # randomize cuckoomon DLL and loader executable names
-        copy("dll\\CAPE.dll", CUCKOOMON32_NAME)
-        copy("dll\\CAPE_x64.dll", CUCKOOMON64_NAME)
-        copy("bin\\loader.exe", LOADER32_NAME)
-        copy("bin\\loader_x64.exe", LOADER64_NAME)
 
         # Create the folders used for storing the results.
         create_folders()
@@ -963,6 +960,7 @@ class Analyzer:
 
         # Parse the analysis configuration file generated by the agent.
         self.config = Config(cfg="analysis.conf")
+        self.options = self.config.get_options()
 
         # Set virtual machine clock.
         clock = datetime.strptime(self.config.clock, "%Y%m%dT%H:%M:%S")
@@ -983,11 +981,9 @@ class Analyzer:
 
         log.info("Date set to: {0}, time set to: {1}".format(thedate, thetime))
 
-        # Set the default DLL to be used by the PipeHandler.
-        log.info("Analyzer:prepare: DEFAULT_DLL was %s, DEFAULT_DLL_64 was %s", DEFAULT_DLL, DEFAULT_DLL_64)
-        DEFAULT_DLL = self.config.get_options().get("dll")
-        DEFAULT_DLL_64 = self.config.get_options().get("dll_64")
-        log.info("Analyzer:prepare: DEFAULT_DLL set to %s, DEFAULT_DLL_64 set to %s", DEFAULT_DLL, DEFAULT_DLL_64)
+        # Set the DLL to be used by the PipeHandler.
+        MONITOR_DLL = self.config.get_options().get("dll")
+        MONITOR_DLL_64 = self.config.get_options().get("dll_64")
         
         # get PID for services.exe for monitoring services
         svcpid = self.pids_from_process_name_list(["services.exe"])
@@ -1021,7 +1017,7 @@ class Analyzer:
         # Initialize and start the Pipe Servers. This is going to be used for
         # communicating with the injected and monitored processes.
         for x in xrange(self.PIPE_SERVER_COUNT):
-            self.pipes[x] = PipeServer(self.config)
+            self.pipes[x] = PipeServer(self.config, self.options)
             self.pipes[x].daemon = True
             self.pipes[x].start()
 
@@ -1056,9 +1052,8 @@ class Analyzer:
         """Run analysis.
         @return: operation status.
         """
-        global DEFAULT_DLL
-        global DEFAULT_DLL_64
-        self.prepare()
+        global MONITOR_DLL
+        global MONITOR_DLL_64
 
         log.debug("Starting analyzer from: %s", os.getcwd())
         log.debug("Storing results at: %s", PATHS["root"])
@@ -1112,7 +1107,7 @@ class Analyzer:
                               "(package={0}): {1}".format(package_name, e))
 
         # Initialize the analysis package.
-        pack = package_class(self.config.get_options(), self.config)
+        pack = package_class(self.options, self.config)
 
         # Initialize Auxiliary modules
         Auxiliary()
@@ -1133,7 +1128,7 @@ class Analyzer:
         for module in Auxiliary.__subclasses__():
             # Try to start the auxiliary module.
             try:
-                aux = module(self.config.get_options(), self.config)
+                aux = module(self.options, self.config)
                 aux_avail.append(aux)
                 aux.start()
             except (NotImplementedError, AttributeError):
@@ -1146,20 +1141,32 @@ class Analyzer:
                 log.debug("Started auxiliary module %s", module.__name__)
                 AUX_ENABLED.append(aux)
        
-        # Set the default DLL to that specified by the package
+        # Set the DLL to that specified by package
         if pack.options.has_key("dll") and pack.options["dll"] != None:
-            DEFAULT_DLL = pack.options["dll"]
-            log.info("Analyzer:run: DEFAULT_DLL set to %s from package %s", DEFAULT_DLL, package_name)
+            MONITOR_DLL = pack.options["dll"]
+            log.info("Analyzer: DLL set to %s from package %s", MONITOR_DLL, package_name)
         else:
-            log.info("Analyzer:run: Package %s does not specify a DLL option", package_name)
+            log.info("Analyzer: Package %s does not specify a DLL option", package_name)
         
-        # Set the default DLL_64 to that specified by the package
+        # Set the DLL_64 to that specified by package
         if pack.options.has_key("dll_64") and pack.options["dll_64"] != None:
-            DEFAULT_DLL_64 = pack.options["dll_64"]
-            log.info("Analyzer:run: DEFAULT_DLL_64 set to %s from package %s", DEFAULT_DLL_64, package_name)
+            MONITOR_DLL_64 = pack.options["dll_64"]
+            log.info("Analyzer: DLL_64 set to %s from package %s", MONITOR_DLL_64, package_name)
         else:
-            log.info("Analyzer:run: Package %s does not specify a DLL_64 option", package_name)
+            log.info("Analyzer: Package %s does not specify a DLL_64 option", package_name)
         
+        # randomize monitor DLL and loader executable names
+        if MONITOR_DLL != None:
+            copy(os.path.join("dll", MONITOR_DLL), CUCKOOMON32_NAME)
+        else:
+            copy("dll\\CAPE.dll", CUCKOOMON32_NAME)
+        if MONITOR_DLL_64 != None:
+            copy(os.path.join("dll", MONITOR_DLL_64), CUCKOOMON64_NAME)
+        else:
+            copy("dll\\CAPE_x64.dll", CUCKOOMON64_NAME)
+        copy("bin\\loader.exe", LOADER32_NAME)
+        copy("bin\\loader_x64.exe", LOADER64_NAME)
+
         # Start analysis package. If for any reason, the execution of the
         # analysis package fails, we have to abort the analysis.
         try:

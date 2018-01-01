@@ -127,7 +127,7 @@ class Package(object):
         if kernel_analysis != False:
             kernel_analysis = True
 
-        p = Process()
+        p = Process(options=self.options, config=self.config)
         if not p.execute(path=path, args=args, suspended=suspended, kernel_analysis=kernel_analysis):
             raise CuckooPackageError("Unable to execute the initial process, "
                                      "analysis aborted.")
@@ -164,7 +164,7 @@ class Package(object):
 
         suspended = True
 
-        p = Process()
+        p = Process(options=self.options, config=self.config)
         if not p.execute(path=path, args=args, suspended=suspended, kernel_analysis=False):
             raise CuckooPackageError("Unable to execute the initial process, "
                                      "analysis aborted.")

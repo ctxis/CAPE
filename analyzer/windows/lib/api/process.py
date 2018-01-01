@@ -71,12 +71,14 @@ class Process:
     # which check whether the VM has only been up for <10 minutes.
     startup_time = random.randint(1, 30) * 20 * 60 * 1000
 
-    def __init__(self, pid=0, h_process=0, thread_id=0, h_thread=0, suspended=False):
+    def __init__(self, options={}, config=None, pid=0, h_process=0, thread_id=0, h_thread=0, suspended=False):
         """@param pid: PID.
         @param h_process: process handle.
         @param thread_id: thread id.
         @param h_thread: thread handle.
         """
+        self.config = config
+        self.options = options
         self.pid = pid
         self.h_process = h_process
         self.thread_id = thread_id
@@ -522,65 +524,21 @@ class Process:
 
         return True
 
-    def inject(self, dll=None, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
-        """Cuckoo DLL injection.
-        @param dll: Cuckoo DLL path.
-        @param interest: path to file of interest, handed to cuckoomon config
-        @param apc: APC use.
-        """
-        global LOGSERVER_POOL
-
-        if not self.pid:
-            return False
-
-        thread_id = 0
-        if self.thread_id:
-            thread_id = self.thread_id
-
-        if not self.is_alive():
-            log.warning("The process with pid %s is not alive, "
-                        "injection aborted", self.pid)
-            return False
-
-        is_64bit = self.is_64bit()
-        if not dll:
-            log.debug("No DLL has been specified for injection")
-            if is_64bit:
-                dll = CUCKOOMON64_NAME
-            else:
-                dll = CUCKOOMON32_NAME
-        else:
-            dll = os.path.join("dll", dll)
-
-        log.info("DLL to inject is %s", dll)
-        
-        dll = os.path.join(os.getcwd(), dll)
-
-        if not dll or not os.path.exists(dll):
-            log.warning("No valid DLL specified to be injected in process "
-                        "with pid %d, injection aborted.", self.pid)
-            return False
-
-        if thread_id or self.suspended:
-            log.debug("Using QueueUserAPC injection.")
-        else:
-            log.debug("Using CreateRemoteThread injection.")
+    def write_monitor_config(self, interest=None, nosleepskip=False):
 
         config_path = "C:\\%s.ini" % self.pid
-        with open(config_path, "w") as config:
-            cfg = Config("analysis.conf")
-            cfgoptions = cfg.get_options()
 
+        with open(config_path, "w") as config:
             # start the logserver for this monitored process
             logserver_path = LOGSERVER_PREFIX + str(self.pid)
             if logserver_path not in LOGSERVER_POOL:
-                LOGSERVER_POOL[logserver_path] = LogServer(cfg.ip, cfg.port, logserver_path)
+                LOGSERVER_POOL[logserver_path] = LogServer(self.config.ip, self.config.port, logserver_path)
 
             Process.process_num += 1
             firstproc = Process.process_num == 1
 
-            config.write("host-ip={0}\n".format(cfg.ip))
-            config.write("host-port={0}\n".format(cfg.port))
+            config.write("host-ip={0}\n".format(self.config.ip))
+            config.write("host-port={0}\n".format(self.config.port))
             config.write("pipe={0}\n".format(PIPE))
             config.write("logserver={0}\n".format(logserver_path))
             config.write("results={0}\n".format(PATHS["root"]))
@@ -591,10 +549,10 @@ class Process:
             config.write("shutdown-mutex={0}\n".format(SHUTDOWN_MUTEX))
             config.write("terminate-event={0}{1}\n".format(TERMINATE_EVENT, self.pid))
 
-            if nosleepskip or ("force-sleepskip" not in cfgoptions and len(interest) > 2 and interest[1] != ':' and interest[0] != '\\' and Process.process_num <= 2):
+            if nosleepskip or ("force-sleepskip" not in self.options and len(interest) > 2 and interest[1] != ':' and interest[0] != '\\' and Process.process_num <= 2):
                 config.write("force-sleepskip=0\n")
 
-            if "norefer" not in cfgoptions and "referrer" not in cfgoptions:
+            if "norefer" not in self.options and "referrer" not in self.options:
                 config.write("referrer={0}\n".format(get_referrer_url(interest)))
 
             simple_optnames = [
@@ -619,22 +577,64 @@ class Process:
                 ]
             
             for optname in simple_optnames:
-                if optname in cfgoptions:
-                    config.write("{0}={1}\n".format(optname, cfgoptions[optname]))
-                    log.info("Option '%s' with value '%s' sent to monitor", optname, cfgoptions[optname])
+                if optname in self.options:
+                    config.write("{0}={1}\n".format(optname, self.options[optname]))
+                    log.info("Option '%s' with value '%s' sent to monitor", optname, self.options[optname])
 
-            if "procdump" in cfgoptions:
-                config.write("procdump={0}\n".format(cfgoptions["procdump"]))
-            if "import_reconstruction" in cfgoptions:
-                config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
-            if "CAPE_var1" in cfgoptions:
-                config.write("CAPE_var1={0}\n".format(cfgoptions["CAPE_var1"]))
-            if "CAPE_var2" in cfgoptions:
-                config.write("CAPE_var2={0}\n".format(cfgoptions["CAPE_var2"]))
-            if "CAPE_var3" in cfgoptions:
-                config.write("CAPE_var3={0}\n".format(cfgoptions["CAPE_var3"]))
-            if "CAPE_var4" in cfgoptions:
-                config.write("CAPE_var4={0}\n".format(cfgoptions["CAPE_var4"]))
+            if "procdump" in self.options:
+                config.write("procdump={0}\n".format(self.options["procdump"]))
+            if "import_reconstruction" in self.options:
+                config.write("import_reconstruction={0}\n".format(self.options["import_reconstruction"]))
+            if "CAPE_var1" in self.options:
+                config.write("CAPE_var1={0}\n".format(self.options["CAPE_var1"]))
+            if "CAPE_var2" in self.options:
+                config.write("CAPE_var2={0}\n".format(self.options["CAPE_var2"]))
+            if "CAPE_var3" in self.options:
+                config.write("CAPE_var3={0}\n".format(self.options["CAPE_var3"]))
+            if "CAPE_var4" in self.options:
+                config.write("CAPE_var4={0}\n".format(self.options["CAPE_var4"]))
+
+    def inject(self, dll=None, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
+        """Cuckoo DLL injection.
+        @param dll: Cuckoo DLL path.
+        @param interest: path to file of interest, handed to cuckoomon config
+        @param apc: APC use.
+        """
+        global LOGSERVER_POOL
+
+        if not self.pid:
+            return False
+
+        thread_id = 0
+        if self.thread_id:
+            thread_id = self.thread_id
+
+        if not self.is_alive():
+            log.warning("The process with pid %s is not alive, "
+                        "injection aborted", self.pid)
+            return False
+
+        is_64bit = self.is_64bit()
+        if is_64bit:
+            dll = CUCKOOMON64_NAME
+        else:
+            dll = CUCKOOMON32_NAME
+
+        log.info("DLL to inject is %s", dll)
+
+        dll = os.path.join(os.getcwd(), dll)
+
+        if not dll or not os.path.exists(dll):
+            log.warning("No valid DLL specified to be injected in process "
+                        "with pid %d, injection aborted.", self.pid)
+            return False
+
+        if thread_id or self.suspended:
+            log.debug("Using QueueUserAPC injection.")
+        else:
+            log.debug("Using CreateRemoteThread injection.")
+
+        self.write_monitor_config(interest, nosleepskip)
 
         orig_bin_name = ""
         bit_str = ""
@@ -703,75 +703,8 @@ class Process:
                         "with pid %d, injection aborted.", self.pid)
             return False
 
-        config_path = "C:\\%s.ini" % self.pid
-        with open(config_path, "w") as config:
-            cfg = Config("analysis.conf")
-            cfgoptions = cfg.get_options()
+        self.write_monitor_config(interest, nosleepskip)
 
-            # start the logserver for this monitored process
-            logserver_path = LOGSERVER_PREFIX + str(self.pid)
-            if logserver_path not in LOGSERVER_POOL:
-                LOGSERVER_POOL[logserver_path] = LogServer(cfg.ip, cfg.port, logserver_path)
-
-            Process.process_num += 1
-            firstproc = Process.process_num == 1
-
-            config.write("host-ip={0}\n".format(cfg.ip))
-            config.write("host-port={0}\n".format(cfg.port))
-            config.write("pipe={0}\n".format(PIPE))
-            config.write("logserver={0}\n".format(logserver_path))
-            config.write("results={0}\n".format(PATHS["root"]))
-            config.write("analyzer={0}\n".format(os.getcwd()))
-            config.write("first-process={0}\n".format("1" if firstproc else "0"))
-            config.write("startup-time={0}\n".format(Process.startup_time))
-            config.write("file-of-interest={0}\n".format(interest))
-            config.write("shutdown-mutex={0}\n".format(SHUTDOWN_MUTEX))
-            config.write("terminate-event={0}{1}\n".format(TERMINATE_EVENT, self.pid))
-            
-            if nosleepskip or ("force-sleepskip" not in cfgoptions and len(interest) > 2 and interest[1] != ':' and interest[0] != '\\' and Process.process_num <= 2):
-                config.write("force-sleepskip=0\n")
-
-            if "norefer" not in cfgoptions and "referrer" not in cfgoptions:
-                config.write("referrer={0}\n".format(get_referrer_url(interest)))
-
-            simple_optnames = [
-                "force-sleepskip",
-                "full-logs",
-                "force-flush",
-                "no-stealth",
-                "buffer-max",
-                "large-buffer-max",
-                "serial",
-                "sysvol_ctimelow",
-                "sysvol_ctimehigh",
-                "sys32_ctimelow",
-                "sys32_ctimehigh",
-                "debug",
-                "disable_hook_content",
-                "hook-type",
-                "exclude-apis",
-                "exclude-dlls",
-                "referrer",
-                ]
-            
-            for optname in simple_optnames:
-                if optname in cfgoptions:
-                    config.write("{0}={1}\n".format(optname, cfgoptions[optname]))
-                    log.info("Option '%s' with value '%s' sent to monitor", optname, cfgoptions[optname])
-
-            if "procdump" in cfgoptions:
-                config.write("procdump={0}\n".format(cfgoptions["procdump"]))
-            if "import_reconstruction" in cfgoptions:
-                config.write("import_reconstruction={0}\n".format(cfgoptions["import_reconstruction"]))
-            if "CAPE_var1" in cfgoptions:
-                config.write("CAPE_var1={0}\n".format(cfgoptions["CAPE_var1"]))
-            if "CAPE_var2" in cfgoptions:
-                config.write("CAPE_var2={0}\n".format(cfgoptions["CAPE_var2"]))
-            if "CAPE_var3" in cfgoptions:
-                config.write("CAPE_var3={0}\n".format(cfgoptions["CAPE_var3"]))
-            if "CAPE_var4" in cfgoptions:
-                config.write("CAPE_var4={0}\n".format(cfgoptions["CAPE_var4"]))
-                
         orig_bin_name = ""
         bit_str = ""
         if is_64bit:
