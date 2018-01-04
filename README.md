@@ -32,6 +32,7 @@ Currently CAPE has specific packages dumping configuration and payloads for the 
 - TrickBot
 
 CAPE has config parsers/decoders for the following malware families, whose payloads are extracted by a behavioural package:
+- Emotet
 - RedLeaf
 - ChChes
 - HttpBrowser

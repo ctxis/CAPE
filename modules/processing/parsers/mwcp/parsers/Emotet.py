@@ -47,7 +47,7 @@ def yara_scan(raw_data, rule_name):
             for item in match.strings:
                 if item[1] == rule_name:
                     addresses[item[1]] = item[0]
-    return addresses
+                    return addresses
 
 class Emotet(malwareconfigparser):
     def __init__(self, reporter=None):
