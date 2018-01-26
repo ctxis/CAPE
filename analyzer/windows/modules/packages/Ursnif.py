@@ -19,6 +19,7 @@ class Ursnif(Package):
         self.options = options
         self.options["dll"] = "Ursnif.dll"
         self.options["dll_64"] = "Ursnif_x64.dll"
+        self.options["exclude-apis"] = "NtCreateFile:NtWriteFile:NtDeleteFile:NtQueryInformationFile"
         
     def start(self, path):
         args = self.options.get("arguments")

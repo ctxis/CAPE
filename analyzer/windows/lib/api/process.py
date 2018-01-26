@@ -562,6 +562,7 @@ class Process:
                 "no-stealth",
                 "buffer-max",
                 "large-buffer-max",
+                "referrer",
                 "serial",
                 "sysvol_ctimelow",
                 "sysvol_ctimehigh",
@@ -573,7 +574,10 @@ class Process:
                 "exclude-apis",
                 "exclude-dlls",
                 "dump-on-api",
-                "referrer",
+                "bp0",
+                "bp1",
+                "bp2",
+                "bp3",
                 ]
             
             for optname in simple_optnames:

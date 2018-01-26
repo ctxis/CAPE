@@ -32,9 +32,9 @@ log = logging.getLogger(__name__)
 
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "DumpOnAPI", "Doppelganging", "EvilGrab",
-        "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Injection", "Injection_dll",
-        "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc",
-        "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "UPX", "UPX_dll", "Ursnif"
+        "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Extraction_jar", "Injection",
+        "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll",
+        "PlugX_doc", "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "UPX", "UPX_dll", "Ursnif"
     ];
 
 def pirpi_password(strings):
@@ -64,17 +64,19 @@ class SubmitCAPE(Report):
             detections.add('Cerber')                            
             
         if cape_yara["name"] == "Ursnif" and 'Ursnif' not in detections:
-            decrypt32_1 = cape_yara["addresses"].get("decrypt32_1")
-            decrypt64_1 = cape_yara["addresses"].get("decrypt64_1")
-            decrypt64_2 = cape_yara["addresses"].get("decrypt64_2")
-            if decrypt32_1:
-                self.task_options_stack.append("CAPE_var1={0}".format(decrypt32_1))
+            parse_config = cape_yara["addresses"].get("parse_config")
+            if parse_config:
+                self.task_options_stack.append("bp0={0}".format(parse_config))
                 detections.add('Ursnif')
-            elif decrypt64_1:
-                self.task_options_stack.append("CAPE_var1={0}".format(decrypt64_1))
+            crypto1 = cape_yara["addresses"].get("crypto1")
+            if crypto1:
+                ret_address = int(crypto1) + 29 # skip to ret
+                self.task_options_stack.append("bp1={0}".format(str(ret_address)))
                 detections.add('Ursnif')
-            elif decrypt64_2:
-                self.task_options_stack.append("CAPE_var1={0}".format(decrypt64_2))
+            crypto2 = cape_yara["addresses"].get("crypto2")
+            if crypto2:
+                ret_address = int(crypto2) + 53 # skip to ret
+                self.task_options_stack.append("bp1={0}".format(str(ret_address)))
                 detections.add('Ursnif')
     
         if cape_yara["name"] == "TrickBot":
@@ -155,16 +157,19 @@ class SubmitCAPE(Report):
                         # Word triggers this so removed
                             continue
                         if parent_package=='zip':
-                            detections.add('Extraction_zip')    
+                            detections.add('Extraction_zip')
                             continue
                         if parent_package=='ps1':
-                            detections.add('Extraction_ps1')    
+                            detections.add('Extraction_ps1')
                             continue
                         if parent_package=='dll':
-                            detections.add('Extraction_dll')    
+                            detections.add('Extraction_dll')
                             continue
                         if parent_package=='regsvr':
                             detections.add('Extraction_regsvr')    
+                            continue
+                        if parent_package=='jar':
+                            detections.add('Extraction_jar')
                             continue
                         detections.add('Extraction')
                 

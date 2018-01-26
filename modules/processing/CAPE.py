@@ -64,6 +64,8 @@ PLUGX_CONFIG            = 0x11
 EVILGRAB_PAYLOAD        = 0x14
 EVILGRAB_DATA           = 0x15
 SEDRECO_DATA            = 0x20
+URSNIF_CONFIG           = 0x24
+URSNIF_PAYLOAD          = 0x25
 CERBER_CONFIG           = 0x30
 CERBER_PAYLOAD          = 0x31
 UPX                     = 0x1000
@@ -173,6 +175,7 @@ class CAPE(Processing):
         global cape_config
         cape_name = ""
         strings = []
+        suppress_yara_parsing = False
         
         buf = self.options.get("buffer", BUFSIZE)
             
@@ -347,7 +350,7 @@ class CAPE(Processing):
                     ConfigItem = "Unknown"
                 ConfigData = format(file_data)
                 if ConfigData:
-                    cape_config["cape_config"].update({ConfigItem: [ConfigData]}) 
+                    cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                 append_file = False
             # Cerber
             if file_info["cape_type_code"] == CERBER_CONFIG:
@@ -361,6 +364,7 @@ class CAPE(Processing):
                 ConfigData = json.dumps(parsed, indent=4, sort_keys=True)
                 cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
                 append_file = True
+                suppress_yara_parsing = True
             if file_info["cape_type_code"] == CERBER_PAYLOAD:
                 file_info["cape_type"] = "Cerber Payload"
                 cape_config["cape_type"] = "Cerber Payload"
@@ -379,6 +383,37 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"
                 append_file = True
+            # Ursnif
+            if file_info["cape_type_code"] == URSNIF_CONFIG:
+                file_info["cape_type"] = "Ursnif Config"
+                cape_config["cape_type"] = "Ursnif Config"
+                cape_name = "Ursnif"
+                malwareconfig_loaded = False
+                try:
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                    file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
+                    module = imp.load_module(cape_name, file, pathname, description)
+                    malwareconfig_loaded = True
+                    log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
+                except ImportError:
+                    log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
+                if malwareconfig_loaded:
+                    try:
+                        if not "cape_config" in cape_config:
+                            cape_config["cape_config"] = {}
+                        malwareconfig_config = module.config(file_data)
+                        if isinstance(malwareconfig_config, list):
+                            for (key, value) in module.config(file_data)[0].iteritems():
+                                cape_config["cape_config"].update({key: [value]}) 
+                        elif isinstance(malwareconfig_config, dict):
+                            for (key, value) in module.config(file_data).iteritems():
+                                cape_config["cape_config"].update({key: [value]})
+                        suppress_yara_parsing = True
+                    except Exception as e:
+                        log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
+                append_file = False
+            if file_info["cape_type_code"] == URSNIF_PAYLOAD:
+                suppress_yara_parsing = True
             # UPX package output
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"
@@ -428,7 +463,7 @@ class CAPE(Processing):
             # Attempt to import a parser for the hit
             # DC3-MWCP
             mwcp_loaded = False
-            if cape_name:
+            if cape_name and suppress_yara_parsing == False:
                 try:
                     mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
                     kwargs = {}
@@ -446,7 +481,7 @@ class CAPE(Processing):
                 
             # malwareconfig
             malwareconfig_loaded = False
-            if cape_name and mwcp_loaded == False:
+            if cape_name and mwcp_loaded == False and suppress_yara_parsing == False:
                 try:
                     malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
@@ -457,7 +492,7 @@ class CAPE(Processing):
                     log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
             
             # Get config data
-            if mwcp_loaded:
+            if mwcp_loaded and suppress_yara_parsing == False:
                 try:
                     if not "cape_config" in cape_config:
                         cape_config["cape_config"] = {}
@@ -466,7 +501,7 @@ class CAPE(Processing):
                         cape_config["cape_config"].update(convert(mwcp.metadata))
                 except Exception as e:
                     log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
-            elif malwareconfig_loaded:
+            elif malwareconfig_loaded and suppress_yara_parsing == False:
                 try:
                     if not "cape_config" in cape_config:
                         cape_config["cape_config"] = {}
