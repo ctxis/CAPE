@@ -2,6 +2,10 @@
 
 CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate the process of malware analysis with the goal of extracting payloads and configuration from malware. This allows CAPE to detect malware based on payload signatures, as well as automating many of the goals of malware reverse engineering and threat intelligence.
 
+There is a demonstration version online which is free for anyone to try:
+
+https://cape.contextis.com
+
 CAPE can detect a number of malware techniques or behaviours, as well as specific malware families, from its initial run on a sample. 
 
 This detection may then trigger a further run with a specific package, in order to extract the malware payload and possibly its configuration, for further analysis.
