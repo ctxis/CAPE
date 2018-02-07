@@ -4,7 +4,7 @@ CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate
 
 There is a demonstration version online which is free for anyone to try:
 
-https://cape.contextis.com
+https://cape.contextis.com/submit
 
 CAPE can detect a number of malware techniques or behaviours, as well as specific malware families, from its initial run on a sample. 
 
