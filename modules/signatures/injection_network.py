@@ -41,15 +41,18 @@ class InjectionNetworkTraffic(Signature):
             "winlogon.exe",
         ]
 
-    filter_apinames = set(["connect","gethostbyname","HttpOpenRequestW","InternetConnectA", "InternetConnectW","InternetCrackUrlW","InternetCrackUrlA","InternetReadFile","URLDownloadToFileW","WSASend"])
+    filter_apinames = set(["connect","HttpOpenRequestA","HttpOpenRequestW","InternetConnectA", "InternetConnectW","InternetCrackUrlW","InternetCrackUrlA","URLDownloadToFileW","WSASend"])
 
     def on_call(self, call, process):
         pname = process["process_name"].lower()
         if pname in self.proc_list:
             addit = None
             if call["api"] == "URLDownloadToFileW":
-                buff = self.get_argument(call, "URL")
+                buff = self.get_argument(call, "Url")
                 addit = {"http_downloadurl": "%s_URLDownloadToFileW_%s" % (pname,buff)}
+            if call["api"] == "HttpOpenRequestA":
+                buff = self.get_argument(call, "Path")
+                addit = {"http_request_path": "%s_HttpOpenRequestA_%s" % (pname,buff)}
             if call["api"] == "HttpOpenRequestW":
                 buff = self.get_argument(call, "Path")
                 addit = {"http_request_path": "%s_HttpOpenRequestW_%s" % (pname,buff)}
@@ -74,9 +77,6 @@ class InjectionNetworkTraffic(Signature):
                 buff = self.get_argument(call, "ip")
                 if not buff.startswith(("0.", "127.", "169.254.", "10.", "220.", "224.", "239.", "240.", "172.16.", "192.168.", "255.255.255.255")):
                     addit = {"network_connection": "%s_connect_%s" % (pname,buff)}
-            if call["api"] == "gethostbyname":
-                buff = self.get_argument(call, "Name")
-                addit = {"dns_lookup": "%s_gethostbyname_%s" % (pname,buff)}
             if addit and addit not in self.data:
                 self.data.append(addit)
 
