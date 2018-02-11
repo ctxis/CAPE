@@ -39,7 +39,7 @@ class Office_Macro(Signature):
                     ret = True
                     total = len(self.results["static"]["office"]["Macro"]["Code"])
                     if total > 1:
-                        self.description = "The office file has %s macros" % str(total)
+                        self.description = "The office file contains %s macros" % str(total)
             # 97-2003 XML macros
             if not ret and "strings" in self.results:
                 header = False
