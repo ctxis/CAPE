@@ -25,8 +25,6 @@ class OfficeMacroSuspicious(Signature):
     minimum = "1.3"
 
     def run(self):
-        package = self.results["info"]["package"]
-
         ret = False
         if "static" in self.results and "office" in self.results["static"]:
             if "Macro" in self.results["static"]["office"]:
@@ -47,8 +45,6 @@ class OfficeMacroIOC(Signature):
     minimum = "1.3"
 
     def run(self):
-        package = self.results["info"]["package"]
-
         ret = False
         if "static" in self.results and "office" in self.results["static"]:
             if "Macro" in self.results["static"]["office"]:
@@ -69,8 +65,6 @@ class OfficeMacroAutoExecution(Signature):
     minimum = "1.3"
 
     def run(self):
-        package = self.results["info"]["package"]
-
         ret = False
         if "static" in self.results and "office" in self.results["static"]:
             if "Macro" in self.results["static"]["office"]:
