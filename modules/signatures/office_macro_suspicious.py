@@ -26,12 +26,15 @@ class OfficeMacroSuspicious(Signature):
 
     def run(self):
         ret = False
+        strings = []
         if "static" in self.results and "office" in self.results["static"]:
             if "Macro" in self.results["static"]["office"]:
                 if "Analysis" in self.results["static"]["office"]["Macro"]:
                     if "Suspicious" in self.results["static"]["office"]["Macro"]["Analysis"]:
                         for string, description in self.results["static"]["office"]["Macro"]["Analysis"]["Suspicious"]:
-                            self.data.append({string : description})
+                            if string not in strings:
+                                strings.append(string)
+                                self.data.append({string : description})
                         ret = True
 
         return ret
