@@ -23,9 +23,13 @@ rule Ursnif
         $decrypt64_3 = {49 8B CC 8D 57 36 49 2B CB 48 2B CD 48 03 C8 E8 D8 3D 04 00 89 05 AE 8E 05 00 3D DC EE 94 43 75 14 8B 4E 0C 44 8B 46 10 49 8B D4 48 03 CD}
         $decrypt64_4 = {49 8B CC 49 2B CB 48 2B CD 48 03 C8 8B 41 04 2B 41 0C 03 01 3D 70 6E 6C 73 89 05 2C F4 02 00 75 12 44 8B 46 10 49 8D 0C 2B 49 8B D4}
 
-        $crypto1 = {41 8B 02 83 C1 01 41 33 C3 45 8B 1A 41 33 C0 D3 C8 41 89 02 49 83 C2 04 83 C2 FF 75 D8}
-        $crypto2 = {44 01 44 24 10 FF C1 41 8B C0 D1 64 24 10 33 C3 41 8B D8 FF 4C 24 10 41 33 C3 01 44 24 10 D3 C8 01 44 24 10 41 89 02 49 83 C2 04 83 C2 FF 75 C3}
-        $parse_config = {48 89 5C 24 08 57 48 81 EC ?0 01 00 00 44 8B 05 ?? ?? ?? ?? 48 8B D9 48 8B D1 B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 74 29 4C 8D 84 24}
+        $crypto64_1 = {41 8B 02 ?? C1 [0-1] 41 33 C3 45 8B 1A 41 33 C0 D3 C8 41 89 02 49 83 C2 04 83 C2 FF 75 D?}
+        $crypto64_2 = {44 01 44 24 10 FF C1 41 8B C0 D1 64 24 10 33 C3 41 8B D8 FF 4C 24 10 41 33 C3 01 44 24 10 D3 C8 01 44 24 10 41 89 02 49 83 C2 04 83 C2 FF 75 C3}
+        $parse_config64 = {48 89 5C 24 08 57 48 81 EC ?0 01 00 00 44 8B 05 ?? ?? ?? ?? 48 8B D9 48 8B D1 B9 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 C0 74 29 4C 8D 84 24}
+
+        $crypto32_1 = {01 45 FC D1 65 FC FF 4D FC 33 C1 33 45 0C 01 45 FC 43 8A CB D3 C8 8B CE 01 45 FC 89 02 83 C2 04 FF 4D 08 75 CD}
+        $crypto32_2 = {33 C1 33 44 24 10 43 8A CB D3 C8 8B CE 89 02 83 C2 04 FF 4C 24 0C 75 D9}
+        $parse_config32 = {8B ?? 08 5? 33 F? 3B [1-2] 74 14 A1 0? ?? ?? ?? 35 ?? ?? ?? ?? 50 8B D? E8 ?? D? 00 00 EB 02 33 C0 ?B ?? ?? ?? ?? ?? ?? ?? 74 14 8D 4D ?? ?? ?? 50 FF D? 85 C0 74 08}
     condition:
-        uint16(0) == 0x5A4D and (any of ($decrypt32*)) or (any of ($decrypt64*)) or (all of ($a*)) or ((all of ($b*)) and (all of ($c*)) or (all of ($d*))) or (any of ($crypto*) and $parse_config)
+        uint16(0) == 0x5A4D and (any of ($decrypt32*)) or (any of ($decrypt64*)) or (all of ($a*)) or ((all of ($b*)) and (all of ($c*)) or (all of ($d*))) or (any of ($crypto64*) and $parse_config64)  or (any of ($crypto32*) and $parse_config32)
 }

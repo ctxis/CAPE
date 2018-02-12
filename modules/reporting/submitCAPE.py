@@ -63,21 +63,49 @@ class SubmitCAPE(Report):
         if cape_yara["name"] == "Cerber":
             detections.add('Cerber')                            
             
-        if cape_yara["name"] == "Ursnif" and 'Ursnif' not in detections:
-            parse_config = cape_yara["addresses"].get("parse_config")
-            if parse_config:
-                self.task_options_stack.append("bp0={0}".format(parse_config))
+        if cape_yara["name"] == "Ursnif":
+            parse_config64 = cape_yara["addresses"].get("parse_config64")
+            parse_config32 = cape_yara["addresses"].get("parse_config32")
+            if parse_config64:
+                for item in self.task_options_stack:
+                    if 'bp0' in item:
+                        self.task_options_stack.remove(item)
+                self.task_options_stack.append("bp0={0}".format(parse_config64))
                 detections.add('Ursnif')
-            crypto1 = cape_yara["addresses"].get("crypto1")
-            if crypto1:
-                ret_address = int(crypto1) + 29 # skip to ret
+            elif parse_config32:
+                if not any('bp0' in s for s in self.task_options_stack):
+                    self.task_options_stack.append("bp0={0}".format(parse_config32))
+                    detections.add('Ursnif')
+
+            crypto64_1 = cape_yara["addresses"].get("crypto64_1")
+            crypto32_1 = cape_yara["addresses"].get("crypto32_1")
+            if crypto64_1:
+                for item in self.task_options_stack:
+                    if 'bp1' in item:
+                        self.task_options_stack.remove(item)
+                ret_address = int(crypto64_1)
                 self.task_options_stack.append("bp1={0}".format(str(ret_address)))
                 detections.add('Ursnif')
-            crypto2 = cape_yara["addresses"].get("crypto2")
-            if crypto2:
-                ret_address = int(crypto2) + 53 # skip to ret
+            elif crypto32_1:
+                if not any('bp1' in s for s in self.task_options_stack):
+                    ret_address = int(crypto32_1)
+                    self.task_options_stack.append("bp1={0}".format(str(ret_address)))
+                    detections.add('Ursnif')
+
+            crypto64_2 = cape_yara["addresses"].get("crypto64_2")
+            crypto32_2 = cape_yara["addresses"].get("crypto32_2")
+            if crypto64_2:
+                for item in self.task_options_stack:
+                    if 'bp1' in item:
+                        self.task_options_stack.remove(item)
+                ret_address = int(crypto64_2)
                 self.task_options_stack.append("bp1={0}".format(str(ret_address)))
                 detections.add('Ursnif')
+            elif crypto32_2:
+                if not any('bp1' in s for s in self.task_options_stack):
+                    ret_address = int(crypto32_2)
+                    self.task_options_stack.append("bp1={0}".format(str(ret_address)))
+                    detections.add('Ursnif')
     
         if cape_yara["name"] == "TrickBot":
             detections.add('TrickBot')

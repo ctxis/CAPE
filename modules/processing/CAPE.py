@@ -44,9 +44,6 @@ from malwareconfig import JavaDropper
 from plugxconfig import plugx
 from mwcp import malwareconfigreporter
 
-CAPE_YARA_RULEPATH = \
-    os.path.join(CUCKOO_ROOT, "data", "yara", "index_CAPE.yar")
-
 BUFSIZE = 10485760
 
 # CAPE output types
@@ -134,7 +131,7 @@ class CAPE(Processing):
     def upx_unpack(self, file_data, CAPE_output):
         unpacked_file = upx_harness(file_data)
         if unpacked_file and os.path.exists(unpacked_file):
-            unpacked_yara = File(unpacked_file).get_yara(CAPE_YARA_RULEPATH)
+            unpacked_yara = File(unpacked_file).get_yara("CAPE")
             for unpacked_hit in unpacked_yara:
                 unpacked_name = unpacked_hit["name"]
                 if unpacked_name == 'UPX':
@@ -175,7 +172,6 @@ class CAPE(Processing):
         global cape_config
         cape_name = ""
         strings = []
-        suppress_yara_parsing = False
         
         buf = self.options.get("buffer", BUFSIZE)
             
@@ -364,7 +360,6 @@ class CAPE(Processing):
                 ConfigData = json.dumps(parsed, indent=4, sort_keys=True)
                 cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
                 append_file = True
-                suppress_yara_parsing = True
             if file_info["cape_type_code"] == CERBER_PAYLOAD:
                 file_info["cape_type"] = "Cerber Payload"
                 cape_config["cape_type"] = "Cerber Payload"
@@ -408,12 +403,9 @@ class CAPE(Processing):
                         elif isinstance(malwareconfig_config, dict):
                             for (key, value) in module.config(file_data).iteritems():
                                 cape_config["cape_config"].update({key: [value]})
-                        suppress_yara_parsing = True
                     except Exception as e:
                         log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
                 append_file = False
-            if file_info["cape_type_code"] == URSNIF_PAYLOAD:
-                suppress_yara_parsing = True
             # UPX package output
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"
@@ -460,10 +452,15 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"  
                         
+            suppress_parsing_list = ["Cerber", "Ursnif"];
+
+            if hit["name"] in suppress_parsing_list:
+                continue
+
             # Attempt to import a parser for the hit
             # DC3-MWCP
             mwcp_loaded = False
-            if cape_name and suppress_yara_parsing == False:
+            if cape_name:
                 try:
                     mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
                     kwargs = {}
@@ -481,7 +478,7 @@ class CAPE(Processing):
                 
             # malwareconfig
             malwareconfig_loaded = False
-            if cape_name and mwcp_loaded == False and suppress_yara_parsing == False:
+            if cape_name and mwcp_loaded == False:
                 try:
                     malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
@@ -492,7 +489,7 @@ class CAPE(Processing):
                     log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
             
             # Get config data
-            if mwcp_loaded and suppress_yara_parsing == False:
+            if mwcp_loaded:
                 try:
                     if not "cape_config" in cape_config:
                         cape_config["cape_config"] = {}
@@ -501,7 +498,7 @@ class CAPE(Processing):
                         cape_config["cape_config"].update(convert(mwcp.metadata))
                 except Exception as e:
                     log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
-            elif malwareconfig_loaded and suppress_yara_parsing == False:
+            elif malwareconfig_loaded:
                 try:
                     if not "cape_config" in cape_config:
                         cape_config["cape_config"] = {}
