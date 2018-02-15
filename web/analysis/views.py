@@ -11,6 +11,7 @@ except ImportError:
 
 import datetime
 import os
+import shutil
 import json
 import zipfile
 import tempfile
@@ -1406,6 +1407,7 @@ def comments(request, task_id):
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def configdownload(request, task_id, cape_name):
+
     db = Database()
     cd = "text/plain"
     task = db.view_task(task_id)
@@ -1433,17 +1435,16 @@ def configdownload(request, task_id, cape_name):
                 pass
             for cape in rtmp["CAPE"]:
                 if "cape_name" in cape and cape["cape_name"] == cape_name:
+                    filepath = tempfile.NamedTemporaryFile(delete=False)
+                    for key in cape["cape_config"]:
+                        filepath.write("{}\t{}\n".format(key, cape["cape_config"][key]))
+                    filepath.close()
                     filename = cape['cape_name'] + "_config.txt"
-                    tempdir = tempfile.mkdtemp(prefix="capeconfig_", dir=settings.TEMP_PATH)
-                    filepath = os.path.join(settings.TEMP_PATH, tempdir, filename)
+                    newpath = os.path.join(os.path.dirname(filepath.name), filename)
+                    shutil.move(filepath.name, newpath)
                     try:
-                        with open(filepath, 'w') as outfile:
-                            cape_conf = cape["cape_config"]
-                            for key in cape_conf:
-                                outfile.write("{}\t{}\n".format(key, cape_conf[key]))
-
-                        resp = StreamingHttpResponse(FileWrapper(open(filepath), 8192), content_type=cd)
-                        resp["Content-Length"] = os.path.getsize(filepath)
+                        resp = StreamingHttpResponse(FileWrapper(open(newpath), 8192), content_type=cd)
+                        resp["Content-Length"] = os.path.getsize(newpath)
                         resp["Content-Disposition"] = "attachment; filename=" + filename
                         return resp
                     except Exception as e:
