@@ -11,6 +11,7 @@ class Cuckoomon(Package):
     """EXE analysis package."""
 
     def __init__(self, options={}, config=None):
+        self.config = config
         self.options = options
         self.options["dll"] = "cuckoomon.dll"
         self.options["dll_64"] = "cuckoomon_x64.dll"
