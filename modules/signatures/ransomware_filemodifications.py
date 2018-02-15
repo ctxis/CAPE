@@ -65,6 +65,15 @@ class RansomwareFileModifications(Signature):
     def on_complete(self):
         ret = False
 
+        deletedfiles = self.results["behavior"]["summary"]["delete_files"]
+        deletedcount = 0
+        for deletedfile in deletedfiles:
+            if "\\temp\\" not in deletedfile.lower() and not deletedfile.lower().endswith(".tmp"):
+                deletedcount += 1
+        if deletedcount > 100:
+            self.data.append({"mass file_deletion" : "Appears to have deleted %s files indicative of ransomware or wiper malware deleting files to prevent recovery" % (deletedcount)})
+            ret = True
+
         if self.movefilecount > 60:
             self.data.append({"file_modifications" : "Performs %s file moves indicative of a potential file encryption process" % (self.movefilecount)})
             ret = True
