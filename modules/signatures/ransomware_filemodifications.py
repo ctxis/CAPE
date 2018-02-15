@@ -71,7 +71,7 @@ class RansomwareFileModifications(Signature):
             if "\\temp\\" not in deletedfile.lower() and not deletedfile.lower().endswith(".tmp"):
                 deletedcount += 1
         if deletedcount > 100:
-            self.data.append({"mass file_delete" : "Appears to have deleted %s files indicative of ransomware or wiper malware deleting files to prevent recovery" % (deletedcount)})
+            self.data.append({"mass file_deletion" : "Appears to have deleted %s files indicative of ransomware or wiper malware deleting files to prevent recovery" % (deletedcount)})
             ret = True
 
         if self.movefilecount > 60:
