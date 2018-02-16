@@ -47,7 +47,6 @@ class CryptominingCommand(Signature):
     references = ["blog.talosintelligence.com/2018/01/malicious-xmr-mining.html"]
 
     def run(self):
-        
         commands = [
             "--donate-level=",
             "--max-cpu-usage=",
@@ -57,11 +56,13 @@ class CryptominingCommand(Signature):
         for cmdline in self.results["behavior"]["summary"]["executed_commands"]:
             lower = cmdline.lower()
             if "-o " in lower and "-u " in lower and "-p " in lower:
-                self.data.append({"command" : cmdline })
+                if cmdline not in self.data:
+                    self.data.append({"command" : cmdline })
                 ret = True
             for command in commands:
                 if command in lower:
-                    self.data.append({"command" : cmdline })
+                    if cmdline not in self.data:
+                        self.data.append({"command" : cmdline })
                     ret = True
 
         return ret
