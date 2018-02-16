@@ -79,7 +79,7 @@ class UsesWindowsUtilities(Signature):
         for cmdline in cmdlines:
             lower = cmdline.lower()
             for utility in utilities:
-                if lower.startswith(utility):
+                if utility in lower:
                     ret = True
                     self.data.append({"command" : cmdline})
 
@@ -146,7 +146,7 @@ class SuspiciousCommandTools(Signature):
         for cmdline in cmdlines:
             lower = cmdline.lower()
             for utility in utilities:
-                if lower.startswith(utility):
+                if utility in lower:
                     ret = True
                     self.data.append({"command" : cmdline})
 
