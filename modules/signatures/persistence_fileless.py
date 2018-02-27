@@ -28,12 +28,15 @@ class PersistenceRegistryScript(Signature):
         Signature.__init__(self, *args, **kwargs)
         self.registry_writes = dict()
         self.scripts = [
-            "cscript",
+            "cscript ",
+            "cscript.exe",
             "hta ",
             "hta.exe",
             "javascript:",
-            "powershell",
-            "wscript",
+            "powershell ",
+            "powershell.exe",
+            "wscript ",
+            "script.exe",
         ]
 
     filter_apinames = set(["RegSetValueExA", "RegSetValueExW", "NtSetValueKey"])
