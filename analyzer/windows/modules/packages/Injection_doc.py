@@ -4,10 +4,15 @@
 
 from lib.common.abstracts import Package
 
-class Injection_PS1(Package):
-    """PowerShell analysis package."""
+class Injection_doc(Package):
+    """Word analysis package."""
     PATHS = [
-        ("SystemRoot", "system32", "WindowsPowerShell", "v*.0", "powershell.exe"),
+        ("ProgramFiles", "Microsoft Office", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office", "Office11", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office", "Office12", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office", "Office14", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office", "Office15", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office", "WORDVIEW.EXE"),
     ]
 
     def __init__(self, options={}, config=None):
@@ -15,14 +20,8 @@ class Injection_PS1(Package):
         self.config = config
         self.options = options
         self.options["dll"] = "Injection.dll"
-
-    def start(self, path):
-        powershell = self.get_path_glob("PowerShell")
-
-        if not path.endswith(".ps1"):
-            os.rename(path, path + ".ps1")
-            path += ".ps1"
-
-        args = "-NoProfile -ExecutionPolicy bypass -File \"{0}\"".format(path)
-        return self.debug(powershell, args, path)
+        self.options["dll_64"] = "Injection_x64.dll"
         
+    def start(self, path):
+        word = self.get_path("Microsoft Office Word")
+        return self.execute(word, "\"%s\" /q" % path, path)
