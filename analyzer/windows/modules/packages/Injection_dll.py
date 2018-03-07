@@ -20,7 +20,6 @@ class Injection_dll(Package):
         self.pids = []
         self.options["dll"] = "Injection.dll"
         self.options["dll_64"] = "Injection_x64.dll"
-        #self.config.timeout = 60
     
     def start(self, path):
         rundll32 = self.get_path("rundll32.exe")

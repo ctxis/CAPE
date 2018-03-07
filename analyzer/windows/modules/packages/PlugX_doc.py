@@ -22,9 +22,6 @@ class PlugX_doc(Package):
         self.pids = []
         self.options["dll"] = "PlugX.dll"
         
-        #if self.config.timeout > 60:
-        #    self.config.timeout = 60
-
     def start(self, path):
         self.options["dll"] = "PlugX.dll"
         word = self.get_path("Microsoft Office Word")

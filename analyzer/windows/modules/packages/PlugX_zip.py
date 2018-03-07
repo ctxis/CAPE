@@ -34,10 +34,6 @@ class PlugX_zip(Package):
         self.options["dll"] = "PlugX.dll"
 
         log.info("Timeout: " + str(self.config.timeout))
-        
-        #if self.config.timeout > 10:
-        #    self.config.timeout = 5
-        #    log.info("Timeout reset to: " + str(self.config.timeout))     
 
     def extract_zip(self, zip_path, extract_path, password, recursion_depth):
         """Extracts a nested ZIP file.

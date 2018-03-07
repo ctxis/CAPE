@@ -17,7 +17,6 @@ class Injection(Package):
         self.pids = []
         self.options["dll"] = "Injection.dll"
         self.options["dll_64"] = "Injection_x64.dll"
-        #self.config.timeout = 60
 
     def start(self, path):
         args = self.options.get("arguments")

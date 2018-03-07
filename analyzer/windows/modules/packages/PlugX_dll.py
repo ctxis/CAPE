@@ -19,9 +19,6 @@ class PlugX_dll(Package):
         self.options = options
         self.options["dll"] = "PlugX.dll"
 
-        #if self.config.timeout > 10:
-        #    self.config.timeout = 5
-        
     def start(self, path):
         rundll32 = self.get_path("rundll32.exe")
         function = self.options.get("function", "#1")

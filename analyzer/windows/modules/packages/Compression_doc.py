@@ -19,13 +19,9 @@ class Compression_doc(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.pids = []
         self.options["dll"] = "Compression.dll"
         self.options["dll_64"] = "Compression_x64.dll"
         
-        if self.config.timeout > 60:
-            self.config.timeout = 60
-
     def start(self, path):
         self.options["dll"] = "Compression.dll"
         word = self.get_path("Microsoft Office Word")

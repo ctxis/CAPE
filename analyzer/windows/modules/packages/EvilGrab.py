@@ -16,8 +16,6 @@ class EvilGrab(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "EvilGrab.dll"
-        #self.options["dll_64"] = "EvilGrab_x64.dll"
-        #self.config.timeout = 60
 
     def start(self, path):
         args = self.options.get("arguments")

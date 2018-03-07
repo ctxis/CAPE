@@ -25,10 +25,6 @@ class PlugXPayload(Package):
         
         log.info("Timeout: " + str(self.config.timeout))
         
-        #if self.config.timeout > 10:
-        #    self.config.timeout = 5
-        #    log.info("Timeout reset to: " + str(self.config.timeout))             
-
     def start(self, path):
         self.options["dll"] = "PlugX.dll"
         loaderpath = "bin\\loader.exe"
