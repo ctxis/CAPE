@@ -2,7 +2,7 @@
 
 CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate the process of malware analysis with the goal of extracting payloads and configuration from malware. This allows CAPE to detect malware based on payload signatures, as well as automating many of the goals of malware reverse engineering and threat intelligence.
 
-There is a demonstration version online which is free for anyone to try:
+There is a community version online which is free for anyone to try:
 
 https://cape.contextis.com/submit
 
@@ -35,7 +35,7 @@ Currently CAPE has specific packages dumping configuration and payloads for the 
 - Ursnif
 - TrickBot
 
-CAPE has config parsers/decoders for the following malware families, whose payloads are extracted by a behavioural package:
+CAPE has config parsers/decoders for the following malware families, whose payloads are automatically extracted by a behavioural package:
 - Emotet
 - RedLeaf
 - ChChes
@@ -44,18 +44,18 @@ CAPE has config parsers/decoders for the following malware families, whose paylo
 - PoisonIvy
 - Screech
 
-CAPE also has Yara signatures to detect payloads that are extracted by a behavioural package. This list is growing, and includes:
-- QtBot, ZeroT, WanaCry, Sedreco, NetTraveler, Locky, Emotet, Cerber, Ursnif, Enfal, BadRabbit, Magniber, Redsip, RCSession, Hancitor, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, RedLeaf, ChChes, EvilGrab, HttpBrowser, IcedID, Scarab
+Many other malware families have their payloads automatically extracted by some of the behavioural packages, for which CAPE uses Yara signatures to detect the payloads. This list is growing, and includes:
+- QtBot, ZeroT, WanaCry, NetTraveler, Locky, Emotet, Cerber, Ursnif, Enfal, BadRabbit, Magniber, Redsip, RCSession, Hancitor, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, RedLeaf, ChChes, EvilGrab, HttpBrowser, IcedID, Scarab, Cutlet, RokRat, OlympicDestroyer, Gandcrab, Fareit, ZeusPanda, AgentTesla, Imminent, Arkei.
     
-Many other malware families have their payloads extracted by some of the behavioural packages, with their configuration in the clear in the resulting output. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on either of CAPE's config parsing frameworks, the RATDecoders framework from malwareconfig.com and DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). The many parsers/decoders from malwareconfig.com are also included, comprising among many others: Sakula, Trickbot, DarkComet, PredatorPain and PoisonIvy. Thanks to Kevin Breen/TechAnarchy for this framework and parsers (https://github.com/kevthehermit/RATDecoders), and to DC3 for their framework (https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP).
+Configuration data may be output from either family packages, or in payloads resulting from behavioural packages. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on either of CAPE's config parsing frameworks, the RATDecoders framework from malwareconfig.com and DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). The many parsers/decoders from malwareconfig.com are also included, comprising among many others: Sakula, Trickbot, DarkComet, PredatorPain and PoisonIvy. Thanks to Kevin Breen/TechAnarchy for this framework and parsers (https://github.com/kevthehermit/RATDecoders), and to DC3 for their framework (https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP).
 
-A utility package 'DumpOnAPI' is included which allows a module to be dumped when it calls a specific API function which can be specified in the web interface. This can be useful for quickly unpacking/dumping novel samples.
+Utility packages are also included: 'DumpOnAPI' allows a module to be dumped when it calls a specific API function which can be specified in the web interface. 'DumpConfigRegion' allows the memory region containing C2 information or other config data to be dumped for commonly used API calls. These packages can be useful for quickly unpacking/dumping novel samples or configs.
 
 There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
     
 Packages can be written based on API hooks, the CAPE debugger, or a combination of both.
 
-The CAPE debugger allows four breakpoints to be set on read, write or execute of a memory address or region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code, API hooks or Yara signatures. Thanks to the embedded distorm library the debugger can output the disassembly of instructions during single-step mode or when breakpoints are hit.
+The CAPE debugger allows breakpoints to be set on read, write or execute of a memory address or region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code, API hooks or Yara signatures. Thanks to the embedded distorm library the debugger can output the disassembly of instructions during single-step mode or when breakpoints are hit, resulting in instruction traces.
 
 Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API. These dumps can then be scanned and parsed for configuration information.
 
@@ -65,4 +65,4 @@ The repository containing the code for the monitor DLLs which form the basis of 
 
 CAPE is derived from spender-sandbox (https://github.com/spender-sandbox), which is derived from Cuckoo Sandbox (https://github.com/cuckoosandbox), so thanks to Brad Spengler, Claudio Guarnieri, and the countless other Cuckoo contributors without whom this work would not be possible. It also depends on Yara (https://github.com/VirusTotal/yara) from VirusTotal.
 
-Please contribute to this project by helping create new packages for further malware families, packers, techniques or configuration parsers. Alternatively contact Kevin O'Reilly for further details of CAPE development.
+Please contribute to this project by helping create new packages for further malware families, packers, techniques or configuration parsers. Alternatively contact @CapeSandbox or Kevin O'Reilly for further details of CAPE development.
