@@ -42,7 +42,7 @@ CAPE has config parsers/decoders for the following malware families, whose paylo
 - HttpBrowser
 - Enfal
 - PoisonIvy
-- RCSession/Screech
+- Screech
 
 CAPE also has Yara signatures to detect payloads that are extracted by a behavioural package. This list is growing, and includes:
 - QtBot, ZeroT, WanaCry, Sedreco, NetTraveler, Locky, Emotet, Cerber, Ursnif, Enfal, BadRabbit, Magniber, Redsip, RCSession, Hancitor, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, RedLeaf, ChChes, EvilGrab, HttpBrowser, IcedID, Scarab
