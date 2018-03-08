@@ -5,7 +5,7 @@ rule Hancitor
         description = "Hancitor Payload"
         cape_type = "Hancitor Payload"
     strings:
-        $decrypt = {B9 6C C5 58 54 EB 2A 8B 55 E0 8B 52 04 8B 75 EC 0F B6 14 32 8B 75 E4 0F B7 36 31 F2 C1 EE 08 8B 5D EC 31 D3 31 F3 8B 55 EC 88 1C 10 0F B7 55 F2 42 BE 6C 20 DB D8}
+        $decrypt = {33 C9 03 D6 C7 45 FC ?? ?? ?? ?? 8B 70 10 85 F6 74 12 90 8B C1 83 E0 03 8A 44 05 FC 30 04 11 41 3B CE 72 EF}
     condition:
         uint16(0) == 0x5A4D and all of them
 }

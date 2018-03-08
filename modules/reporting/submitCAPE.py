@@ -32,9 +32,10 @@ log = logging.getLogger(__name__)
 
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "DumpOnAPI", "Doppelganging", "EvilGrab",
-        "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Extraction_jar", "Injection",
-        "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX", "PlugXPayload", "PlugX_dll",
-        "PlugX_doc", "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "UPX", "UPX_dll", "Ursnif"
+        "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Extraction_jar", "Hancitor",
+        "Hancitor_doc", "Injection", "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX",
+        "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "UPX",
+        "UPX_dll", "Ursnif"
     ];
 
 def pirpi_password(strings):
@@ -109,6 +110,9 @@ class SubmitCAPE(Report):
     
         if cape_yara["name"] == "TrickBot":
             detections.add('TrickBot')
+
+        if cape_yara["name"] == "Hancitor":
+            detections.add('Hancitor')
 
     def run(self, results):
         self.task_options_stack = []
@@ -303,6 +307,10 @@ class SubmitCAPE(Report):
         if 'Ursnif' in detections:
             package = 'Ursnif'	
             
+        if 'Hancitor' in detections:
+            if parent_package=='doc' or parent_package=='Injection_doc':
+                package = 'Hancitor_doc'
+
         # we want to switch off automatic process dumps in CAPE submissions
         if self.task_options and 'procdump=1' in self.task_options:
             self.task_options = self.task_options.replace(u"procdump=1", u"procdump=0", 1)

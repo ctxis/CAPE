@@ -65,6 +65,8 @@ URSNIF_CONFIG           = 0x24
 URSNIF_PAYLOAD          = 0x25
 CERBER_CONFIG           = 0x30
 CERBER_PAYLOAD          = 0x31
+HANCITOR_CONFIG           = 0x34
+HANCITOR_PAYLOAD          = 0x35
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -405,6 +407,26 @@ class CAPE(Processing):
                                 cape_config["cape_config"].update({key: [value]})
                     except Exception as e:
                         log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
+                append_file = False
+            # Hancitor
+            if file_info["cape_type_code"] == HANCITOR_PAYLOAD:
+                cape_name = "Hancitor"
+                cape_config["cape_type"] = "Hancitor Payload"
+                file_info["cape_type"] = "Hancitor Payload"
+            if file_info["cape_type_code"] == HANCITOR_CONFIG:
+                cape_name = "Hancitor"
+                cape_config["cape_type"] = "Hancitor Config"
+                file_info["cape_type"] = "Hancitor Config"
+                if not "cape_config" in cape_config:
+                    cape_config["cape_config"] = {}
+                ConfigStrings = file_data.split('\0')
+                ConfigStrings = filter(None, ConfigStrings)
+                ConfigItem = "Campaign Code"
+                cape_config["cape_config"].update({ConfigItem: [ConfigStrings[0]]})
+                GateURLs = ConfigStrings[1].split('|')
+                for index, value in enumerate(GateURLs):
+                    ConfigItem = "Gate URL " + str(index+1)
+                    cape_config["cape_config"].update({ConfigItem: [value]})
                 append_file = False
             # UPX package output
             if file_info["cape_type_code"] == UPX:
