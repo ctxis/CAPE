@@ -65,17 +65,17 @@ class SubmitCAPE(Report):
             detections.add('Cerber')                            
             
         if cape_yara["name"] == "Ursnif":
-            parse_config64 = cape_yara["addresses"].get("parse_config64")
-            parse_config32 = cape_yara["addresses"].get("parse_config32")
-            if parse_config64:
+            decrypt_config64 = cape_yara["addresses"].get("decrypt_config64")
+            decrypt_config32 = cape_yara["addresses"].get("decrypt_config32")
+            if decrypt_config64:
                 for item in self.task_options_stack:
                     if 'bp0' in item:
                         self.task_options_stack.remove(item)
-                self.task_options_stack.append("bp0={0}".format(parse_config64))
+                self.task_options_stack.append("bp0={0}".format(decrypt_config64))
                 detections.add('Ursnif')
-            elif parse_config32:
+            elif decrypt_config32:
                 if not any('bp0' in s for s in self.task_options_stack):
-                    self.task_options_stack.append("bp0={0}".format(parse_config32))
+                    self.task_options_stack.append("bp0={0}".format(decrypt_config32))
                     detections.add('Ursnif')
 
             crypto64_1 = cape_yara["addresses"].get("crypto64_1")
