@@ -253,8 +253,8 @@ class Human(Auxiliary, Thread):
                 if officedoc and (seconds % 30) == 0 and not CLOSED_OFFICE:
                     USER32.EnumWindows(EnumWindowsProc(get_office_window), 0)
 
-                # only move the mouse 50% of the time, as malware can choose to act on an "idle" system just as it can on an "active" system
-                if random.randint(0, 3) > 1:
+                # only move the mouse 75% of the time, as malware can choose to act on an "idle" system just as it can on an "active" system
+                if random.randint(0, 7) > 1:
                     click_mouse()
                     move_mouse()
 
