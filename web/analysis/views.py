@@ -859,7 +859,7 @@ def file(request, category, task_id, dlfile):
 
     if category == "sample":
         path = os.path.join(CUCKOO_ROOT, "storage", "binaries", dlfile)
-        file_name += ".bin"
+        #file_name += ".bin"
     elif category == "pcap":
         file_name += ".pcap"
         # Forcefully grab dump.pcap, serve it as [sha256].pcap
@@ -894,10 +894,10 @@ def file(request, category, task_id, dlfile):
             # [orig file name]_info.exe
             dfile = min(os.listdir(buf), key=len)
             path = os.path.join(buf, dfile)
-            file_name = dfile + ".bin"
+            #file_name = dfile + ".bin"
         else:
             path = buf
-            file_name += ".bin"            
+            #file_name += ".bin"            
     elif category == "procdump":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "procdump", file_name)
@@ -907,10 +907,10 @@ def file(request, category, task_id, dlfile):
             # [orig file name]_info.exe
             dfile = min(os.listdir(buf), key=len)
             path = os.path.join(buf, dfile)
-            file_name = dfile + ".bin"
+            #file_name = dfile + ".bin"
         else:
             path = buf
-            file_name += ".bin"
+            #file_name += ".bin"
     elif category == "CAPE":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "CAPE", file_name)
@@ -920,10 +920,10 @@ def file(request, category, task_id, dlfile):
             # [orig file name]_info.exe
             dfile = min(os.listdir(buf), key=len)
             path = os.path.join(buf, dfile)
-            file_name = dfile + ".bin"
+            #file_name = dfile + ".bin"
         else:
             path = buf
-            file_name += ".bin"
+            #file_name += ".bin"
     # Just for suricata dropped files currently
     elif category == "zip":
         file_name = "files.zip"
