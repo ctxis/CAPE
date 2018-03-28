@@ -57,6 +57,8 @@ AUX_ENABLED = []
 PROCESS_LOCK = Lock()
 MONITOR_DLL = None
 MONITOR_DLL_64 = None
+LOADER = None
+LOADER_64 = None
 
 SERVICES_PID = None
 MONITORED_SERVICES = False
@@ -642,7 +644,7 @@ class PipeHandler(Thread):
                         add_pids(process_id)
                     PROCESS_LOCK.release()
                     NUM_INJECTED += 1
-                    log.info("Cuckoomon successfully loaded in process with pid %u.", process_id)
+                    log.info("Monitor successfully loaded in process with pid %u.", process_id)
 
                 # In case of PID, the client is trying to notify the creation of
                 # a new process to be injected and monitored.
@@ -823,7 +825,7 @@ class PipeHandler(Thread):
                         dump_file(unicode(new_fname.decode("utf-8")))
                     FILES_LIST_LOCK.release()
                 else:
-                    log.warning("Received unknown command from cuckoomon: %s", command)
+                    log.warning("Received unknown command from monitor: %s", command)
 
             KERNEL32.WriteFile(self.h_pipe,
                                create_string_buffer(response),
@@ -1054,6 +1056,8 @@ class Analyzer:
         """
         global MONITOR_DLL
         global MONITOR_DLL_64
+        global LOADER
+        global LOADER_64
 
         log.debug("Starting analyzer from: %s", os.getcwd())
         log.debug("Storing results at: %s", PATHS["root"])
@@ -1155,6 +1159,15 @@ class Analyzer:
         else:
             log.info("Analyzer: Package %s does not specify a DLL_64 option", package_name)
         
+        # Set the loader to that specified by package
+        if pack.options.has_key("loader") and pack.options["loader"] != None:
+            LOADER32 = pack.options["loader"]
+            log.info("Analyzer: Loader (32-bit) set to %s from package %s", LOADER32, package_name)
+        
+        if pack.options.has_key("loader_64") and pack.options["loader_64"] != None:
+            LOADER_64 = pack.options["loader_64"]
+            log.info("Analyzer: Loader (64-bit) set to %s from package %s", LOADER_64, package_name)
+        
         # randomize monitor DLL and loader executable names
         if MONITOR_DLL != None:
             copy(os.path.join("dll", MONITOR_DLL), CUCKOOMON32_NAME)
@@ -1164,8 +1177,14 @@ class Analyzer:
             copy(os.path.join("dll", MONITOR_DLL_64), CUCKOOMON64_NAME)
         else:
             copy("dll\\CAPE_x64.dll", CUCKOOMON64_NAME)
-        copy("bin\\loader.exe", LOADER32_NAME)
-        copy("bin\\loader_x64.exe", LOADER64_NAME)
+        if LOADER != None:
+            copy(os.path.join("bin", LOADER), LOADER32_NAME)
+        else:
+            copy("bin\\loader.exe", LOADER32_NAME)
+        if LOADER_64 != None:
+            copy(os.path.join("bin", LOADER_64), LOADER64_NAME)
+        else:
+            copy("bin\\loader_x64.exe", LOADER64_NAME)
 
         # Start analysis package. If for any reason, the execution of the
         # analysis package fails, we have to abort the analysis.

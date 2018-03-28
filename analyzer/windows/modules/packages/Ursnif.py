@@ -20,13 +20,13 @@ class Ursnif(Package):
         self.options["dll"] = "Ursnif.dll"
         self.options["dll_64"] = "Ursnif_x64.dll"
         self.options["exclude-apis"] = "NtCreateFile:NtWriteFile:NtDeleteFile:NtQueryInformationFile"
+        self.options["loader"] = "newloader.exe"
+        self.options["loader_64"] = "newloader_x64.exe"
         
     def start(self, path):
         args = self.options.get("arguments")
         appdata = self.options.get("appdata")
         runasx86 = self.options.get("runasx86")
-        self.options["dll"] = "Ursnif.dll"
-        self.options["dll_64"] = "Ursnif_x64.dll"        
         
         # If the file doesn't have an extension, add .exe
         # See CWinApp::SetCurrentHandles(), it will throw
