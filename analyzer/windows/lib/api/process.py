@@ -571,6 +571,7 @@ class Process:
                 "debug",
                 "disable_hook_content",
                 "hook-type",
+                "base-on-api",
                 "exclude-apis",
                 "exclude-dlls",
                 "dump-on-api",
