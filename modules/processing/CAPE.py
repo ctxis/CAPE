@@ -65,8 +65,8 @@ URSNIF_CONFIG           = 0x24
 URSNIF_PAYLOAD          = 0x25
 CERBER_CONFIG           = 0x30
 CERBER_PAYLOAD          = 0x31
-HANCITOR_CONFIG           = 0x34
-HANCITOR_PAYLOAD          = 0x35
+HANCITOR_CONFIG         = 0x34
+HANCITOR_PAYLOAD        = 0x35
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -400,10 +400,10 @@ class CAPE(Processing):
                             cape_config["cape_config"] = {}
                         malwareconfig_config = module.config(file_data)
                         if isinstance(malwareconfig_config, list):
-                            for (key, value) in module.config(file_data)[0].iteritems():
+                            for (key, value) in malwareconfig_config[0].iteritems():
                                 cape_config["cape_config"].update({key: [value]}) 
                         elif isinstance(malwareconfig_config, dict):
-                            for (key, value) in module.config(file_data).iteritems():
+                            for (key, value) in malwareconfig_config.iteritems():
                                 cape_config["cape_config"].update({key: [value]})
                     except Exception as e:
                         log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
@@ -526,11 +526,11 @@ class CAPE(Processing):
                         cape_config["cape_config"] = {}
                     malwareconfig_config = module.config(file_data)
                     if isinstance(malwareconfig_config, list):
-                        for (key, value) in module.config(file_data)[0].iteritems():
+                        for (key, value) in malwareconfig_config[0].iteritems():
                             cape_config["cape_config"].update({key: [value]}) 
                     elif isinstance(malwareconfig_config, dict):
-                        for (key, value) in module.config(file_data).iteritems():
-                            cape_config["cape_config"].update({key: [value]}) 
+                        for (key, value) in malwareconfig_config.iteritems():
+                            cape_config["cape_config"].update({key: [value]})
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
             
