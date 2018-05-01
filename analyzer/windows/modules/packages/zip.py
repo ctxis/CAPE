@@ -23,6 +23,7 @@ class Zip(Package):
     PATHS = [
              ("SystemRoot", "system32", "cmd.exe"),
              ("SystemRoot", "system32", "wscript.exe"),
+             ("SystemRoot", "system32", "rundll32.exe"),
             ]
     def extract_zip(self, zip_path, extract_path, password, recursion_depth):
         """Extracts a nested ZIP file.
@@ -93,7 +94,7 @@ class Zip(Package):
     def start(self, path):
         root = os.environ["TEMP"]
         password = self.options.get("password")
-        exe_regex = re.compile('(\.exe|\.scr|\.msi|\.bat|\.lnk|\.js|\.jse|\.vbs|\.vbe|\.wsf)$',flags=re.IGNORECASE)
+        exe_regex = re.compile('(\.exe|\.dll|\.scr|\.msi|\.bat|\.lnk|\.js|\.jse|\.vbs|\.vbe|\.wsf)$',flags=re.IGNORECASE)
         zipinfos = self.get_infos(path)
         self.extract_zip(path, root, password, 0)
 
@@ -113,7 +114,6 @@ class Zip(Package):
             else:
                 raise CuckooPackageError("Empty ZIP archive")
 
-
         file_path = os.path.join(root, file_name)
         log.debug("file_name: \"%s\"" % (file_name))
         if file_name.lower().endswith(".lnk"):
@@ -128,5 +128,18 @@ class Zip(Package):
             wscript = self.get_path_app_in_path("wscript.exe")
             wscript_args = "\"{0}\"".format(file_path)
             return self.execute(wscript, wscript_args, file_path)
+        elif file_name.lower().endswith(".dll"):
+            rundll32 = self.get_path_app_in_path("rundll32.exe")
+            function = self.options.get("function", "#1")
+            arguments = self.options.get("arguments")
+            loadername = self.options.get("loader")
+            dll_args = "\"{0}\",{1}".format(file_path, function)
+            if arguments:
+                dll_args += " {0}".format(arguments)
+            if loadername:
+                newname = os.path.join(os.path.dirname(rundll32), loadername)
+                shutil.copy(rundll32, newname)
+                rundll32 = newname
+            return self.execute(rundll32, dll_args, file_path)
         else:
             return self.execute(file_path, self.options.get("arguments"), file_path)
