@@ -649,11 +649,6 @@ class PipeHandler(Thread):
                 # In case of PID, the client is trying to notify the creation of
                 # a new process to be injected and monitored.
                 elif command.startswith("PROCESS:"):
-                    # We acquire the process lock in order to prevent the analyzer
-                    # to terminate the analysis while we are operating on the new
-                    # process.
-                    PROCESS_LOCK.acquire()
-
                     # Set the current DLL to the default one provided
                     # at submission.
                     dll = MONITOR_DLL
@@ -721,15 +716,7 @@ class PipeHandler(Thread):
                             log.warning("Received request to inject Cuckoo "
                                         "process with pid %d, skip", process_id)
 
-                    # Once we're done operating on the processes list, we release
-                    # the lock.
-                    PROCESS_LOCK.release()
                 elif command.startswith("DEBUGGER:"):
-                    # We acquire the process lock in order to prevent the analyzer
-                    # to terminate the analysis while we are operating on the new
-                    # process.
-                    PROCESS_LOCK.acquire()
-
                     # Set the current DLL to the default one provided
                     # at submission.
                     dll = MONITOR_DLL
@@ -785,9 +772,6 @@ class PipeHandler(Thread):
                             log.warning("Received request to inject Cuckoo "
                                         "process with pid %d, skip", process_id)
 
-                    # Once we're done operating on the processes list, we release
-                    # the lock.
-                    PROCESS_LOCK.release()
                 # In case of FILE_NEW, the client is trying to notify the creation
                 # of a new file.
                 elif command.startswith("FILE_NEW:"):

@@ -335,7 +335,10 @@ class SubmitCAPE(Report):
             package = 'TrickBot'
 
         if 'Ursnif' in detections:
-            package = 'Ursnif'	
+            if parent_package=='doc' or parent_package=='Injection_doc':
+                package = 'Ursnif_doc'
+            else:
+                package = 'Ursnif'
             
         if 'Hancitor' in detections:
             if parent_package=='doc' or parent_package=='Injection_doc':
