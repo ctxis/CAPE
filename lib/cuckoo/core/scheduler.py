@@ -77,6 +77,7 @@ class AnalysisManager(threading.Thread):
         self.db = Database()
         self.interface = None
         self.rt_table = None
+        self.route = None
 
     def init_storage(self):
         """Initialize analysis storage folder."""
@@ -501,7 +502,6 @@ class AnalysisManager(threading.Thread):
     def route_network(self):
         """Enable network routing if desired."""
         # Determine the desired routing strategy (none, internet, VPN).
-        self.route = None
         if self.task.options:
             for option in self.task.options.split(","):
                 key, value = option.split("=")
