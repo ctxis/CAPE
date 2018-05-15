@@ -27,6 +27,7 @@ from lib.cuckoo.core.guest import GuestManager
 from lib.cuckoo.core.plugins import list_plugins, RunAuxiliary, RunProcessing
 from lib.cuckoo.core.plugins import RunSignatures, RunReporting, GetFeeds
 from lib.cuckoo.core.resultserver import ResultServer
+from lib.cuckoo.core.rooter import rooter, vpns
 
 try:
     import pefile
@@ -74,6 +75,8 @@ class AnalysisManager(threading.Thread):
         self.binary = ""
         self.machine = None
         self.db = Database()
+        self.interface = None
+        self.rt_table = None
 
     def init_storage(self):
         """Initialize analysis storage folder."""
@@ -293,6 +296,9 @@ class AnalysisManager(threading.Thread):
             # Start the machine.
             machinery.start(self.machine.label)
 
+            # Enable network routing.
+            self.route_network()
+
             # By the time start returns it will have fully started the Virtual
             # Machine. We can now safely release the machine lock.
             machine_lock.release()
@@ -352,6 +358,9 @@ class AnalysisManager(threading.Thread):
             # After all this, we can make the ResultServer forget about the
             # internal state for this analysis task.
             ResultServer().del_task(self.task, self.machine)
+
+            # Drop the network routing rules if any.
+            self.unroute_network()
 
             if dead_machine:
                 # Remove the guest from the database, so that we can assign a
@@ -489,6 +498,101 @@ class AnalysisManager(threading.Thread):
 
         active_analysis_count -= 1
 
+    def route_network(self):
+        """Enable network routing if desired."""
+        # Determine the desired routing strategy (none, internet, VPN).
+        self.route = None
+        if self.task.options:
+            for option in self.task.options.split(","):
+                key, value = option.split("=")
+                if key == "route":
+                    self.route = value
+                    break
+
+        if self.route == "none" or self.route == "None":
+            self.interface = None
+            self.rt_table = None
+        elif self.route == "inetsim":
+            self.interface = self.cfg.routing.inetsim_interface
+        elif self.route == "tor":
+            self.interface = self.cfg.routing.tor_interface
+        elif self.route == "internet" and self.cfg.routing.internet != "none":
+            self.interface = self.cfg.routing.internet
+            self.rt_table = self.cfg.routing.rt_table
+        elif self.route in vpns:
+            self.interface = vpns[self.route].interface
+            self.rt_table = vpns[self.route].rt_table
+            #startup the configured vpn
+            rooter("vpn_enable", self.route)
+            timeout = 0
+            while timeout < 30:
+                if not rooter("nic_available", self.interface):
+                    time.sleep(1)
+                    timeout += 1
+                    log.info("Waiting for VPN interface '%s' to be enabled.",
+                              self.interface)
+                else:
+                    log.info("Enabled VPN interface '%s'", self.interface)
+                    break
+        else:
+            log.warning("Unknown network routing destination specified, "
+                        "ignoring routing for this analysis: %r", self.route)
+            self.interface = None
+            self.rt_table = None
+
+        # Check if the network interface is still available. If a VPN dies for
+        # some reason, its tunX interface will no longer be available.
+        if self.interface and not rooter("nic_available", self.interface):
+            log.error(
+                "The network interface '%s' configured for this analysis is "
+                "not available at the moment, switching to route=none mode.",
+                self.interface
+            )
+            self.route = "none"
+            self.interface = None
+            self.rt_table = None
+
+        if self.route == "inetsim":
+            rooter("inetsim_enable", self.machine.ip, str(self.cfg.routing.inetsim_server),
+                str(self.cfg.routing.inetsim_dnsport), str(self.cfg.resultserver.port))
+
+        if self.route == "tor":
+            rooter("tor_enable", self.machine.ip, str(self.cfg.resultserver.port),
+                str(self.cfg.routing.tor_dnsport), str(self.cfg.routing.tor_proxyport))
+
+        if self.interface:
+            rooter("forward_enable", self.machine.interface,
+                   self.interface, self.machine.ip)
+
+        log.info("Enabled route '%s'", self.route)
+
+        if self.rt_table:
+            rooter("srcroute_enable", self.rt_table, self.machine.ip)
+
+        # Propagate the taken route to the database.
+        #self.db.set_route(self.task.id, self.route)
+
+    def unroute_network(self):
+        if self.interface:
+            rooter("forward_disable", self.machine.interface,
+                   self.interface, self.machine.ip)
+            log.info("Disabled route '%s'", self.route)
+
+        if self.rt_table:
+            rooter("srcroute_disable", self.rt_table, self.machine.ip)
+
+        if self.route in vpns:
+            rooter("vpn_disable", self.route)
+            time.sleep(1)
+
+        if self.route == "inetsim":
+          rooter("inetsim_disable", self.machine.ip, self.cfg.routing.inetsim_server,
+                str(self.cfg.routing.inetsim_dnsport), str(self.cfg.resultserver.port))
+
+        if self.route == "tor":
+            rooter("tor_disable", self.machine.ip, str(self.cfg.resultserver.port),
+                str(self.cfg.routing.tor_dnsport), str(self.cfg.routing.tor_proxyport))
+
 class Scheduler:
     """Tasks Scheduler.
 
@@ -567,6 +671,29 @@ class Scheduler:
                         "to process the results in a separate process.py to "
                         "increase throughput and stability. Please read the "
                         "documentation about the `Processing Utility`.")
+
+        # Drop all existing packet forwarding rules for each VM. Just in case
+        # Cuckoo was terminated for some reason and various forwarding rules
+        # have thus not been dropped yet.
+        for machine in machinery.machines():
+            if not machine.interface:
+                log.info("Unable to determine the network interface for VM "
+                         "with name %s, Cuckoo will not be able to give it "
+                         "full internet access or route it through a VPN! "
+                         "Please define a default network interface for the "
+                         "machinery or define a network interface for each "
+                         "VM.", machine.name)
+                continue
+
+            # Drop forwarding rule to each VPN.
+            for vpn in vpns.values():
+                rooter("forward_disable", machine.interface,
+                       vpn.interface, machine.ip)
+
+            # Drop forwarding rule to the internet / dirty line.
+            if self.cfg.routing.internet != "none":
+                rooter("forward_disable", machine.interface,
+                       self.cfg.routing.internet, machine.ip)
 
     def stop(self):
         """Stop scheduler."""
