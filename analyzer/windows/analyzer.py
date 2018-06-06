@@ -533,8 +533,8 @@ class PipeHandler(Thread):
                             MONITORED_DCOM = True
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
-                                add_critical_pid(dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
+                                servproc.set_critical()
                                 filepath = servproc.get_filepath()
                                 servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
