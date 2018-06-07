@@ -205,7 +205,7 @@ class MongoDB(Report):
                                     log.warn("results['%s']['%s'] deleted due to size: %s" % (parent_key, child_key, csize))
                                     del report[parent_key][j][child_key]
                         else:
-                            child_key, csize = self.debug_dict_size(report[parent_key])
+                            child_key, csize = self.debug_dict_size(report[parent_key])[0]
                             if csize > size_filter:
                                 log.warn("results['%s']['%s'] deleted due to size: %s" % (parent_key, child_key, csize))
                                 del report[parent_key][child_key]
