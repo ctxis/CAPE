@@ -23,7 +23,12 @@ class Sniffer(Auxiliary):
         self.machine = self.db.view_machine_by_label(self.machine.label)
         tcpdump = self.options.get("tcpdump", "/usr/sbin/tcpdump")
         bpf = self.options.get("bpf", "")
-        file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
+        remote = self.options.get("remote", "no")
+        remote_host = self.options.get("host", "")
+	if remote:
+		file_path = "/tmp/tcp.dump.%d" % self.task.id
+	else:
+        	file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                                  "%s" % self.task.id, "dump.pcap")
         host = self.machine.ip
         # Selects per-machine interface if available.
@@ -78,10 +83,11 @@ class Sniffer(Auxiliary):
         except:
             pass
         else:
-            pargs.extend(["-Z", user])
+	    if not remote:
+	            pargs.extend(["-Z", user])
 
         pargs.extend(["-w", file_path])
-        pargs.extend(["host", host])
+        pargs.extend(["'", "host", host])
         # Do not capture XMLRPC agent traffic.
         pargs.extend(["and", "not", "(", "dst", "host", host, "and", "dst", "port",
                       str(CUCKOO_GUEST_PORT), ")", "and", "not", "(", "src", "host",
@@ -94,23 +100,57 @@ class Sniffer(Auxiliary):
                       "src", "port", resultserver_port, ")"])
 
         if bpf:
-            pargs.extend(["and", "(", bpf, ")"])
+            pargs.extend(["and", "("] + bpf.split(' ') + [ ")" ] )
 
-        try:
-            self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE)
-        except (OSError, ValueError):
-            log.exception("Failed to start sniffer (interface=%s, host=%s, "
-                          "dump path=%s)", interface, host, file_path)
-            return
+        pargs.extend(["'"])
 
-        log.info("Started sniffer with PID %d (interface=%s, host=%s, "
-                 "dump path=%s)", self.proc.pid, interface, host, file_path)
+	if remote and not remote_host:
+		log.exception("Failed to start sniffer, remote enabled but no ssh string has been specified")
+		return
+	elif remote:
+		f = open("/tmp/" + str(self.task.id) + ".sh", "w")
+		# remote_args = [ 'ssh', remote_host, 'nohup', ' '.join(pargs), '&' ]
+		if f:
+			f.write( ' '.join(['nohup', ' '.join(pargs), '&']))
+			f.write("\n")
+			f.close()
+		remote_output = subprocess.check_output(['scp', '-q', "/tmp/" + str(self.task.id) + ".sh", remote_host + ":/tmp/a.sh"  ], stderr=subprocess.STDOUT)
+	        log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
+	      	         "dump path=%s)", remote_host, interface, host, file_path)
+
+		# x = os.system("ssh %s 'nohup /tmp/a.sh > /tmp/log 2>/tmp/err &'" % remote_host)
+		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', '/tmp/a.sh', '>','/tmp/log','2>','/tmp/err','&' ], stderr=subprocess.STDOUT)
+	else:
+	        try:
+		    self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE)
+	        except (OSError, ValueError):
+	            log.exception("Failed to start sniffer (interface=%s, host=%s, "
+	                          "dump path=%s)", interface, host, file_path)
+	            return
+
+	        log.info("Started sniffer with PID %d (interface=%s, host=%s, "
+	      	         "dump path=%s)", self.proc.pid, interface, host, file_path)
 
     def stop(self):
         """Stop sniffing.
         @return: operation status.
         """
+        remote = self.options.get("remote", "no")
+	if remote: 
+        	remote_host = self.options.get("host", "")
+		remote_args = [ 'ssh', remote_host, 'killall' , '-9', 'tcpdump' ]
+		remote_output = subprocess.check_output(remote_args, stderr=subprocess.STDOUT)
+
+        	file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
+                                 "%s" % self.task.id, "dump.pcap")
+		file_path2 = "/tmp/tcp.dump.%d" % self.task.id
+
+		remote_output = subprocess.check_output([ 'scp', '-q', remote_host + ":" + file_path2, file_path ], stderr=subprocess.STDOUT)
+
+		remote_output = subprocess.check_output([ 'ssh', remote_host, 'rm', '-f', file_path2 ], stderr=subprocess.STDOUT)
+		return
+
         if self.proc and not self.proc.poll():
             try:
                 self.proc.terminate()
