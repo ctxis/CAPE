@@ -120,7 +120,6 @@ class Sniffer(Auxiliary):
 
 		x = os.system("ssh %s 'nohup /tmp/a.sh > /tmp/log 2>/tmp/err &'" % remote_host)
 		#remote_output = subprocess.check_output(['ssh', remote_host, "/bin/bash /tmp/a.sh" ], stderr=subprocess.STDOUT)
-		#print(remote_output)
 	else:
 	        try:
 		    self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
@@ -141,19 +140,15 @@ class Sniffer(Auxiliary):
 	if remote: 
         	remote_host = self.options.get("host", "")
 		remote_args = [ 'ssh', remote_host, 'killall' , '-9', 'tcpdump' ]
-		print(remote_args)
 		remote_output = subprocess.check_output(remote_args, stderr=subprocess.STDOUT)
-		print(remote_output)
 
         	file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                                  "%s" % self.task.id, "dump.pcap")
 		file_path2 = "/tmp/tcp.dump.%d" % self.task.id
 
 		remote_output = subprocess.check_output([ 'scp', '-q', remote_host + ":" + file_path2, file_path ], stderr=subprocess.STDOUT)
-		print(remote_output)
 
 		remote_output = subprocess.check_output([ 'ssh', remote_host, 'rm', '-f', file_path2 ], stderr=subprocess.STDOUT)
-		print(remote_output)
 		return
 
         if self.proc and not self.proc.poll():
