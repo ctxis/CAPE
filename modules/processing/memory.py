@@ -1010,6 +1010,8 @@ class VolatilityManager(object):
 
         vol = VolatilityAPI(self.memfile, profile)
 
+	print(self.voptions)
+
         # TODO: improve the load of volatility functions.
         if self.voptions.pslist.enabled:
             results["pslist"] = vol.pslist()
@@ -1141,7 +1143,10 @@ class Memory(Processing):
         self.voptions = Config("memory")
 
         results = {}
+	print(self.task)
+	print(self)
         if "machine" not in self.task or not self.task["machine"] or not self.task["memory"]:
+            log.warn("Volatility startup: machine not in task list and no memory task specified.")
             return results
 
         task_machine = self.task["machine"]["name"]
@@ -1152,6 +1157,7 @@ class Memory(Processing):
                 try:
                     vol = VolatilityManager(self.memory_path)
                     results = vol.run(manager=machine_manager, vm=task_machine)
+		    print(results)
                 except Exception:
                     log.exception("Generic error executing volatility")
                     if self.voptions.basic.delete_memdump_on_exception:

@@ -33,3 +33,5 @@ imagehash
 pyinstaller
 requests
 sqlalchemy
+# upx
+maec
