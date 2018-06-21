@@ -118,8 +118,8 @@ class Sniffer(Auxiliary):
 	        log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
 	      	         "dump path=%s)", remote_host, interface, host, file_path)
 
-		x = os.system("ssh %s 'nohup /tmp/a.sh > /tmp/log 2>/tmp/err &'" % remote_host)
-		#remote_output = subprocess.check_output(['ssh', remote_host, "/bin/bash /tmp/a.sh" ], stderr=subprocess.STDOUT)
+		# x = os.system("ssh %s 'nohup /tmp/a.sh > /tmp/log 2>/tmp/err &'" % remote_host)
+		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', '/tmp/a.sh', '>','/tmp/log','2>','/tmp/err','&' ], stderr=subprocess.STDOUT)
 	else:
 	        try:
 		    self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
