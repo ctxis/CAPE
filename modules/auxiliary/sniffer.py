@@ -108,18 +108,26 @@ class Sniffer(Auxiliary):
 		log.exception("Failed to start sniffer, remote enabled but no ssh string has been specified")
 		return
 	elif remote:
-		f = open("/tmp/" + str(self.task.id) + ".sh", "w")
-		# remote_args = [ 'ssh', remote_host, 'nohup', ' '.join(pargs), '&' ]
+
+		try:
+		    from subprocess import DEVNULL # py3k
+		except ImportError:
+		    DEVNULL = open(os.devnull, 'wb')
+
+		f = open("/tmp/%d.sh" % self.task.id, "w")
 		if f:
-			f.write( ' '.join(['nohup', ' '.join(pargs), '&']))
+			f.write( ' '.join(pargs)  + ' &')
 			f.write("\n")
 			f.close()
-		remote_output = subprocess.check_output(['scp', '-q', "/tmp/" + str(self.task.id) + ".sh", remote_host + ":/tmp/a.sh"  ], stderr=subprocess.STDOUT)
+
+		remote_output = subprocess.check_output(['scp', '-q', "/tmp/%d.sh" % self.task.id, remote_host + ":/tmp/%d.sh" % self.task.id  ], stderr=DEVNULL)
+		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', "/bin/bash", '/tmp/%d.sh' % self.task.id, '>','/tmp/log','2>','/tmp/err','&' ], stderr=subprocess.STDOUT)
+
 	        log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
 	      	         "dump path=%s)", remote_host, interface, host, file_path)
 
-		# x = os.system("ssh %s 'nohup /tmp/a.sh > /tmp/log 2>/tmp/err &'" % remote_host)
-		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', '/tmp/a.sh', '>','/tmp/log','2>','/tmp/err','&' ], stderr=subprocess.STDOUT)
+		remote_output = subprocess.check_output(['ssh', remote_host, 'rm', '-f', '/tmp/%d.sh' % self.task.id ], stderr=DEVNULL)
+
 	else:
 	        try:
 		    self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
@@ -140,15 +148,20 @@ class Sniffer(Auxiliary):
 	if remote: 
         	remote_host = self.options.get("host", "")
 		remote_args = [ 'ssh', remote_host, 'killall' , '-9', 'tcpdump' ]
-		remote_output = subprocess.check_output(remote_args, stderr=subprocess.STDOUT)
+
+		try:
+		    from subprocess import DEVNULL # py3k
+		except ImportError:
+		    DEVNULL = open(os.devnull, 'wb')
+
+		remote_output = subprocess.check_output(remote_args, stderr=DEVNULL)
 
         	file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                                  "%s" % self.task.id, "dump.pcap")
 		file_path2 = "/tmp/tcp.dump.%d" % self.task.id
 
-		remote_output = subprocess.check_output([ 'scp', '-q', remote_host + ":" + file_path2, file_path ], stderr=subprocess.STDOUT)
-
-		remote_output = subprocess.check_output([ 'ssh', remote_host, 'rm', '-f', file_path2 ], stderr=subprocess.STDOUT)
+		remote_output = subprocess.check_output([ 'scp', '-q', remote_host + ":" + file_path2, file_path ], stderr=DEVNULL)
+		remote_output = subprocess.check_output([ 'ssh', remote_host, 'rm', '-f', file_path2 ], stderr=DEVNULL)
 		return
 
         if self.proc and not self.proc.poll():
