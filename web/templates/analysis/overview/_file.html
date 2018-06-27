@@ -39,18 +39,18 @@
                 <td style="word-wrap: break-word;">{{analysis.target.file.ssdeep}}</td>
             </tr>
             <tr>
-                <th>TRiD</th>
+                <th>TrID</th>
                 <td style="word-wrap: break-word;">
-                {% if analysis.target.file.trid %}
+                {% if analysis.trid %}
                     <ul style="margin-top: 0;margin-bottom: 0;">
-                    {% for str in analysis.target.file.trid %}
+                    {% for str in analysis.trid %}
                         <li>{{str}}</li>
                     {% endfor %}
                     </ul>
                 {% else %}
                     None matched
                 {% endif %}
-                <td>
+                </td>
             </tr>
             <tr>
                 <th>ClamAV</th>
