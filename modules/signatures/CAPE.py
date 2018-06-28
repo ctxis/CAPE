@@ -658,10 +658,11 @@ class CAPE_AnomalousDynamicFunctionLoading(Signature):
 		self.data.append({"DynamicLoader" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
 
     def on_complete(self):
-	if self.loadctr > 8:
-		elif self.loadctr > 20:
-			self.severity = 2
-		return True
+	if self.loadctr < 8:
+		return False
+	elif self.loadctr > 20:
+		self.severity = 2
+	return True
 
 class CAPE_MaliciousDynamicFunctionLoading(Signature):
     name = "MaliciousDynamicFunctionLoading"
