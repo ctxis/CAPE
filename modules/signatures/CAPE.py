@@ -725,7 +725,7 @@ class CAPE_AnomalousDeleteFile(Signature):
 
 class CAPE_ThemeInitApiHookInject(Signature):
     name = "ThemeInitApiHookInject"
-    description = "CAPE detection: Possible ThemeInitApiHook Injecttion"
+    description = "CAPE detection: Possible ThemeInitApiHook Injection"
     severity = 1
     categories = ["injection"]
     authors = ["redsand"]
@@ -765,8 +765,8 @@ class CAPE_MoveFileOnReboot(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "MoveFileWithProgressTransactedW" or call["api"] == "MoveFileWithProgressTransactedA":
-		if self.get_argument(call, "Flags") == "MOVEFILE_DELAY_UNTIL_REBOOT":
-			self.data.append({"File Rename" : "Old: %s -> New: %s" % (self.get_argument(call, "ExistingFileName"), self.get_argument(call, "NewFileName")) })
+		if self.get_raw_argument(call, "Flags") == 0x4: # 0x00000004
+			self.data.append({"File Move on Reboot" : "Old: %s -> New: %s" % (self.get_argument(call, "ExistingFileName"), self.get_argument(call, "NewFileName")) })
 			self.match = True
     def on_complete(self):
 	return self.match
