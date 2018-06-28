@@ -434,4 +434,24 @@ class CAPE_Doppelganging(Signature):
             if self.get_argument(call, "SectionHandle") == self.sectionhandle:
                 return True
       
-            
+
+class CAPE_AntiDebugSetUnhandledExceptionFilter(Signature):
+    name = "SetUnhandledExceptionFilter"
+    description = "CAPE detection: Anti-Debug SetUnhandledExceptionFilter"
+    severity = 3
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.lastprocess = None
+
+    filter_apinames = set(["SetUnhandledExceptionFilter"])
+
+    def on_call(self, call, process):
+        if call["api"] == "SetUnhandledExceptionFilter":
+           return True
+
+

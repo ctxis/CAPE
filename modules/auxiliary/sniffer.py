@@ -116,17 +116,19 @@ class Sniffer(Auxiliary):
 
 		f = open("/tmp/%d.sh" % self.task.id, "w")
 		if f:
-			f.write( ' '.join(pargs)  + ' &')
+			f.write( ' '.join(pargs)  + ' & PID=$!')
+			f.write("\n")
+			f.write( 'echo $PID > /tmp/%d.pid' % self.task.id )
 			f.write("\n")
 			f.close()
 
 		remote_output = subprocess.check_output(['scp', '-q', "/tmp/%d.sh" % self.task.id, remote_host + ":/tmp/%d.sh" % self.task.id  ], stderr=DEVNULL)
 		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', "/bin/bash", '/tmp/%d.sh' % self.task.id, '>','/tmp/log','2>','/tmp/err','&' ], stderr=subprocess.STDOUT)
 
-	        log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
-	      	         "dump path=%s)", remote_host, interface, host, file_path)
-
-		remote_output = subprocess.check_output(['ssh', remote_host, 'rm', '-f', '/tmp/%d.sh' % self.task.id ], stderr=DEVNULL)
+		self.pid = subprocess.check_output(['ssh', remote_host, 'cat', '/tmp/%d.pid' % self.task.id ], stderr=DEVNULL).strip()
+		log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
+			"dump path=%s, pid=%s)", remote_host, interface, host, file_path, self.pid)
+		remote_output = subprocess.check_output(['ssh', remote_host, 'rm', '-f', '/tmp/%d.pid' % self.task.id, '/tmp/%d.sh' % self.task.id ], stderr=DEVNULL)
 
 	else:
 	        try:
@@ -147,7 +149,7 @@ class Sniffer(Auxiliary):
         remote = self.options.get("remote", "no")
 	if remote: 
         	remote_host = self.options.get("host", "")
-		remote_args = [ 'ssh', remote_host, 'killall' , '-9', 'tcpdump' ]
+		remote_args = [ 'ssh', remote_host, 'kill' , '-2', self.pid ]
 
 		try:
 		    from subprocess import DEVNULL # py3k
