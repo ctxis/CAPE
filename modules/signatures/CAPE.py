@@ -537,7 +537,7 @@ class CAPE_AntiDebugDebugActiveProcess(Signature):
         if call["api"] == "DebugActiveProcess":
            return True
 
-
+XXX: THIS IS INCOMPLETE, SEE MISSING HOOK ON NtQueryInformationProcess
 class CAPE_AntiDebugCheckRemoteDebuggerPresent(Signature):
     # https://www.apriorit.com/dev-blog/367-anti-reverse-engineering-protection-techniques-to-use-before-releasing-software
     name = "CheckRemoteDebuggerPresent"
@@ -565,7 +565,9 @@ class CAPE_AntiDebugCheckRemoteDebuggerPresent(Signature):
 	   # - ProcessDebugObjectHandle 0x1E
 	   # - ProcessDebugFlags 0x1F
 	   # - ProcessBasicInformation 0x00
-           return True
+
+	   # dont trigger false positive
+           return False
 
 
 
