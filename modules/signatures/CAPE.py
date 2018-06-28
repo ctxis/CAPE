@@ -438,7 +438,7 @@ class CAPE_Doppelganging(Signature):
 class CAPE_AntiDebugSetUnhandledExceptionFilter(Signature):
     name = "SetUnhandledExceptionFilter"
     description = "CAPE detection: Anti-Debug SetUnhandledExceptionFilter"
-    severity = 3
+    severity = 1
     categories = ["anti-debug"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -457,7 +457,7 @@ class CAPE_AntiDebugSetUnhandledExceptionFilter(Signature):
 class CAPE_AntiDebugAddVectoredExceptionHandler(Signature):
     name = "AddVectoredExceptionHandler"
     description = "CAPE detection: Anti-Debug AddVectoredExceptionHandler"
-    severity = 3
+    severity = 1
     categories = ["anti-debug"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -478,7 +478,7 @@ class CAPE_AntiDebugAddVectoredExceptionHandler(Signature):
 class CAPE_AntiDebugNtSetInformationThread(Signature):
     name = "NtSetInformationThread"
     description = "CAPE detection: Anti-Debug NtSetInformationThread"
-    severity = 3
+    severity = 2
     categories = ["anti-debug"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -501,7 +501,7 @@ class CAPE_AntiDebugNtSetInformationThread(Signature):
 class CAPE_AntiDebugNtCreateThreadEx(Signature):
     name = "NtCreateThreadEx"
     description = "CAPE detection: Anti-Debug NtCreateThreadEx"
-    severity = 3
+    severity = 1
     categories = ["anti-debug"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -522,7 +522,7 @@ class CAPE_AntiDebugNtCreateThreadEx(Signature):
 class CAPE_AntiDebugDebugActiveProcess(Signature):
     name = "DebugActiveProcess"
     description = "CAPE detection: Anti-Debug DebugActiveProcess"
-    severity = 3
+    severity = 2
     categories = ["anti-debug"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -604,7 +604,7 @@ class CAPE_AntiDebugGetTickCount(Signature):
 class CAPE_AntiDebugOutputDebugString(Signature):
     name = "OutputDebugString"
     description = "CAPE detection: Anti-Debug OutputDebugString"
-    severity = 3
+    severity = 2
     categories = ["anti-debug"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -659,16 +659,14 @@ class CAPE_AnomalousDynamicFunctionLoading(Signature):
 
     def on_complete(self):
 	if self.loadctr > 8:
-		if self.loadctr > 20:
-			self.severity = 3
-		elif self.loadctr > 10:
+		elif self.loadctr > 20:
 			self.severity = 2
 		return True
 
 class CAPE_MaliciousDynamicFunctionLoading(Signature):
     name = "MaliciousDynamicFunctionLoading"
     description = "CAPE detection: Possible Malicious Dynamic Function Loading"
-    severity = 3
+    severity = 1
     categories = ["malware"]
     authors = ["redsand"]
     minimum = "1.3"
@@ -703,7 +701,7 @@ class CAPE_MaliciousDynamicFunctionLoading(Signature):
 class CAPE_AnomalousDeleteFile(Signature):
     name = "AnomalousDeleteFile"
     description = "CAPE detection: Anomalous File Deletion Behavior (10+)"
-    severity = 1
+    severity = 2
     categories = ["malware"]
     authors = ["redsand"]
     minimum = "1.3"
