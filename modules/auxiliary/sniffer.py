@@ -123,7 +123,7 @@ class Sniffer(Auxiliary):
 			f.close()
 
 		remote_output = subprocess.check_output(['scp', '-q', "/tmp/%d.sh" % self.task.id, remote_host + ":/tmp/%d.sh" % self.task.id  ], stderr=DEVNULL)
-		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', "/bin/bash", '/tmp/%d.sh' % self.task.id, '>','/tmp/log','2>','/tmp/err','&' ], stderr=subprocess.STDOUT)
+		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', "/bin/bash", '/tmp/%d.sh' % self.task.id, '>','/tmp/log','2>','/tmp/err' ], stderr=subprocess.STDOUT)
 
 		self.pid = subprocess.check_output(['ssh', remote_host, 'cat', '/tmp/%d.pid' % self.task.id ], stderr=DEVNULL).strip()
 		log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
