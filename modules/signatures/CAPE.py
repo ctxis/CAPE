@@ -434,4 +434,342 @@ class CAPE_Doppelganging(Signature):
             if self.get_argument(call, "SectionHandle") == self.sectionhandle:
                 return True
       
+
+class CAPE_AntiDebugSetUnhandledExceptionFilter(Signature):
+    name = "SetUnhandledExceptionFilter"
+    description = "CAPE detection: Anti-Debug SetUnhandledExceptionFilter"
+    severity = 1
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["SetUnhandledExceptionFilter"])
+
+    def on_call(self, call, process):
+        if call["api"] == "SetUnhandledExceptionFilter":
+           return True
+      
             
+class CAPE_AntiDebugAddVectoredExceptionHandler(Signature):
+    name = "AddVectoredExceptionHandler"
+    description = "CAPE detection: Anti-Debug AddVectoredExceptionHandler"
+    severity = 1
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["AddVectoredExceptionHandler"])
+
+    def on_call(self, call, process):
+        if call["api"] == "AddVectoredExceptionHandler":
+           return True
+      
+# XXX: not sure this will work since NtSetInformationThread is looked up via LdrDll       
+# also needs hooking and logging inside capemon
+"""
+class CAPE_AntiDebugNtSetInformationThread(Signature):
+    name = "NtSetInformationThread"
+    description = "CAPE detection: Anti-Debug NtSetInformationThread"
+    severity = 2
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["NtSetInformationThread"])
+
+    def on_call(self, call, process):
+        if call["api"] == "NtSetInformationThread":
+	   # check arg 2 if it equals 0x11, if so then trigger
+           return True
+"""
+
+
+# XXX: Currently does not work, needs hook monitor around NtCreateThreadEx
+"""
+class CAPE_AntiDebugNtCreateThreadEx(Signature):
+    name = "NtCreateThreadEx"
+    description = "CAPE detection: Anti-Debug NtCreateThreadEx"
+    severity = 1
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["NtCreateThreadEx"])
+
+    def on_call(self, call, process):
+        if call["api"] == "NtCreateThreadEx":
+           # check arg  CreateFlags & THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER == TRUE then we're hiding from the debugger
+           return True
+"""
+
+
+class CAPE_AntiDebugDebugActiveProcess(Signature):
+    name = "DebugActiveProcess"
+    description = "CAPE detection: Anti-Debug DebugActiveProcess"
+    severity = 2
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["DebugActiveProcess"])
+
+    def on_call(self, call, process):
+        if call["api"] == "DebugActiveProcess":
+           return True
+
+# XXX: THIS IS INCOMPLETE, SEE MISSING HOOK ON NtQueryInformationProcess
+class CAPE_AntiDebugCheckRemoteDebuggerPresent(Signature):
+    # https://www.apriorit.com/dev-blog/367-anti-reverse-engineering-protection-techniques-to-use-before-releasing-software
+    name = "CheckRemoteDebuggerPresent"
+    description = "CAPE detection: Anti-Debug CheckRemoteDebuggerPresent"
+    severity = 3
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["CheckRemoteDebuggerPresent", "NtQueryInformationProcess"])
+
+    def on_call(self, call, process):
+        if call["api"] == "CheckRemoteDebuggerPresent":
+           return True
+        elif call["api"] == "NtQueryInformationProcess":
+	   # looks like capemon is missing hook on this function to inspect arguments
+	   # need to verify the argument (_In_      UINT             ProcessInformationClass,) equals 7
+	   # would like to also verify argument 3 ( _Out_     PVOID            ProcessInformation) is not null 
+
+	   # other examples to monitor are:
+	   # - ProcessDebugObjectHandle 0x1E
+	   # - ProcessDebugFlags 0x1F
+	   # - ProcessBasicInformation 0x00
+
+	   # dont trigger false positive
+           return False
+
+
+
+"""
+XXX: MISSING CHECK - redsand
+CONTEXT ctx = {};
+ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+SetThreadContext(GetCurrentThread(), &ctx);
+
+Check if Malware is clearing debug registers.  This function should be hooked and monitored as well
+Also hook NtSetContextThread as this is the underlying Nt WINAPI function.
+
+"""
+
+
+class CAPE_AntiDebugGetTickCount(Signature):
+    name = "GetTickCount"
+    description = "CAPE detection: Anti-Debug GetTickCount"
+    severity = 1
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+
+    filter_apinames = set(["GetTickCount"])
+
+    def on_call(self, call, process):
+        if call["api"] == "GetTickCount":
+           return True
+
+class CAPE_AntiDebugOutputDebugString(Signature):
+    name = "OutputDebugString"
+    description = "CAPE detection: Anti-Debug OutputDebugString"
+    severity = 2
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.set_err = False
+	self.output = False
+
+    filter_apinames = set(["OutputDebugStringA", "OutputDebugStringW", "SetLastError", "GetLastError"])
+
+    def on_call(self, call, process):
+        if call["api"] == "OutputDebugStringA" or call["api"] == "OutputDebugStringW":
+	   if self.set_err: 
+		   self.output = True
+	   else:
+		self.output = False
+        elif call["api"] == "SetLastError": 
+	  self.output = False
+	  self.set_err = True
+        elif call["api"] == "GetLastError": 
+	  if not self.set_err or not self.output:
+		self.set_err = self.output = False
+	  elif self.set_err and self.output:
+		return True
+		
+
+class CAPE_AnomalousDynamicFunctionLoading(Signature):
+    name = "AnomalousDynamicFunctionLoading"
+    description = "CAPE detection: Anomalous Dynamic Function Loading"
+    severity = 1
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.dll_loaded = False
+        self.loadctr = 0
+	self.list = [ ]
+
+    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll"])
+
+    def on_call(self, call, process):
+        if call["api"] == "LdrLoadDll":
+	   self.dll_loaded = True
+	elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress":
+		self.loadctr += 1
+		self.data.append({"DynamicLoader" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+
+    def on_complete(self):
+	if self.loadctr < 8:
+		return False
+	elif self.loadctr > 20:
+		self.severity = 2
+	return True
+
+class CAPE_MaliciousDynamicFunctionLoading(Signature):
+    name = "MaliciousDynamicFunctionLoading"
+    description = "CAPE detection: Possible Malicious Dynamic Function Loading"
+    severity = 1
+    categories = ["malware"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+    malicious_functions = [ "LookupAccountNameLocalW", "LookupAccountNameLocalA", "LookupAccountSidW", "LookupAccountSidA",
+			    "LookupAccountSidLocalW", "LookupAccountSidLocalA", "CoTaskMemAlloc", "CoTaskMemFree", 
+			    "LookupAccountNameW", "LookupAccountNameA", "NetLocalGroupGetMembers", "SamConnect", "SamLookupNamesInDomain",
+			    "OpenProcessToken", "SetThreadToken", "DuplicateTokenEx", "AdjustTokenPrivileges", "OpenThreadToken",
+			   ]
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.dll_loaded = False
+        self.loadctr = 0
+	self.list = [ ]
+
+    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll"])
+
+    def on_call(self, call, process):
+        if call["api"] == "LdrLoadDll":
+	   self.dll_loaded = True
+	elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress":
+		arg = self.get_argument(call, "FunctionName")
+		if arg in malicious_functions:
+			self.data.append({"SuspiciousDynamicFunction" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+
+    def on_complete(self):
+	if self.loadctr > 0:
+		return True
+
+
+class CAPE_AnomalousDeleteFile(Signature):
+    name = "AnomalousDeleteFile"
+    description = "CAPE detection: Anomalous File Deletion Behavior (10+)"
+    severity = 2
+    categories = ["malware"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.loadctr = 0
+	self.list = [ ]
+
+    filter_apinames = set(["NtDeleteFile", "DeleteFileA", "DeleteFileW"])
+
+    def on_call(self, call, process):
+        if call["api"] == "NtDeleteFile" or call["api"] == "DeleteFileA" or call["api"] == "DeleteFileW":
+		self.loadctr += 1
+		self.data.append({"DynamicLoader" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+    def on_complete(self):
+	if self.loadctr > 10:
+		return True
+
+
+class CAPE_ThemeInitApiHookInject(Signature):
+    name = "ThemeInitApiHookInject"
+    description = "CAPE detection: Possible ThemeInitApiHook Injection"
+    severity = 1
+    categories = ["injection"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.loadctr = 0
+	self.list = [ ]
+
+    filter_apinames = set(["ThemeInitApiHook"])
+
+    def on_call(self, call, process):
+        if call["api"] == "ThemeInitApiHook":
+		self.loadctr += 1
+		self.data.append({"Injection" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+    def on_complete(self):
+	if self.loadctr > 0:
+		return True
+
+
+class CAPE_MoveFileOnReboot(Signature):
+    name = "MoveFileOnReboot"
+    description = "CAPE detection: Scheduled File Move On Reboot"
+    severity = 1
+    categories = ["malware"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.match = False
+
+    filter_apinames = set(["MoveFileWithProgressTransactedW", "MoveFileWithProgressTransactedA"])
+
+    def on_call(self, call, process):
+        if call["api"] == "MoveFileWithProgressTransactedW" or call["api"] == "MoveFileWithProgressTransactedA":
+		if self.get_raw_argument(call, "Flags") == 0x4: # 0x00000004
+			self.data.append({"File Move on Reboot" : "Old: %s -> New: %s" % (self.get_argument(call, "ExistingFileName"), self.get_argument(call, "NewFileName")) })
+			self.match = True
+    def on_complete(self):
+	return self.match
+
+
