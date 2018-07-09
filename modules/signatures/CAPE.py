@@ -755,7 +755,7 @@ class CAPE_MaliciousDynamicFunctionLoading(Signature):
 	   self.dll_loaded = True
 	elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress":
 		arg = self.get_argument(call, "FunctionName")
-		if arg in malicious_functions:
+		if arg in self.malicious_functions:
 			self.data.append({"SuspiciousDynamicFunction" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
 
     def on_complete(self):

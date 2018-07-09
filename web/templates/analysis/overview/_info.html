@@ -1,3 +1,31 @@
+{% if analysis.cape or children|length > 0 %}
+    <section id="cape">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h4 class="panel-title">CAPE</h4>
+        </div>
+    <div class="panel-body" style="padding: 0px 0px 0px 20px; height: 80%;">
+    {% if analysis.cape != None %}
+        <h4>CAPE Detections</h4>
+        <th>
+        <h3 style="margin: 0px;"><span class="label label-danger">{{analysis.cape}}</span></h3>
+        </th>
+    {% endif %}
+    {% if analysis.cape and children|length > 0 %}
+        <hr/>
+    {% endif %}
+    {% if children|length > 0 %}
+        <h4>Triggered CAPE Tasks:</h4>
+        {% for child in children %}
+            <a href="/submit/status/{{ child.0 }}/" class="btn btn-primary btn-small">Task #{{ child.0 }}: {{ child.1 }}</a>
+        {% endfor %}
+        <br/>
+    {% endif %}
+    </br>
+    </div>
+    </section>
+{% endif %}
+
 <section id="information">
     <div class="row">
     <div class="col-lg-11">
@@ -112,6 +140,6 @@
                     </tr>
                 </tbody>
             </table>
-            </div>
+            </div
     </section>
 {% endif %}
