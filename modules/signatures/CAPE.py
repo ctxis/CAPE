@@ -854,11 +854,11 @@ class CAPE_GuardPagesAntiDebug(Signature):
 
     def on_call(self, call, process):
 
-        if call["api"] == "VirtualAlloc" or call["api"] == "VirtualAllocEx":
+        if call["api"] == "VirtualAlloc" or call["api"] == "VirtualAllocEx" or call["api"] == "VirtualAllocFromApp" or call["api"] == "VirtualAllocExNuma":
             if self.get_argument(call, "Protection") & 0x100:
 		# guard page found
 		self.found = True
-        if call["api"] == "VirtualProtect" or call["api"] == "VirtualProtectEx":
+        if call["api"] == "VirtualProtect" or call["api"] == "VirtualProtectEx" or call["api"] == "VirtualProtectFromApp":
             if self.get_argument(call, "Protection") & 0x100:
 		# guard page found
 		self.found = True
