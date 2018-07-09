@@ -837,3 +837,33 @@ class CAPE_MoveFileOnReboot(Signature):
 	return self.match
 
 
+class CAPE_GuardPagesAntiDebug(Signature):
+    name = "GuardPagesAntiDebug"
+    description = "CAPE detection: Guard Pages used, likely for anti-debugging."
+    severity = 4
+    categories = ["anti-debug"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.found = False
+
+    filter_categories = set(["process"])
+
+    def on_call(self, call, process):
+
+        if call["api"] == "VirtualAlloc" or call["api"] == "VirtualAllocEx":
+            if self.get_argument(call, "Protection") & 0x100:
+		# guard page found
+		self.found = True
+        if call["api"] == "VirtualProtect" or call["api"] == "VirtualProtectEx":
+            if self.get_argument(call, "Protection") & 0x100:
+		# guard page found
+		self.found = True
+
+    def on_complete(self):
+        if self.found:
+            return True
+
