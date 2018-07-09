@@ -40,6 +40,13 @@ except ImportError:
     HAVE_CLAMAV = False
 
 try:
+    import pefile
+    import peutils
+    HAVE_PEFILE = True
+except ImportError:
+    HAVE_PEFILE = False
+
+try:
     import re2 as re
 except ImportError:
     import re
@@ -96,6 +103,7 @@ class File:
         self._sha1      = None
         self._sha256    = None
         self._sha512    = None
+        self._pefile    = False
 
     def get_name(self):
         """Get file name.
@@ -206,6 +214,38 @@ class File:
 
         try:
             return pydeep.hash_file(self.file_path)
+        except Exception:
+            return None
+
+    def get_entrypoint(self):
+        """Get entry point (PE).
+        @return: entry point.
+        """
+        if not HAVE_PEFILE:
+            if not File.notified_pefile:
+                File.notified_pefile = True
+                log.warning("Unable to import pefile (install with `pip install pefile`)")
+            return None
+
+        try:
+            pe = pefile.PE(data=self.file_data)
+            return pe.OPTIONAL_HEADER.AddressOfEntryPoint
+        except Exception:
+            return None
+
+    def get_ep_bytes(self):
+        """Get entry point bytes (PE).
+        @return: entry point bytes (16).
+        """
+        if not HAVE_PEFILE:
+            if not File.notified_pefile:
+                File.notified_pefile = True
+                log.warning("Unable to import pefile (install with `pip install pefile`)")
+            return None
+
+        try:
+            pe = pefile.PE(data=self.file_data)
+            return binascii.b2a_hex(pe.get_data(pe.OPTIONAL_HEADER.AddressOfEntryPoint, 0x10))
         except Exception:
             return None
 
@@ -405,6 +445,8 @@ class File:
         infos["yara"] = self.get_yara()
         infos["cape_yara"] = self.get_yara(CAPE_YARA_RULEPATH)
         infos["clamav"] = self.get_clamav()
+        infos["entrypoint"] = self.get_entrypoint()
+        infos["ep_bytes"] = self.get_ep_bytes()
 
         return infos
 
