@@ -647,7 +647,7 @@ class CAPE_ExploitGetBaseKernelAddress(Signature):
         self.loadctr = 0
 	self.list = [ ]
 
-    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll", "EnumDeviceDrivers"])
+    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll", "EnumDeviceDrivers", "K32EnumDeviceDrivers"])
 
     def on_call(self, call, process):
         if call["api"] == "LdrLoadDll":
@@ -656,11 +656,11 @@ class CAPE_ExploitGetBaseKernelAddress(Signature):
 	elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress" and ( call["FunctionName"] == "PsInitialSystemProcess"):
 		self.loadctr += 1
 		self.data.append({"KernelExploitBase" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
-	elif call["api"] == "EnumDeviceDrivers":
+	elif call["api"] == "EnumDeviceDrivers" or call["api"] == "K32EnumDeviceDrivers":
 		self.loadctr += 1
 
     def on_complete(self):
-	# both EnumDeviceDrivers and PsInitialSystemProcess were called, able to calculate PsInitialSystemProcess offset
+	# both EnumDeviceDrivers/K32EnumDeviceDrivers and PsInitialSystemProcess were called, able to calculate PsInitialSystemProcess offset
 	if self.loadctr > 1:
 		return True
 	return False
