@@ -632,6 +632,70 @@ class CAPE_AntiDebugOutputDebugString(Signature):
 	  elif self.set_err and self.output:
 		return True
 		
+class CAPE_ExploitGetBaseKernelAddress(Signature):
+    name = "PsInitialSystemProcess"
+    description = "CAPE detection: Exploit - Get Kernel Base Memory Address (PsInitialSystemProcess)"
+    severity = 3
+    categories = ["exploit"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.dll_loaded = False
+        self.loadctr = 0
+	self.list = [ ]
+
+    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll", "EnumDeviceDrivers"])
+
+    def on_call(self, call, process):
+        if call["api"] == "LdrLoadDll":
+	   if call["FileName"].lower() == "ntkrnlpa.exe":
+		   self.dll_loaded = True
+	elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress" and ( call["FunctionName"] == "PsInitialSystemProcess"):
+		self.loadctr += 1
+		self.data.append({"KernelExploitBase" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+	elif call["api"] == "EnumDeviceDrivers":
+		self.loadctr += 1
+
+    def on_complete(self):
+	# both EnumDeviceDrivers and PsInitialSystemProcess were called, able to calculate PsInitialSystemProcess offset
+	if self.loadctr > 1:
+		return True
+	return False
+		
+# windows 7 trick only
+class CAPE_ExploitGetHalDispatchTable(Signature):
+    name = "HalDispatchTable"
+    description = "CAPE detection: Exploit - Get Hardware Abstraction Layer Dispatch Table (HalDispatchTable)"
+    severity = 3
+    categories = ["exploit"]
+    authors = ["redsand"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+	self.dll_loaded = False
+        self.loadctr = 0
+	self.list = [ ]
+
+    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll"])
+
+    def on_call(self, call, process):
+        if call["api"] == "LdrLoadDll":
+	   if call["FileName"].lower() == "ntkrnlpa.exe":
+		   self.dll_loaded = True
+	elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress" and ( call["FunctionName"] == "HalDispatchTable"):
+		self.loadctr += 1
+		self.data.append({"KernelExploitAttempt" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+
+    def on_complete(self):
+	# HalDispatchTable was called
+	if self.loadctr > 0:
+		return True
+	return False
 
 class CAPE_AnomalousDynamicFunctionLoading(Signature):
     name = "AnomalousDynamicFunctionLoading"
