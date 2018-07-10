@@ -494,7 +494,7 @@ class CAPE_AntiDebugNtSetInformationThread(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "NtSetInformationThread":
-            ThreadInformationClass = int(self.get_raw_argument(call, "ThreadInformationClass"), 0)
+            ThreadInformationClass = int(self.get_raw_argument(call, "ThreadInformationClass"))
             if ThreadInformationClass == THREAD_HIDE_FROM_DEBUGGER:
                 return True
 
@@ -555,7 +555,7 @@ class CAPE_AntiDebugCheckRemoteDebuggerPresent(Signature):
         if call["api"] == "CheckRemoteDebuggerPresent":
             return True
         elif call["api"] == "NtQueryInformationProcess":
-            ProcessInformationClass = int(self.get_raw_argument(call, "ProcessInformationClass"), 0)
+            ProcessInformationClass = int(self.get_raw_argument(call, "ProcessInformationClass"))
             if ProcessInformationClass == PROCESS_DEBUG_PORT:
             # other examples to monitor are:
             # - ProcessDebugObjectHandle 0x1E
