@@ -36,6 +36,14 @@ from struct import unpack_from, calcsize
 from socket import inet_ntoa
 import collections
 
+try:
+    import pydeep
+    HAVE_PYDEEP = True
+except ImportError:
+    HAVE_PYDEEP = False
+
+ssdeep_threshold = 90
+
 parser_path = os.path.dirname(__file__)
 parser_path += "/parsers"
 if parser_path not in sys.path:
@@ -544,6 +552,17 @@ class CAPE(Processing):
             if not "cape" in self.results:
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name
+
+        # Remove duplicate payloads from web ui
+        for cape_file in CAPE_output:
+            if file_info["size"] == cape_file["size"]:
+                if HAVE_PYDEEP:
+                    ssdeep_grade = pydeep.compare(file_info["ssdeep"], cape_file["ssdeep"])
+                    if ssdeep_grade >= ssdeep_threshold:
+                        append_file = False
+                if file_info["entrypoint"] and file_info["entrypoint"] == cape_file["entrypoint"] \
+                    and file_info["ep_bytes"] == cape_file["ep_bytes"]:
+                    append_file = False
 
         if append_file == True:
             CAPE_output.append(file_info)
