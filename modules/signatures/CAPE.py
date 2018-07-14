@@ -514,7 +514,7 @@ class CAPE_AntiDebugNtCreateThreadEx(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "NtCreateThreadEx":
-            ThreadCreationFlags = int(self.get_raw_argument(call, "CreateFlags"), 0)
+            ThreadCreationFlags = int(self.get_raw_argument(call, "CreationFlags"), 16)
             if ThreadCreationFlags & THREAD_CREATE_HIDE_FROM_DEBUGGER:
                 return True
 
@@ -762,7 +762,7 @@ class CAPE_AnomalousDeleteFile(Signature):
     def on_call(self, call, process):
         if call["api"] == "NtDeleteFile" or call["api"] == "DeleteFileA" or call["api"] == "DeleteFileW":
             self.loadctr += 1
-            self.data.append({"DynamicLoader" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
+            self.data.append({"DeletedFile" : "%s" % (self.get_argument(call, "FileName")) })
 
     def on_complete(self):
         if self.loadctr > 10:
