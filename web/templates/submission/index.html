@@ -165,16 +165,16 @@ $(document).ready( function() {
                                 </div>
                                 {% endif %}
                                 <div class="form-group">
--                               <strong>Network routing through TOR, VPN, or Simulated Interenet</strong>
+-                               <strong>Network Routing: Simulated Internet, VPN or TOR</strong>
 -                               </div>
 -                               <div class="form-group">
 -                               <select class="form-control" id="form_route" name="route">
--                               <option value="inetsim">inetsim (simulated Internet access)</option>
+-                               <option value="inetsim">Simulated Internet</option>
 -                               {% if internet != "none" %}
--                                   <option value="internet"{% if route == "internet" %} selected{% endif %}>Internet (dirty line, {{ internet }})</option>
+-                                   <option value="internet"{% if route == "internet" %} selected{% endif %}>Internet (VPN, {{ internet }})</option>
 -                               {% endif %}
 -                               {% if tor %}
--                                   <option value="tor" >tor (tor anonymized onion network)</option>
+-                                   <option value="tor" >TOR anonymized onion network</option>
 -                               {% endif %}
 -                               </select>
 -                               </div>
