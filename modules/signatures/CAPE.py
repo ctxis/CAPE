@@ -22,6 +22,9 @@ IMAGE_NT_SIGNATURE                  = 0x00004550
 OPTIONAL_HEADER_MAGIC_PE            = 0x10b
 OPTIONAL_HEADER_MAGIC_PE_PLUS       = 0x20b
 IMAGE_FILE_EXECUTABLE_IMAGE         = 0x0002
+IMAGE_FILE_MACHINE_I386             = 0x014c
+IMAGE_FILE_MACHINE_AMD64            = 0x8664    
+DOS_HEADER_LIMIT                    = 0x40
 PE_HEADER_LIMIT                     = 0x200
 
 MOVEFILE_DELAY_UNTIL_REBOOT         = 0x4
@@ -39,7 +42,7 @@ PROCESS_DEBUG_PORT                  = 0x7
 
 class CAPE_Compression(Signature):
     name = "Compression"
-    description = "CAPE detection: Compression (or decompression)"
+    description = "CAPE detection: Decompression of executable module(s)."
     severity = 1
     categories = ["malware"]
     authors = ["kevoreilly"]
@@ -55,17 +58,24 @@ class CAPE_Compression(Signature):
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
             buf = self.get_raw_argument(call, "UncompressedBuffer")
-            dos_header = buf[:64]
-
-            if struct.unpack("<H", dos_header[0:2])[0] == IMAGE_DOS_SIGNATURE:
-                self.compressed_binary = True
+            dos_header = buf[:DOS_HEADER_LIMIT]
+            nt_headers = None
 
             # Check for sane value in e_lfanew
             e_lfanew, = struct.unpack("<L", dos_header[60:64])
             if not e_lfanew or e_lfanew > PE_HEADER_LIMIT:
+                offset = 0
+                while offset < PE_HEADER_LIMIT-2:
+                    machine_probe = struct.unpack("<H", buf[offset:offset+2])[0]
+                    if machine_probe == IMAGE_FILE_MACHINE_I386 or machine_probe == IMAGE_FILE_MACHINE_AMD64:
+                        nt_headers = buf[offset-4:offset+252]
+                        break
+                    offset = offset + 2
+            else:
+                nt_headers = buf[e_lfanew:e_lfanew+256]
+
+            if nt_headers == None:
                 return
-            
-            nt_headers = buf[e_lfanew:e_lfanew+256]
 
             #if ((pNtHeader->FileHeader.Machine == 0) || (pNtHeader->FileHeader.SizeOfOptionalHeader == 0 || pNtHeader->OptionalHeader.SizeOfHeaders == 0)) 
             if struct.unpack("<H", nt_headers[4:6]) == 0 or struct.unpack("<H", nt_headers[20:22]) == 0 or struct.unpack("<H", nt_headers[84:86]) == 0:
