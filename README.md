@@ -43,19 +43,19 @@ CAPE has config parsers/decoders for the following malware families, whose paylo
 - PoisonIvy
 - Screech
 - TSCookie
+- Dridex
+- SmokeLoader
 
 Many other malware families have their payloads automatically extracted by behavioural packages, for which CAPE uses Yara signatures to detect the payloads. This list is growing, and includes:
-- Gootkit, QtBot, ZeroT, WanaCry, NetTraveler, Locky, BadRabbit, Magniber, Redsip, RCSession, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, Dridex, IcedID, Scarab, Cutlet, RokRat, OlympicDestroyer, Gandcrab, Fareit, ZeusPanda, AgentTesla, Imminent, Arkei.
+- Gootkit, QtBot, ZeroT, WanaCry, NetTraveler, Locky, BadRabbit, Magniber, Redsip, RCSession, Kronos, PetrWrap, Kovter, Azer, Petya, Dreambot, Atlas, NanoLocker, Mole, Codoso, Cryptoshield, Loki, Jaff, IcedID, Scarab, Cutlet, RokRat, OlympicDestroyer, Gandcrab, Fareit, ZeusPanda, AgentTesla, Imminent, Arkei.
     
 Configuration data may be output from either family packages, or in payloads resulting from behavioural packages. Configuration parsing may then be performed on this by virtue of Yara-based detection, and config parsing based on either of CAPE's config parsing frameworks, the RATDecoders framework from malwareconfig.com and DC3-MWCP (Defense Cyber Crime Center - Malware Configuration Parser). The many parsers/decoders from malwareconfig.com are also included, comprising among many others: Sakula, Trickbot, DarkComet, PredatorPain and PoisonIvy. Thanks to Kevin Breen/TechAnarchy for this framework and parsers (https://github.com/kevthehermit/RATDecoders), and to DC3 for their framework (https://github.com/Defense-Cyber-Crime-Center/DC3-MWCP).
 
 Utility packages are also included: 'DumpOnAPI' allows a module to be dumped when it calls a specific API function which can be specified in the web interface. 'DumpConfigRegion' allows the memory region containing C2 information or other config data to be dumped for commonly used API calls. These packages can be useful for quickly unpacking/dumping novel samples or configs. The 'Trace' package allows quick access to the debugger by accepting four breakpoints (RVA values) to set on instructions, whereupon a short instruction trace will be output. An optional 'base-on-api' parameter allows the image base to be set by API call.
 
-Packages can be written based on API hooks, the CAPE debugger, or a combination of both. There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
-
 The CAPE debugger allows breakpoints to be set on read, write or execute of a memory address or region, as well as single-step mode. This allows fine control over malware execution until it is possible to dump the memory regions of interest, containing code or configuration data. Breakpoints can be set dynamically by package code, API hooks or Yara signatures. Thanks to the embedded distorm library the debugger can output the disassembly of instructions during single-step mode or when breakpoints are hit, resulting in instruction traces.
 
-Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API. These dumps can then be scanned and parsed for configuration information. Executable modules are fixed on being dumped, and may also have their imports automatically reconstructed (based on Scylla: https://github.com/NtQuery/Scylla).
+Processes, modules and memory regions can variously be dumped by CAPE through use of a simple API. These dumps can then be scanned and parsed for configuration information. Executable modules are fixed on being dumped, and may also have their imports automatically reconstructed (based on Scylla: https://github.com/NtQuery/Scylla). Packages can be written based on API hooks, the CAPE debugger, or a combination of both. There are a number of other behavioural and malware family packages and parsers currently in the works, so watch this space.
 
 The repository containing the code for the monitor DLLs which form the basis of these packages is a distinct one: https://github.com/ctxis/capemon. This repository is organised in branches for the various packages.
 
