@@ -455,6 +455,12 @@ class Curtain(Processing):
                         except Exception as e:
                             log.error("Curtain processing error for entry - %s" % e)
 
+                    # https://malwaretips.com/threads/how-to-de-obfuscate-powershell-script-commands-examples.76369/
+                    if re.findall("-join\s+?\(\s?\'(.+)\.split\(.+\)\s+?\|\s+?foreach", MESSAGE, re.I):
+                        chars = re.findall("\d{1,3}", MESSAGE)
+                        ALTMSG = "".join([chr(int(i)) for i in chars])
+                        MODFLAG = 1
+
                     # Remove camel case obfuscation as last step
                     ALTMSG, MODFLAG = adjustCase(ALTMSG, MODFLAG)
 
