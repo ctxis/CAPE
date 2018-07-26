@@ -1,7 +1,7 @@
 import os
 import re
 import ast
-import logging 
+import logging
 import itertools
 import xml.etree.ElementTree as ET
 
@@ -350,7 +350,6 @@ class Curtain(Processing):
 
         root = False
         for curtain_log in curtLog[::-1]:
-            log.info(curtain_log)
             try:
                 tree = ET.parse("%s/curtain/%s" % (self.analysis_path, curtain_log))
                 root = tree.getroot()
@@ -375,6 +374,7 @@ class Curtain(Processing):
         pids     = {}
         COUNTER  = 0
         FILTERED = 0
+        messages_by_task = dict()
 
         for i in range(0, len(root)):
 
@@ -385,9 +385,9 @@ class Curtain(Processing):
 
                 PID = root[i][0][10].attrib['ProcessID']
                 #TID = root[i][0][10].attrib['ThreadID']
+                task = root[1][0][4].text
 
                 MESSAGE = root[i][1][2].text
-
                 if PID not in pids:
                     pids[PID] = {
                         "pid": PID,
@@ -403,6 +403,18 @@ class Curtain(Processing):
                             FILTERED  += 1
                             pids[PID]["filter"].append({str(FILTERED): MESSAGE.strip()})
 
+                if task in messages_by_task:
+                    messages_by_task[task]["message"] = MESSAGE + messages_by_task[task]["message"]
+                else:
+                    messages_by_task.setdefault(task, dict())
+                    messages_by_task[task].setdefault("message", MESSAGE)
+                    messages_by_task[task].setdefault("pid", PID)
+
+        new_dict = [block_dict for block_dict in messages_by_task.values()]
+
+        for block in new_dict:
+                MESSAGE = block["message"]
+                pid = block["pid"]
                 # Save the record
                 if FILTERFLAG == 0 and MESSAGE != None:
 
@@ -452,7 +464,7 @@ class Curtain(Processing):
                         ALTMSG = "No alteration of event."
 
                     # Save the output
-                    pids[PID]["events"].append({str(COUNTER): {"original": MESSAGE.strip(), "altered": ALTMSG}})
+                    pids[pid]["events"].append({str(COUNTER): {"original": MESSAGE.strip(), "altered": ALTMSG}})
 
         remove = []
 
