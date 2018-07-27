@@ -524,7 +524,7 @@ class CAPE_AntiDebugNtCreateThreadEx(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "NtCreateThreadEx":
-            ThreadCreationFlags = int(self.get_raw_argument(call, "CreationFlags"), 16)
+            ThreadCreationFlags = int(self.get_raw_argument(call, "CreateFlags"), 16)
             if ThreadCreationFlags & THREAD_CREATE_HIDE_FROM_DEBUGGER:
                 return True
 
