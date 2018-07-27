@@ -385,7 +385,7 @@ class Curtain(Processing):
 
                 PID = root[i][0][10].attrib['ProcessID']
                 #TID = root[i][0][10].attrib['ThreadID']
-                task = root[1][0][4].text
+                task = root[i][0][4].text
 
                 MESSAGE = root[i][1][2].text
                 if PID not in pids:
