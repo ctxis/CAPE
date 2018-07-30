@@ -27,22 +27,14 @@ IMAGE_FILE_MACHINE_AMD64            = 0x8664
 DOS_HEADER_LIMIT                    = 0x40
 PE_HEADER_LIMIT                     = 0x200
 
-MOVEFILE_DELAY_UNTIL_REBOOT         = 0x4
-
-PAGE_GUARD                          = 0x100
 EXECUTABLE_FLAGS                    = 0x10 | 0x20 | 0x40 | 0x80
 EXTRACTION_MIN_SIZE                 = 0x1001
 
 PLUGX_SIGNATURE		                = 0x5658
 
-THREAD_HIDE_FROM_DEBUGGER           = 0x11
-THREAD_CREATE_HIDE_FROM_DEBUGGER    = 0x4
-
-PROCESS_DEBUG_PORT                  = 0x7
-
 class CAPE_Compression(Signature):
     name = "Compression"
-    description = "CAPE detection: Decompression of executable module(s)."
+    description = "Behavioural detection: Decompression of executable module(s)."
     severity = 1
     categories = ["malware"]
     authors = ["kevoreilly"]
@@ -102,7 +94,7 @@ class CAPE_Compression(Signature):
 
 class CAPE_Extraction(Signature):
     name = "Extraction"
-    description = "CAPE detection: Executable code extraction"
+    description = "Behavioural detection: Executable code extraction"
     severity = 1
     categories = ["allocation"]
     authors = ["kevoreilly"]
@@ -139,7 +131,7 @@ class CAPE_Extraction(Signature):
 
 class CAPE_InjectionCreateRemoteThread(Signature):
     name = "InjectionCreateRemoteThread"
-    description = "CAPE detection: Injection with CreateRemoteThread in a remote process"
+    description = "Behavioural detection: Injection with CreateRemoteThread in a remote process"
     severity = 1
     categories = ["injection"]
     authors = ["JoseMi Holguin", "nex", "Optiv", "kevoreilly", "KillerInstinct"]
@@ -212,7 +204,7 @@ class CAPE_InjectionCreateRemoteThread(Signature):
 
 class CAPE_InjectionProcessHollowing(Signature):
     name = "InjectionProcessHollowing"
-    description = "CAPE detection: Injection (Process Hollowing)"
+    description = "Behavioural detection: Injection (Process Hollowing)"
     severity = 1
     categories = ["injection"]
     authors = ["glysbaysb", "Optiv", "KillerInstinct"]
@@ -271,7 +263,7 @@ class CAPE_InjectionProcessHollowing(Signature):
       
 class CAPE_InjectionSetWindowLong(Signature):
     name = "InjectionSetWindowLong"
-    description = "CAPE detection: Injection with SetWindowLong in a remote process"
+    description = "Behavioural detection: Injection with SetWindowLong in a remote process"
     severity = 1
     categories = ["injection"]
     authors = ["kevoreilly"]
@@ -313,7 +305,7 @@ class CAPE_InjectionSetWindowLong(Signature):
                 
 class CAPE_Injection(Signature):
     name = "InjectionInterProcess"
-    description = "CAPE detection: Injection (inter-process)"
+    description = "Behavioural detection: Injection (inter-process)"
     severity = 1
     categories = ["injection"]
     authors = ["kevoreilly"]
@@ -341,7 +333,7 @@ class CAPE_Injection(Signature):
       
 class CAPE_EvilGrab(Signature):
     name = "EvilGrab"
-    description = "CAPE detection: EvilGrab"
+    description = "Behavioural detection: EvilGrab"
     severity = 1
     categories = ["malware"]
     authors = ["kevoreilly"]
@@ -374,7 +366,7 @@ class CAPE_EvilGrab(Signature):
 
 class CAPE_PlugX(Signature):
     name = "PlugX"
-    description = "CAPE detection: PlugX"
+    description = "Behavioural detection: PlugX"
     severity = 1
     categories = ["chinese", "malware"]
     families = ["plugx"]
@@ -421,7 +413,7 @@ class CAPE_PlugX(Signature):
 
 class CAPE_Doppelganging(Signature):
     name = "Doppelganging"
-    description = "CAPE detection: Process Doppelganging"
+    description = "Behavioural detection: Process Doppelganging"
     severity = 1
     categories = ["injection"]
     authors = ["kevoreilly"]
@@ -449,414 +441,3 @@ class CAPE_Doppelganging(Signature):
         elif call["api"] == "NtCreateProcessEx":
             if self.get_argument(call, "SectionHandle") == self.sectionhandle:
                 return True
-      
-
-class CAPE_AntiDebugSetUnhandledExceptionFilter(Signature):
-    name = "SetUnhandledExceptionFilter"
-    description = "CAPE detection: SetUnhandledExceptionFilter (possible anti-debug)"
-    severity = 1
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["SetUnhandledExceptionFilter"])
-
-    def on_call(self, call, process):
-        if call["api"] == "SetUnhandledExceptionFilter":
-           return True
-      
-            
-class CAPE_AntiDebugAddVectoredExceptionHandler(Signature):
-    name = "AddVectoredExceptionHandler"
-    description = "CAPE detection: AddVectoredExceptionHandler (possible anti-debug)"
-    severity = 1
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["AddVectoredExceptionHandler"])
-
-    def on_call(self, call, process):
-        if call["api"] == "AddVectoredExceptionHandler":
-           return True
-      
-class CAPE_AntiDebugNtSetInformationThread(Signature):
-    name = "NtSetInformationThread"
-    description = "CAPE detection: NtSetInformationThread thread hidden from debugger"
-    severity = 2
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["NtSetInformationThread"])
-
-    def on_call(self, call, process):
-        if call["api"] == "NtSetInformationThread":
-            ThreadInformationClass = int(self.get_raw_argument(call, "ThreadInformationClass"))
-            if ThreadInformationClass == THREAD_HIDE_FROM_DEBUGGER:
-                return True
-
-class CAPE_AntiDebugNtCreateThreadEx(Signature):
-    name = "NtCreateThreadEx"
-    description = "CAPE detection: NtCreateThreadEx thread hidden from debugger"
-    severity = 1
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["NtCreateThreadEx"])
-
-    def on_call(self, call, process):
-        if call["api"] == "NtCreateThreadEx":
-            ThreadCreationFlags = int(self.get_raw_argument(call, "CreateFlags"), 0)
-            if ThreadCreationFlags & THREAD_CREATE_HIDE_FROM_DEBUGGER:
-                return True
-
-class CAPE_AntiDebugDebugActiveProcess(Signature):
-    name = "DebugActiveProcess"
-    description = "CAPE detection: DebugActiveProcess (possible anti-debug)"
-    severity = 2
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["DebugActiveProcess"])
-
-    def on_call(self, call, process):
-        if call["api"] == "DebugActiveProcess":
-           return True
-
-class CAPE_AntiDebugCheckRemoteDebuggerPresent(Signature):
-    # https://www.apriorit.com/dev-blog/367-anti-reverse-engineering-protection-techniques-to-use-before-releasing-software
-    name = "CheckRemoteDebuggerPresent"
-    description = "CAPE detection: CheckRemoteDebuggerPresent (possible anti-debug)"
-    severity = 3
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["CheckRemoteDebuggerPresent", "NtQueryInformationProcess"])
-
-    def on_call(self, call, process):
-        if call["api"] == "CheckRemoteDebuggerPresent":
-            return True
-        elif call["api"] == "NtQueryInformationProcess":
-            ProcessInformationClass = int(self.get_raw_argument(call, "ProcessInformationClass"))
-            if ProcessInformationClass == PROCESS_DEBUG_PORT:
-            # other examples to monitor are:
-            # - ProcessDebugObjectHandle 0x1E
-            # - ProcessDebugFlags 0x1F
-            # - ProcessBasicInformation 0x00
-                return True
-
-class CAPE_AntiDebugGetTickCount(Signature):
-    name = "GetTickCount"
-    description = "CAPE detection: GetTickCount(possible anti-debug)"
-    severity = 1
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-
-    filter_apinames = set(["GetTickCount"])
-
-    def on_call(self, call, process):
-        if call["api"] == "GetTickCount":
-           return True
-
-class CAPE_AntiDebugOutputDebugString(Signature):
-    name = "OutputDebugString"
-    description = "CAPE detection: OutputDebugString (possible anti-debug)"
-    severity = 2
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.set_err = False
-        self.output = False
-
-    filter_apinames = set(["OutputDebugStringA", "OutputDebugStringW", "SetLastError", "GetLastError"])
-
-    def on_call(self, call, process):
-        if call["api"] == "OutputDebugStringA" or call["api"] == "OutputDebugStringW":
-            if self.set_err: 
-                self.output = True
-            else:
-                self.output = False
-        elif call["api"] == "SetLastError": 
-            self.output = False
-            self.set_err = True
-        elif call["api"] == "GetLastError": 
-            if not self.set_err or not self.output:
-                self.set_err = self.output = False
-
-        def on_complete(self):
-            if self.set_err and self.output:
-                return True
-
-class CAPE_ExploitGetBaseKernelAddress(Signature):
-    name = "PsInitialSystemProcess"
-    description = "CAPE detection: Exploit - Get Kernel Base Memory Address (PsInitialSystemProcess)"
-    severity = 3
-    categories = ["exploit"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.dll_loaded = False
-        self.loadctr = 0
-        self.list = []
-
-    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll", "EnumDeviceDrivers", "K32EnumDeviceDrivers"])
-
-    def on_call(self, call, process):
-        if call["api"] == "LdrLoadDll" and self.get_argument(call, "FileName").lower() == "ntkrnlpa.exe":
-            self.dll_loaded = True
-        elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress" and self.get_argument(call, "FileName").lower() == "PsInitialSystemProcess":
-            self.loadctr += 1
-            self.data.append({"KernelExploitBase" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName"))})
-        elif call["api"] == "EnumDeviceDrivers" or call["api"] == "K32EnumDeviceDrivers":
-            self.loadctr += 1
-
-    def on_complete(self):
-        if self.loadctr > 1:
-            # both EnumDeviceDrivers/K32EnumDeviceDrivers and PsInitialSystemProcess were called, able to calculate PsInitialSystemProcess offset
-            return True
-        else:
-            return False
-
-# windows 7 trick only
-class CAPE_ExploitGetHalDispatchTable(Signature):
-    name = "HalDispatchTable"
-    description = "CAPE detection: Exploit - Get Hardware Abstraction Layer Dispatch Table (HalDispatchTable)"
-    severity = 3
-    categories = ["exploit"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.dll_loaded = False
-        self.loadctr = 0
-        self.list = [ ]
-
-    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll"])
-
-    def on_call(self, call, process):
-        if call["api"] == "LdrLoadDll" and self.get_argument(call, "FileName").lower() == "ntkrnlpa.exe":
-            self.dll_loaded = True
-        elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress" and self.get_argument(call, "FunctionName") == "HalDispatchTable":
-            self.loadctr += 1
-            self.data.append({"KernelExploitAttempt" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
-
-    def on_complete(self):
-        if self.loadctr > 0:
-            # HalDispatchTable was called
-            return True
-        else:
-            return False
-
-class CAPE_AnomalousDynamicFunctionLoading(Signature):
-    name = "AnomalousDynamicFunctionLoading"
-    description = "CAPE detection: Anomalous Dynamic Function Loading"
-    severity = 1
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.dll_loaded = False
-        self.loadctr = 0
-        self.list = [ ]
-
-    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll"])
-
-    def on_call(self, call, process):
-        if call["api"] == "LdrLoadDll":
-            self.dll_loaded = True
-        elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress":
-            self.loadctr += 1
-            self.data.append({"DynamicLoader" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
-
-    def on_complete(self):
-        if self.loadctr < 8:
-            return False
-        elif self.loadctr > 20:
-            self.severity = 2
-        return True
-
-class CAPE_MaliciousDynamicFunctionLoading(Signature):
-    name = "MaliciousDynamicFunctionLoading"
-    description = "CAPE detection: Possible Malicious Dynamic Function Loading"
-    severity = 1
-    categories = ["malware"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-    malicious_functions = [ "LookupAccountNameLocalW", "LookupAccountNameLocalA", "LookupAccountSidW", "LookupAccountSidA",
-			    "LookupAccountSidLocalW", "LookupAccountSidLocalA", "CoTaskMemAlloc", "CoTaskMemFree", 
-			    "LookupAccountNameW", "LookupAccountNameA", "NetLocalGroupGetMembers", "SamConnect", "SamLookupNamesInDomain",
-			    "OpenProcessToken", "SetThreadToken", "DuplicateTokenEx", "AdjustTokenPrivileges", "OpenThreadToken"]
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.dll_loaded = False
-        self.loadctr = 0
-        self.list = [ ]
-
-    filter_apinames = set(["LdrGetProcedureAddress", "LdrLoadDll"])
-
-    def on_call(self, call, process):
-        if call["api"] == "LdrLoadDll":
-            self.dll_loaded = True
-        elif self.dll_loaded and call["api"] == "LdrGetProcedureAddress":
-            arg = self.get_argument(call, "FunctionName")
-            if arg in self.malicious_functions:
-                self.data.append({"SuspiciousDynamicFunction" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
-
-    def on_complete(self):
-        if self.loadctr > 0:
-            return True
-
-class CAPE_AnomalousDeleteFile(Signature):
-    name = "AnomalousDeleteFile"
-    description = "CAPE detection: Anomalous File Deletion Behavior (10+)"
-    severity = 2
-    categories = ["malware"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.loadctr = 0
-        self.list = []
-
-    filter_apinames = set(["NtDeleteFile", "DeleteFileA", "DeleteFileW"])
-
-    def on_call(self, call, process):
-        if call["api"] == "NtDeleteFile" or call["api"] == "DeleteFileA" or call["api"] == "DeleteFileW":
-            self.loadctr += 1
-            self.data.append({"DeletedFile" : "%s" % (self.get_argument(call, "FileName")) })
-
-    def on_complete(self):
-        if self.loadctr > 10:
-            return True
-
-
-class CAPE_ThemeInitApiHookInject(Signature):
-    name = "ThemeInitApiHookInject"
-    description = "CAPE detection: Possible ThemeInitApiHook Injection"
-    severity = 1
-    categories = ["injection"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.loadctr = 0
-        self.list = []
-
-    filter_apinames = set(["ThemeInitApiHook"])
-
-    def on_call(self, call, process):
-        if call["api"] == "ThemeInitApiHook":
-            self.loadctr += 1
-            self.data.append({"Injection" : "%s/%s" % (self.get_argument(call, "ModuleName"), self.get_argument(call, "FunctionName")) })
-
-    def on_complete(self):
-        if self.loadctr > 0:
-            return True
-
-class CAPE_MoveFileOnReboot(Signature):
-    name = "MoveFileOnReboot"
-    description = "CAPE detection: Scheduled File Move On Reboot"
-    severity = 1
-    categories = ["malware"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.match = False
-
-    filter_apinames = set(["MoveFileWithProgressTransactedW", "MoveFileWithProgressTransactedA"])
-
-    def on_call(self, call, process):
-        if call["api"] == "MoveFileWithProgressTransactedW" or call["api"] == "MoveFileWithProgressTransactedA" and self.get_raw_argument(call, "Flags") == MOVEFILE_DELAY_UNTIL_REBOOT:
-            self.data.append({"File Move on Reboot" : "Old: %s -> New: %s" % (self.get_argument(call, "ExistingFileName"), self.get_argument(call, "NewFileName")) })
-            self.match = True
-
-    def on_complete(self):
-        return self.match
-
-
-class CAPE_GuardPagesAntiDebug(Signature):
-    name = "GuardPagesAntiDebug"
-    description = "CAPE detection: Guard Pages used, likely for anti-debugging."
-    severity = 4
-    categories = ["anti-debug"]
-    authors = ["redsand"]
-    minimum = "1.3"
-    evented = True
-
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.found = False
-
-    filter_apinames = set(["NtAllocateVirtualMemory","NtProtectVirtualMemory","VirtualProtectEx"])
-
-    def on_call(self, call, process):
-        if call["api"] == "NtAllocateVirtualMemory":
-            protection = int(self.get_raw_argument(call, "Protection"), 0)
-            if protection & PAGE_GUARD:
-                self.found = True
-        if call["api"] == "VirtualProtectEx":
-            protection = int(self.get_raw_argument(call, "Protection"), 0)
-            if protection & PAGE_GUARD:
-                self.found = True
-        elif call["api"] == "NtProtectVirtualMemory":
-            protection = int(self.get_raw_argument(call, "NewAccessProtection"), 0)
-            if protection & PAGE_GUARD:
-                self.found = True
-    
-    def on_complete(self):
-        if self.found:
-            return True
