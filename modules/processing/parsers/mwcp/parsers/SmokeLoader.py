@@ -63,16 +63,22 @@ class SmokeLoader(malwareconfigparser):
             # First C2 URL
             c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
             c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key)
-            if c2_url:
-                self.reporter.add_metadata('address', c2_url)
+            try:
+                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                if c2_url:
+                    self.reporter.add_metadata('address', c2_url)
+            except:
+                pass
             # Second C2 URL
             c2_offset = c2_offset + c2_size + 9
             c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
             c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key)
-            if c2_url:
-                self.reporter.add_metadata('address', c2_url)
+            try:
+                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                if c2_url:
+                    self.reporter.add_metadata('address', c2_url)
+            except:
+                pass
             return
         else:
             c2ref = yara_scan(filebuf, '$ref2')
@@ -83,14 +89,20 @@ class SmokeLoader(malwareconfigparser):
             # First C2 URL
             c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
             c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key)
-            if c2_url:
-                self.reporter.add_metadata('address', c2_url)
+            try:
+                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                if c2_url:
+                    self.reporter.add_metadata('address', c2_url)
+            except:
+                pass
             # Second C2 URL
             c2_offset = c2_offset + c2_size + 9
             c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
             c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key)
-            if c2_url:
-                self.reporter.add_metadata('address', c2_url)
+            try:
+                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                if c2_url:
+                    self.reporter.add_metadata('address', c2_url)
+            except:
+                pass
             return
