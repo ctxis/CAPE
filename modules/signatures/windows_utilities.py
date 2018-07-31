@@ -151,3 +151,31 @@ class SuspiciousCommandTools(Signature):
                     self.data.append({"command" : cmdline})
 
         return ret
+
+class ScriptToolExecuted(Signature):
+    name = "script_tool_executed"
+    description = "A scripting utility was executed"
+    severity = 2
+    confidence = 80
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        utilities = [
+            "cscript",
+            "powershell",
+            "wscript",
+        ]
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            for utility in utilities:
+                if utility in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
