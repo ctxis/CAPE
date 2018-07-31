@@ -53,7 +53,7 @@ class CmdlineChracterObfsucation(Signature):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
         for cmdline in cmdlines:
-            if "cmd" in cmdline.lower() and (cmdline.count("^") > 3 or cmdline.count("&") > 6):
+            if "cmd" in cmdline.lower() and (cmdline.count("^") > 3 or cmdline.count("&") > 6 or cmdline.count("+") > 4 or cmdline.count("\"") > 8:)
                     ret = True
                     self.data.append({"command" : cmdline})
 
