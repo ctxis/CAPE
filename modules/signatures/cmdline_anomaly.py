@@ -80,7 +80,7 @@ class CmdlineConcatenationObfsucation(Signature):
 
 class CmdlineSetObfsucation(Signature):
     name = "cmdline_set_obfuscation"
-    description = "Appears to use multiple set variables in command line likely for obfsucation"
+    description = "Appears to use use set to define variables in command line likely for obfsucation"
     severity = 3
     categories = ["commands"]
     authors = ["Kevin Ross"]
