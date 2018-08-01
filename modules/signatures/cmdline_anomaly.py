@@ -135,6 +135,44 @@ class CmdlineSetForLoopObfsucation(Signature):
 
         return ret
 
+class CmdlineSwitches(Signature):
+    name = "cmdline_switches"
+    description = "Executed a command line with /V argument which modifies variable behaviour and whitespace allowing for increased obfuscation options"
+    severity = 2
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            if "cmd" in cmdline.lower() and ("/V" in cmdline or "\V" in cmdline):
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
+
+class CmdlineTerminate(Signature):
+    name = "cmdline_terminate"
+    description = "Executed a command line with /C or /R argument to terminate command shell on completion which can be used to hide execution"
+    severity = 1
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            if "cmd" in cmdline.lower() and ("/C" in cmdline or "\C" in cmdline or "/R" in cmdline or "\R" in cmdline):
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
+
 class LongCommandline(Signature):
     name = "long_commandline"
     description = "Executed a very long command line or script command which may be indicative of chained commands or obfuscation"
