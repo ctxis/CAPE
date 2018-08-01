@@ -53,7 +53,7 @@ class CmdlineChracterObfsucation(Signature):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
         for cmdline in cmdlines:
-            if "cmd" in cmdline.lower() and (cmdline.count("^") > 3 or cmdline.count("&") > 6 or cmdline.count("+") > 4 or cmdline.count("\"") > 8):
+            if "cmd" in cmdline.lower() and (cmdline.count("^") > 3 or cmdline.count("&") > 6 or cmdline.count("+") > 4 or cmdline.count("\"") > 8 or cmdline.count(";") > 6):
                     ret = True
                     self.data.append({"command" : cmdline})
 
@@ -80,7 +80,7 @@ class CmdlineConcatenationObfsucation(Signature):
 
 class CmdlineSetObfsucation(Signature):
     name = "cmdline_set_obfuscation"
-    description = "Appears to use set to define variables in command line likely for obfsucation"
+    description = "Appears to use set to define variables in a command line likely for obfuscation"
     severity = 3
     categories = ["commands"]
     authors = ["Kevin Ross"]
@@ -96,6 +96,45 @@ class CmdlineSetObfsucation(Signature):
                     self.data.append({"command" : cmdline})
 
         return ret
+
+class CmdlineSetCallObfsucation(Signature):
+    name = "cmdline_setcall_obfuscation"
+    description = "Appears to use set and call to define a variable in a command line likely for obfuscation"
+    severity = 3
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            if "cmd" in cmdline.lower() and "set " in cmdline.lower() and "call " in cmdline.lower():
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
+
+class CmdlineSetForLoopObfsucation(Signature):
+    name = "cmdline_set_forloop_obfuscation"
+    description = "Appears to use a for loop in a command line likely for obfuscation"
+    severity = 3
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            if "cmd" in cmdline.lower() and "set " in cmdline.lower() and "for " in cmdline.lower():
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
+
 class LongCommandline(Signature):
     name = "long_commandline"
     description = "Executed a very long command line or script command which may be indicative of chained commands or obfuscation"
