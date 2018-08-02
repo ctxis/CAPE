@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "jwhite@paloaltonetworks.com"
 __version__ = "1.0.6"
-__date__    = "12JUN2018"
+__date__    = "27JUL2018"
 
 def buildBehaviors(entry, behaviorTags):
     # Generates possible code injection variations
@@ -459,6 +459,12 @@ class Curtain(Processing):
                     if re.findall("-join\s+?\(\s?\'(.+)\.split\(.+\)\s+?\|\s+?foreach", MESSAGE, re.I):
                         chars = re.findall("\d{1,3}", MESSAGE)
                         ALTMSG = "".join([chr(int(i)) for i in chars])
+                        MODFLAG = 1
+
+                    if re.findall("join\(\s?['\"]+\s?,\(\s?['\"].+'\s?\)\s?\|\s?foreach-object\s?.+-bxor\s?(0x[\d\w]+)", MESSAGE, re.I):
+                        xorkey = re.findall("join\(\s?['\"]+\s?,\(\s?['\"].+'\s?\)\s?\|\s?foreach-object\s?.+-bxor\s?(0x[\d\w]+)", MESSAGE, re.I)[0]
+                        chars = re.findall("\d{1,3}", MESSAGE)
+                        ALTMSG = "".join([chr(int(i) ^ int(xorkey, 16)) for i in chars])
                         MODFLAG = 1
 
                     # Remove camel case obfuscation as last step
