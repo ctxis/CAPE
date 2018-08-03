@@ -132,7 +132,7 @@ class CAPE_Extraction(Signature):
 class CAPE_InjectionCreateRemoteThread(Signature):
     name = "InjectionCreateRemoteThread"
     description = "Behavioural detection: Injection with CreateRemoteThread in a remote process"
-    severity = 1
+    severity = 3
     categories = ["injection"]
     authors = ["JoseMi Holguin", "nex", "Optiv", "kevoreilly", "KillerInstinct"]
     minimum = "1.3"
@@ -205,7 +205,7 @@ class CAPE_InjectionCreateRemoteThread(Signature):
 class CAPE_InjectionProcessHollowing(Signature):
     name = "InjectionProcessHollowing"
     description = "Behavioural detection: Injection (Process Hollowing)"
-    severity = 1
+    severity = 3
     categories = ["injection"]
     authors = ["glysbaysb", "Optiv", "KillerInstinct"]
     minimum = "1.3"
@@ -264,7 +264,7 @@ class CAPE_InjectionProcessHollowing(Signature):
 class CAPE_InjectionSetWindowLong(Signature):
     name = "InjectionSetWindowLong"
     description = "Behavioural detection: Injection with SetWindowLong in a remote process"
-    severity = 1
+    severity = 3
     categories = ["injection"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -306,7 +306,7 @@ class CAPE_InjectionSetWindowLong(Signature):
 class CAPE_Injection(Signature):
     name = "InjectionInterProcess"
     description = "Behavioural detection: Injection (inter-process)"
-    severity = 1
+    severity = 3
     categories = ["injection"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -334,7 +334,7 @@ class CAPE_Injection(Signature):
 class CAPE_EvilGrab(Signature):
     name = "EvilGrab"
     description = "Behavioural detection: EvilGrab"
-    severity = 1
+    severity = 3
     categories = ["malware"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -367,7 +367,7 @@ class CAPE_EvilGrab(Signature):
 class CAPE_PlugX(Signature):
     name = "PlugX"
     description = "Behavioural detection: PlugX"
-    severity = 1
+    severity = 3
     categories = ["chinese", "malware"]
     families = ["plugx"]
     authors = ["kevoreilly"]
@@ -414,7 +414,7 @@ class CAPE_PlugX(Signature):
 class CAPE_Doppelganging(Signature):
     name = "Doppelganging"
     description = "Behavioural detection: Process Doppelganging"
-    severity = 1
+    severity = 3
     categories = ["injection"]
     authors = ["kevoreilly"]
     minimum = "1.3"
