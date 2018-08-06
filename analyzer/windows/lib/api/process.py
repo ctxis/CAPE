@@ -579,6 +579,8 @@ class Process:
                 "bp1",
                 "bp2",
                 "bp3",
+                "depth",
+                "count",
                 ]
             
             for optname in simple_optnames:
