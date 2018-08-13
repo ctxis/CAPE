@@ -27,6 +27,7 @@ import tempfile
 import hashlib
 import random
 import imp
+import datetime
 
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
@@ -75,6 +76,8 @@ CERBER_CONFIG           = 0x30
 CERBER_PAYLOAD          = 0x31
 HANCITOR_CONFIG         = 0x34
 HANCITOR_PAYLOAD        = 0x35
+QAKBOT_CONFIG           = 0x38
+QAKBOT_PAYLOAD          = 0x39
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -436,6 +439,126 @@ class CAPE(Processing):
                     ConfigItem = "Gate URL " + str(index+1)
                     cape_config["cape_config"].update({ConfigItem: [value]})
                 append_file = False
+            # QakBot
+            if file_info["cape_type_code"] == QAKBOT_CONFIG:
+                file_info["cape_type"] = "QakBot Config"
+                cape_config["cape_type"] = "QakBot Config"
+                cape_name = "QakBot"
+                if not "cape_config" in cape_config:
+                    cape_config["cape_config"] = {}
+                for line in file_data.splitlines():
+                    if '=' in line:
+                        index = line.split('=')[0]
+                        data = line.split('=')[1]
+                    if index == '10':
+                        ConfigItem = "Botnet name"
+                        ConfigData = data
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '11':
+                        ConfigItem = "Number of C2 servers"
+                        ConfigData = data
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '47':
+                        ConfigItem = "Bot ID"
+                        ConfigData = data
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '3':
+                        ConfigItem = "Config timestamp"
+                        ConfigData = datetime.datetime.fromtimestamp(int(data)).strftime('%H:%M:%S %d-%m-%Y')
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '22':
+                        values = data.split(':')
+                        ConfigItem = "Password #1"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #1"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #1"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '23':
+                        values = data.split(':')
+                        ConfigItem = "Password #2"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #2"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #2"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '24':
+                        values = data.split(':')
+                        ConfigItem = "Password #3"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #3"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #3"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '25':
+                        values = data.split(':')
+                        ConfigItem = "Password #4"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #4"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #4"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '26':
+                        values = data.split(':')
+                        ConfigItem = "Password #5"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #5"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #5"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                append_file = False
+            if file_info["cape_type_code"] == QAKBOT_PAYLOAD:
+                file_info["cape_type"] = "QakBot Payload"
+                cape_config["cape_type"] = "QakBot Payload"
+                cape_name = "QakBot"
+                type_strings = file_info["type"].split()
+                if type_strings[0] == ("PE32+"):
+                    file_info["cape_type"] += ": 64-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                if type_strings[0] == ("PE32"):
+                    file_info["cape_type"] += ": 32-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                append_file = True
             # UPX package output
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"
@@ -482,7 +605,7 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"  
                         
-            suppress_parsing_list = ["Cerber", "Ursnif"];
+            suppress_parsing_list = ["Cerber", "Ursnif", "QakBot"];
 
             if hit["name"] in suppress_parsing_list:
                 continue
