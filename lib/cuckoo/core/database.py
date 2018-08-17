@@ -39,6 +39,7 @@ TASK_REPORTED = "reported"
 TASK_FAILED_ANALYSIS = "failed_analysis"
 TASK_FAILED_PROCESSING = "failed_processing"
 TASK_FAILED_REPORTING = "failed_reporting"
+TASK_DISTRIBUTED_COMPLETED = "distributed_completed"
 
 # Secondary table used in association Machine - Tag.
 machines_tags = Table(
@@ -589,11 +590,12 @@ class Database(object):
             if not row:
                 return
 
-            row.status = status
+            if status != TASK_DISTRIBUTED_COMPLETED:
+                row.status = status
 
             if status == TASK_RUNNING:
                 row.started_on = datetime.now()
-            elif status == TASK_COMPLETED:
+            elif status == TASK_COMPLETED or status == TASK_DISTRIBUTED_COMPLETED:
                 row.completed_on = datetime.now()
 
             session.commit()
