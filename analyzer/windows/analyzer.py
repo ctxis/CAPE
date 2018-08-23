@@ -703,6 +703,12 @@ class PipeHandler(Thread):
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
+                                # We want to prevent multiple injection attempts if one is already underway
+                                PROCESS_LOCK.acquire()
+                                add_pids(process_id)
+                                PROCESS_LOCK.release()
+                                NUM_INJECTED += 1
+
                                 if is_64bit:
                                     if not in_protected_path(filename):
                                         res = proc.inject(dll_64, INJECT_QUEUEUSERAPC, interest)
