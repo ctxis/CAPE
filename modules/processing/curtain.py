@@ -12,8 +12,9 @@ log = logging.getLogger(__name__)
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "jwhite@paloaltonetworks.com"
-__version__ = "1.0.6"
-__date__    = "27JUL2018"
+__version__ = "1.0.8"
+__date__    = "24AUG2018"
+__credits__ = ["@noottrak", "@doomedraven"]
 
 def buildBehaviors(entry, behaviorTags):
     # Generates possible code injection variations
@@ -36,13 +37,18 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Code Injection"] = list(itertools.product(*codeInject))
 
-    behaviorCol["Downloader"] = [["New-Object System.Net.WebClient","DownloadFile"],
+    behaviorCol["Downloader"] = [
+                                 ["New-Object System.Net.WebClient","DownloadFile"],
                                  ["New-Object System.Net.WebClient","DownloadString"],
                                  ["New-Object System.Net.WebClient","DownloadData"],
+                                 ["New-Object Net.WebClient","DownloadFile"],
+                                 ["New-Object Net.WebClient","DownloadString"],
+                                 ["New-Object Net.WebClient","DownloadData"],
                                  ["System.Net.WebRequest","WebProxy","System.Net.CredentialCache"],
                                  ["Import-Module BitsTransfer", "Start-BitsTransfer", "Source", "Destination"],
                                  ["New-Object System.Net.Sockets.TCPClient", "GetStream"],
-                                 ["$env:LocalAppData"]]
+                                 ["$env:LocalAppData"]
+                                ]
 
     behaviorCol["Starts Process"] = [["Start-Process"],
                                      ["New-Object IO.MemoryStream", "New-Object IO.StreamReader"],
@@ -466,6 +472,16 @@ class Curtain(Processing):
                         chars = re.findall("\d{1,3}", MESSAGE)
                         ALTMSG = "".join([chr(int(i) ^ int(xorkey, 16)) for i in chars])
                         MODFLAG = 1
+
+                    if re.findall("\"([{\d{1,3}\}]+)\"\-f(.+)\)\)\s+(-replace.*)", MESSAGE, re.I):
+                        res = re.findall(
+                            "\"([{\d{1,3}\}]+)\"\-f(.+)\)\)\s+(-replace.*)", MESSAGE, re.I)
+                        formated, data, replaces = res[0]
+                        r = formated.format(*data.split("','")).replace("'", "")
+                        # split by blocks
+                        blocks = re.findall("([\[cHAR\]\d{1,3}\+']+\)),(\[char\]\d{1,3})", MESSAGE, re.I)
+                        for i in blocks:
+                            r = r.replace("".join([chr(int(i)) for i in re.findall("\d{1,3}", i[0])]), "".join([chr(int(i)) for i in re.findall("\d{1,3}", i[1])]))
 
                     # Remove camel case obfuscation as last step
                     ALTMSG, MODFLAG = adjustCase(ALTMSG, MODFLAG)
