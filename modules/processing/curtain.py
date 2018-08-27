@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "jwhite@paloaltonetworks.com"
-__version__ = "1.0.8"
-__date__    = "24AUG2018"
+__version__ = "1.0.9"
+__date__    = "27AUG2018"
 __credits__ = ["@noottrak", "@doomedraven"]
 
 def buildBehaviors(entry, behaviorTags):
@@ -22,42 +22,37 @@ def buildBehaviors(entry, behaviorTags):
     behaviorCol = {}
 
     codeInject = [["VirtualAlloc", "NtAllocateVirtualMemory", "ZwAllocateVirtualMemory", "HeapAlloc"],
-        ["RtlMoveMemory", "WriteProcessMemory", "memset"],
-        ["CallWindowProcA", "CallWindowProcW", "DialogBoxIndirectParamA", "DialogBoxIndirectParamW",
-         "EnumCalendarInfoA", "EnumCalendarInfoW", "EnumDateFormatsA", "EnumDateFormatsW", "EnumDesktopWindows",
-         "EnumDesktopsA", "EnumDesktopsW", "EnumLanguageGroupLocalesA", "EnumLanguageGroupLocalesW", "EnumPropsExA",
-         "EnumPropsExW", "EnumPwrSchemes", "EnumResourceTypesA", "EnumResourceTypesW", "EnumResourceTypesExA",
-         "EnumResourceTypesExW", "EnumSystemCodePagesA", "EnumSystemCodePagesW", "EnumSystemLanguageGroupsA",
-         "EnumSystemLanguageGroupsW", "EnumSystemLocalesA", "EnumSystemLocalesW", "EnumThreadWindows",
-         "EnumTimeFormatsA", "EnumTimeFormatsW", "EnumUILanguagesA", "EnumUILanguagesW", "EnumWindowStationsA",
-         "EnumWindowStationsW", "EnumWindows", "EnumerateLoadedModules", "EnumerateLoadedModulesEx",
-         "EnumerateLoadedModulesExW", "GrayStringA", "GrayStringW", "NotifyIpInterfaceChange", "NotifyTeredoPortChange",
-         "NotifyUnicastIpAddressChange", "SHCreateThread", "SHCreateThreadWithHandle", "SendMessageCallbackA",
-         "SendMessageCallbackW", "SetWinEventHook", "SetWindowsHookExA", "SetWindowsHookExW", "CreateThread"]]
+                  ["RtlMoveMemory", "WriteProcessMemory", "memset"],
+                  ["CallWindowProcA", "CallWindowProcW", "DialogBoxIndirectParamA", "DialogBoxIndirectParamW",
+                   "EnumCalendarInfoA", "EnumCalendarInfoW", "EnumDateFormatsA", "EnumDateFormatsW", "EnumDesktopWindows",
+                   "EnumDesktopsA", "EnumDesktopsW", "EnumLanguageGroupLocalesA", "EnumLanguageGroupLocalesW", "EnumPropsExA",
+                   "EnumPropsExW", "EnumPwrSchemes", "EnumResourceTypesA", "EnumResourceTypesW", "EnumResourceTypesExA",
+                   "EnumResourceTypesExW", "EnumSystemCodePagesA", "EnumSystemCodePagesW", "EnumSystemLanguageGroupsA",
+                   "EnumSystemLanguageGroupsW", "EnumSystemLocalesA", "EnumSystemLocalesW", "EnumThreadWindows",
+                   "EnumTimeFormatsA", "EnumTimeFormatsW", "EnumUILanguagesA", "EnumUILanguagesW", "EnumWindowStationsA",
+                   "EnumWindowStationsW", "EnumWindows", "EnumerateLoadedModules", "EnumerateLoadedModulesEx",
+                   "EnumerateLoadedModulesExW", "GrayStringA", "GrayStringW", "NotifyIpInterfaceChange", "NotifyTeredoPortChange",
+                   "NotifyUnicastIpAddressChange", "SHCreateThread", "SHCreateThreadWithHandle", "SendMessageCallbackA",
+                   "SendMessageCallbackW", "SetWinEventHook", "SetWindowsHookExA", "SetWindowsHookExW", "CreateThread"]]
 
     behaviorCol["Code Injection"] = list(itertools.product(*codeInject))
 
-    behaviorCol["Downloader"] = [
-                                 ["New-Object System.Net.WebClient","DownloadFile"],
-                                 ["New-Object System.Net.WebClient","DownloadString"],
-                                 ["New-Object System.Net.WebClient","DownloadData"],
-                                 ["New-Object Net.WebClient","DownloadFile"],
-                                 ["New-Object Net.WebClient","DownloadString"],
-                                 ["New-Object Net.WebClient","DownloadData"],
-                                 ["System.Net.WebRequest","WebProxy","System.Net.CredentialCache"],
-                                 ["Import-Module BitsTransfer", "Start-BitsTransfer", "Source", "Destination"],
-                                 ["New-Object System.Net.Sockets.TCPClient", "GetStream"],
-                                 ["$env:LocalAppData"]
-                                ]
+    behaviorCol["Downloader"] = [["Net.WebClient", "DownloadFile"],
+                                 ["Net.WebClient", "DownloadString"],
+                                 ["Net.WebClient", "DownloadData"],
+                                 ["Net.WebRequest", "WebProxy", "Net.CredentialCache"],
+                                 ["Start-BitsTransfer", "Source", "Destination"],
+                                 ["Net.Sockets.TCPClient", "GetStream"],
+                                 ["$env:LocalAppData"]]
 
     behaviorCol["Starts Process"] = [["Start-Process"],
-                                     ["New-Object IO.MemoryStream", "New-Object IO.StreamReader"],
+                                     ["IO.MemoryStream", "IO.StreamReader"],
                                      ["System.Diagnostics.Process]::Start"]]
 
     behaviorCol["Compression"] = [["Convert", "FromBase64String", "System.Text.Encoding"],
-                                  ["New-Object IO.Compression.GzipStream"],
+                                  ["IO.Compression.GzipStream"],
                                   ["[IO.Compression.CompressionMode]::Decompress"],
-                                  ["New-Object IO.Compression.DeflateStream"]]
+                                  ["IO.Compression.DeflateStream"]]
 
     behaviorCol["Uses Stealth"] = [["WindowStyle", "Hidden"],
                                    ["CreateNoWindow=$true"],
@@ -65,7 +60,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Key Logging"] = [["GetAsyncKeyState", "Windows.Forms.Keys"]]
 
-    behaviorCol["Screen Scraping"] = [["New-Object Drawing.Bitmap", "Width", "Height"],
+    behaviorCol["Screen Scraping"] = [["Drawing.Bitmap", "Width", "Height"],
                                       ["[Drawing.Graphics]::FromImage"],
                                       ["CopyFroMScreen", "Location", "[Drawing.Point]::Empty", "Size"]]
 
@@ -81,7 +76,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Obfuscation"] = [["-Join", "[int]", "-as", "[char]"]]
 
-    behaviorCol["Crypto"] = [["New-Object System.Security.Cryptography.AESCryptoServiceProvider", "Mode", "Key", "IV"],
+    behaviorCol["Crypto"] = [["System.Security.Cryptography.AESCryptoServiceProvider", "Mode", "Key", "IV"],
                              ["CreateEncryptor().TransformFinalBlock"],
                              ["CreateDecryptor().TransformFinalBlock"]]
 
@@ -97,10 +92,11 @@ def buildBehaviors(entry, behaviorTags):
                                             ["GWMI Win32_OperatingSystem"],
                                             ["Get-WMIObject Win32_OperatingSystem"],
                                             ["[Security.Principal.WindowsIdentity]::GetCurrent"],
-                                            ["[Security.Principal.WindowsBuiltInRole]", "Administrator"],
+                                            ["[Security.Principal.WindowsBuiltInRole]",
+                                                "Administrator"],
                                             ["[System.Diagnostics.Process]::GetCurrentProcess"],
                                             ["PSVersionTable.PSVersion"],
-                                            ["New-Object System.Diagnostics.ProcessStartInfo"],
+                                            ["System.Diagnostics.ProcessStartInfo"],
                                             ["GWMI Win32_ComputerSystemProduct"],
                                             ["Get-WMIObject Win32_ComputerSystemProduct"],
                                             ["Get-Process -id"],
@@ -481,8 +477,8 @@ class Curtain(Processing):
                         # split by blocks
                         blocks = re.findall("([\[cHAR\]\d{1,3}\+']+\)),(\[char\]\d{1,3})", MESSAGE, re.I)
                         for i in blocks:
-                            r = r.replace("".join([chr(int(i)) for i in re.findall("\d{1,3}", i[0])]), "".join([chr(int(i)) for i in re.findall("\d{1,3}", i[1])]))
-
+                            ALTMSG = r.replace("".join([chr(int(i)) for i in re.findall("\d{1,3}", i[0])]), "".join([chr(int(i)) for i in re.findall("\d{1,3}", i[1])]))
+                        MODFLAG = 1
                     # Remove camel case obfuscation as last step
                     ALTMSG, MODFLAG = adjustCase(ALTMSG, MODFLAG)
 
