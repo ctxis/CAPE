@@ -63,6 +63,10 @@ $(function() {
     {% if analysis.misp %}
             <li><a href="#misp" data-toggle="tab">MISP</a></li>
     {% endif %}
+     {% if analysis.curtain%}
+    <li>
+        <a href="#curtain" data-toggle="tab">Curtain</a>
+    </li>{% endif %}
     <li><a href="#statistics" data-toggle="tab">Statistics</a></li>
     <li><a href="#admin" data-toggle="tab">Admin</a></li>
 </ul>
@@ -120,6 +124,11 @@ $(function() {
     {% if analysis.misp %}
     <div class="tab-pane fade" id="misp">
         {% include "analysis/misp/index.html" %}
+    </div>
+    {% endif %}
+    {% if analysis.curtain %}
+    <div class="tab-pane fade" id="curtain">
+        {% include "analysis/curtain.html" %}
     </div>
     {% endif %}
     <div class="tab-pane fade" id="statistics">

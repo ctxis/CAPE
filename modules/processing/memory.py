@@ -1142,6 +1142,7 @@ class Memory(Processing):
 
         results = {}
         if "machine" not in self.task or not self.task["machine"] or not self.task["memory"]:
+            log.warn("Volatility startup: machine not in task list and no memory task specified.")
             return results
 
         task_machine = self.task["machine"]["name"]

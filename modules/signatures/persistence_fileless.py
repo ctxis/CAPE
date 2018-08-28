@@ -45,7 +45,7 @@ class PersistenceRegistryScript(Signature):
         fullname = self.get_argument(call, "FullName")
         buf = self.get_argument(call, "Buffer")
         for script in self.scripts:
-            if script in buf.lower():
+            if buf and script in buf.lower():
                 self.registry_writes[fullname] = buf
 
     def on_complete(self):

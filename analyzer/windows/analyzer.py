@@ -22,7 +22,7 @@ from shutil import copy
 from lib.api.process import Process
 from lib.common.abstracts import Package, Auxiliary
 from lib.common.constants import PATHS, PIPE, SHUTDOWN_MUTEX, TERMINATE_EVENT
-from lib.common.constants import CUCKOOMON32_NAME, CUCKOOMON64_NAME, LOADER32_NAME, LOADER64_NAME
+from lib.common.constants import CAPEMON32_NAME, CAPEMON64_NAME, LOADER32_NAME, LOADER64_NAME
 from lib.common.defines import ADVAPI32, KERNEL32, NTDLL
 from lib.common.defines import ERROR_MORE_DATA, ERROR_PIPE_CONNECTED
 from lib.common.defines import PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE
@@ -343,8 +343,6 @@ class PipeHandler(Thread):
         """Run handler.
         @return: operation status.
         """
-        global MONITOR_DLL
-        global MONITOR_DLL_64
         global MONITORED_SERVICES
         global MONITORED_WMI
         global MONITORED_DCOM
@@ -445,7 +443,7 @@ class PipeHandler(Thread):
                             servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -470,7 +468,7 @@ class PipeHandler(Thread):
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                                 servproc.set_critical()
                                 filepath = servproc.get_filepath()
-                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
@@ -484,7 +482,7 @@ class PipeHandler(Thread):
                             servproc = Process(options=self.options,config=self.config,pid=wmi_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -511,7 +509,7 @@ class PipeHandler(Thread):
                             servproc = Process(options=self.options,config=self.config,pid=sched_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -536,7 +534,7 @@ class PipeHandler(Thread):
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                                 servproc.set_critical()
                                 filepath = servproc.get_filepath()
-                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
@@ -550,7 +548,7 @@ class PipeHandler(Thread):
                             servproc = Process(options=self.options,config=self.config,pid=bits_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -576,11 +574,7 @@ class PipeHandler(Thread):
                             servproc = Process(options=self.options,config=self.config,pid=SERVICES_PID,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
-                            is_64bit = servproc.is_64bit()
-                            if is_64bit:
-                                servproc.inject(dll=MONITOR_DLL_64, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
-                            else:
-                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(1000)
@@ -649,10 +643,6 @@ class PipeHandler(Thread):
                 # In case of PID, the client is trying to notify the creation of
                 # a new process to be injected and monitored.
                 elif command.startswith("PROCESS:"):
-                    # Set the current DLL to the default one provided
-                    # at submission.
-                    dll = MONITOR_DLL
-                    dll_64 = MONITOR_DLL_64
                     suspended = False
                     # We parse the process ID.
                     data = command[8:]
@@ -703,25 +693,21 @@ class PipeHandler(Thread):
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
-                                if is_64bit:
-                                    if not in_protected_path(filename):
-                                        res = proc.inject(dll_64, INJECT_QUEUEUSERAPC, interest)
-                                        LASTINJECT_TIME = datetime.now()
-                                else:
-                                    if not in_protected_path(filename):
-                                        res = proc.inject(dll, INJECT_QUEUEUSERAPC, interest)
-                                        LASTINJECT_TIME = datetime.now()
+                                # We want to prevent multiple injection attempts if one is already underway
+                                PROCESS_LOCK.acquire()
+                                add_pids(process_id)
+                                PROCESS_LOCK.release()
+                                NUM_INJECTED += 1
+
+                                if not in_protected_path(filename):
+                                    res = proc.inject(INJECT_QUEUEUSERAPC, interest)
+                                    LASTINJECT_TIME = datetime.now()
                                 proc.close()
                         else:
                             log.warning("Received request to inject Cuckoo "
                                         "process with pid %d, skip", process_id)
 
                 elif command.startswith("DEBUGGER:"):
-                    # Set the current DLL to the default one provided
-                    # at submission.
-                    dll = MONITOR_DLL
-                    dll_64 = MONITOR_DLL_64
-                    suspended = True
                     # We parse the process ID.
                     data = command[9:]
                     process_id = thread_id = None
@@ -757,16 +743,10 @@ class PipeHandler(Thread):
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
-                                if is_64bit:
-                                    if not in_protected_path(filename):
-                                        res = proc.debug_inject(dll_64, interest, childprocess=True)
-                                        log.info("Injected 64-bit process %s with 64-bit debugger dll: %s", filename, dll_64)
-                                        LASTINJECT_TIME = datetime.now()
-                                else:
-                                    if not in_protected_path(filename):
-                                        res = proc.debug_inject(dll, interest, childprocess=True)
-                                        log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
-                                        LASTINJECT_TIME = datetime.now()
+                                if not in_protected_path(filename):
+                                    res = proc.debug_inject(interest, childprocess=True)
+                                    log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
+                                    LASTINJECT_TIME = datetime.now()
                                 proc.close()
                         else:
                             log.warning("Received request to inject Cuckoo "
@@ -1154,13 +1134,13 @@ class Analyzer:
         
         # randomize monitor DLL and loader executable names
         if MONITOR_DLL != None:
-            copy(os.path.join("dll", MONITOR_DLL), CUCKOOMON32_NAME)
+            copy(os.path.join("dll", MONITOR_DLL), CAPEMON32_NAME)
         else:
-            copy("dll\\CAPE.dll", CUCKOOMON32_NAME)
+            copy("dll\\CAPE.dll", CAPEMON32_NAME)
         if MONITOR_DLL_64 != None:
-            copy(os.path.join("dll", MONITOR_DLL_64), CUCKOOMON64_NAME)
+            copy(os.path.join("dll", MONITOR_DLL_64), CAPEMON64_NAME)
         else:
-            copy("dll\\CAPE_x64.dll", CUCKOOMON64_NAME)
+            copy("dll\\CAPE_x64.dll", CAPEMON64_NAME)
         if LOADER != None:
             copy(os.path.join("bin", LOADER), LOADER32_NAME)
         else:
