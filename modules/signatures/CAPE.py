@@ -441,3 +441,38 @@ class CAPE_Doppelganging(Signature):
         elif call["api"] == "NtCreateProcessEx":
             if self.get_argument(call, "SectionHandle") == self.sectionhandle:
                 return True
+
+class CAPE_TransactedHollowing(Signature):
+    name = "TransactedHollowing"
+    description = "Behavioural detection: Transacted Hollowing"
+    severity = 3
+    categories = ["injection"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    filter_apinames = set(["RtlSetCurrentTransaction", "NtRollbackTransaction", "NtMapViewOfSection"])
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.transaction_set = False
+        self.transaction_rollback = False
+        self.transacted_hollowing = False
+
+    def on_call(self, call, process):
+
+        if call["api"] == "RtlSetCurrentTransaction":
+            self.transaction_set = True
+
+        if call["api"] == "NtRollbackTransaction":
+            if self.transaction_set == True:
+                self.transaction_rollback = True
+
+        if (call["api"] == "NtMapViewOfSection"):
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle != "0xffffffff" and self.transaction_rollback == True:
+                self.transacted_hollowing = True
+
+    def on_complete(self):
+        if self.transacted_hollowing == True:
+            return True
