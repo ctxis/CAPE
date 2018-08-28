@@ -1382,6 +1382,35 @@ class Database(object):
         return sample
 
     @classlock
+    def sample_path_by_hash(self, hash):
+        """Retrieve information on a sample location by given hash.
+        @param hash: md5/sha1/sha256/sha256.
+        @return: sample paths.
+        """
+        sizes = {
+            32: Sample.md5,
+            40: Sample.sha1,
+            64: Sample.sha256,
+        }
+        query_filter = sizes.get(len(hash), "")
+        if query_filter:
+            session = self.Session()
+            try:
+                samples = session.query(Task).filter(query_filter == hash).filter(Sample.id == Task.sample_id).all()
+                if samples is not None:
+                    sample = [sample.to_dict().get("target", "") for sample in samples]
+            except AttributeError:
+                return None
+            except SQLAlchemyError as e:
+                log.debug("Database error viewing task: {0}".format(e))
+                return None
+            finally:
+                session.close()
+        else:
+            return None
+        return sample
+
+    @classlock
     def count_samples(self):
         """Counts the amount of samples in the database."""
         session = self.Session()
