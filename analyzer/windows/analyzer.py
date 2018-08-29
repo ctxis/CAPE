@@ -57,8 +57,8 @@ AUX_ENABLED = []
 PROCESS_LOCK = Lock()
 MONITOR_DLL = None
 MONITOR_DLL_64 = None
-LOADER = None
-LOADER_64 = None
+LOADER32 = None
+LOADER64 = None
 
 SERVICES_PID = None
 MONITORED_SERVICES = False
@@ -1020,8 +1020,8 @@ class Analyzer:
         """
         global MONITOR_DLL
         global MONITOR_DLL_64
-        global LOADER
-        global LOADER_64
+        global LOADER32
+        global LOADER64
 
         log.debug("Starting analyzer from: %s", os.getcwd())
         log.debug("Storing results at: %s", PATHS["root"])
@@ -1129,8 +1129,8 @@ class Analyzer:
             log.info("Analyzer: Loader (32-bit) set to %s from package %s", LOADER32, package_name)
         
         if pack.options.has_key("loader_64") and pack.options["loader_64"] != None:
-            LOADER_64 = pack.options["loader_64"]
-            log.info("Analyzer: Loader (64-bit) set to %s from package %s", LOADER_64, package_name)
+            LOADER64 = pack.options["loader_64"]
+            log.info("Analyzer: Loader (64-bit) set to %s from package %s", LOADER64, package_name)
         
         # randomize monitor DLL and loader executable names
         if MONITOR_DLL != None:
@@ -1141,12 +1141,12 @@ class Analyzer:
             copy(os.path.join("dll", MONITOR_DLL_64), CAPEMON64_NAME)
         else:
             copy("dll\\CAPE_x64.dll", CAPEMON64_NAME)
-        if LOADER != None:
-            copy(os.path.join("bin", LOADER), LOADER32_NAME)
+        if LOADER32 != None:
+            copy(os.path.join("bin", LOADER32), LOADER32_NAME)
         else:
             copy("bin\\loader.exe", LOADER32_NAME)
-        if LOADER_64 != None:
-            copy(os.path.join("bin", LOADER_64), LOADER64_NAME)
+        if LOADER64 != None:
+            copy(os.path.join("bin", LOADER64), LOADER64_NAME)
         else:
             copy("bin\\loader_x64.exe", LOADER64_NAME)
 
