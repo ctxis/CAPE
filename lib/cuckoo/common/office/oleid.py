@@ -18,7 +18,7 @@ http://www.decalage.info/python/oletools
 
 #=== LICENSE =================================================================
 
-# oleid is copyright (c) 2012-2015, Philippe Lagadec (http://www.decalage.info)
+# oleid is copyright (c) 2012-2018, Philippe Lagadec (http://www.decalage.info)
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -41,6 +41,9 @@ http://www.decalage.info/python/oletools
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# To improve Python 2+3 compatibility:
+from __future__ import print_function
+#from __future__ import absolute_import
 
 #------------------------------------------------------------------------------
 # CHANGELOG:
@@ -48,8 +51,12 @@ http://www.decalage.info/python/oletools
 # 2014-11-29 v0.02 PL: - use olefile instead of OleFileIO_PL
 #                      - improved usage display with -h
 # 2014-11-30 v0.03 PL: - improved output with prettytable
+# 2016-10-25 v0.50 PL: - fixed print and bytes strings for Python 3
+# 2016-12-12 v0.51 PL: - fixed relative imports for Python 3 (issue #115)
+# 2017-04-26       PL: - fixed absolute imports (issue #141)
+# 2017-09-01       SA: - detect OpenXML encryption
 
-__version__ = '0.03'
+__version__ = '0.53'
 
 
 #------------------------------------------------------------------------------
@@ -71,8 +78,22 @@ __version__ = '0.03'
 #=== IMPORTS =================================================================
 
 import optparse, sys, os, re, zlib, struct
-import olefile
-#from thirdparty.prettytable import prettytable
+
+# IMPORTANT: it should be possible to run oletools directly as scripts
+# in any directory without installing them with pip or setup.py.
+# In that case, relative imports are NOT usable.
+# And to enable Python 2+3 compatibility, we need to use absolute imports,
+# so we add the oletools parent folder to sys.path (absolute+normalized path):
+_thismodule_dir = os.path.normpath(os.path.abspath(os.path.dirname(__file__)))
+# print('_thismodule_dir = %r' % _thismodule_dir)
+_parent_dir = os.path.normpath(os.path.join(_thismodule_dir, '..'))
+# print('_parent_dir = %r' % _thirdparty_dir)
+if not _parent_dir in sys.path:
+    sys.path.insert(0, _parent_dir)
+
+from oletools.thirdparty import olefile
+from oletools.thirdparty.prettytable import prettytable
+
 
 
 #=== FUNCTIONS ===============================================================
@@ -88,7 +109,7 @@ def detect_flash (data):
     """
     #TODO: report
     found = []
-    for match in re.finditer('CWS|FWS', data):
+    for match in re.finditer(b'CWS|FWS', data):
         start = match.start()
         if start+8 > len(data):
             # header size larger than remaining data, this is not a SWF
@@ -97,7 +118,7 @@ def detect_flash (data):
         # Read Header
         header = data[start:start+3]
         # Read Version
-        ver = struct.unpack('<b', data[start+3])[0]
+        ver = struct.unpack('<b', data[start+3:start+4])[0]
         # Error check for version above 20
         #TODO: is this accurate? (check SWF specifications)
         if ver > 20:
@@ -111,7 +132,7 @@ def detect_flash (data):
         # Read SWF into buffer. If compressed read uncompressed size.
         swf = data[start:start+size]
         compressed = False
-        if 'CWS' in header:
+        if b'CWS' in header:
             compressed = True
             # compressed SWF: data after header (8 bytes) until the end is
             # compressed with zlib. Attempt to decompress it to check if it is
@@ -191,6 +212,9 @@ class OleID:
         if 0x13 in self.suminfo:
             if self.suminfo[0x13] & 1:
                 self.encrypted.value = True
+        # check if this is an OpenXML encrypted file
+        elif self.ole.exists('EncryptionInfo'):
+            self.encrypted.value = True
 
     def check_word (self):
         word = Indicator('word', False, name='Word Document',
@@ -258,3 +282,46 @@ class OleID:
             # just add to the count of Flash objects:
             flash.value += len(found)
             #print stream, found
+
+
+#=== MAIN =================================================================
+
+def main():
+    # print banner with version
+    print ('oleid %s - http://decalage.info/oletools' % __version__)
+    print ('THIS IS WORK IN PROGRESS - Check updates regularly!')
+    print ('Please report any issue at https://github.com/decalage2/oletools/issues')
+    print ('')
+
+    usage = 'usage: %prog [options] <file>'
+    parser = optparse.OptionParser(usage=__doc__ + '\n' + usage)
+##    parser.add_option('-o', '--ole', action='store_true', dest='ole', help='Parse an OLE file (e.g. Word, Excel) to look for SWF in each stream')
+
+    (options, args) = parser.parse_args()
+
+    # Print help if no argurments are passed
+    if len(args) == 0:
+        parser.print_help()
+        return
+
+    for filename in args:
+        print('Filename:', filename)
+        oleid = OleID(filename)
+        indicators = oleid.check()
+
+        #TODO: add description
+        #TODO: highlight suspicious indicators
+        t = prettytable.PrettyTable(['Indicator', 'Value'])
+        t.align = 'l'
+        t.max_width = 39
+        #t.border = False
+
+        for indicator in indicators:
+            #print '%s: %s' % (indicator.name, indicator.value)
+            t.add_row((indicator.name, indicator.value))
+
+        print(t)
+        print ('')
+
+if __name__ == '__main__':
+    main()
