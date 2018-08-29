@@ -1081,6 +1081,8 @@ class Office(object):
                 vba = VBA_Parser(filepath)
             except:
                 return results
+        else:
+            return results
 
         officeresults = results["office"] = { }
 
