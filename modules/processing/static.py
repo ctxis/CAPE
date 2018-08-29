@@ -67,19 +67,23 @@ except:
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.objects import File
-from lib.cuckoo.common.office.oleid import OleID
-from lib.cuckoo.common.office.olevba import detect_autoexec
-from lib.cuckoo.common.office.olevba import detect_hex_strings
-from lib.cuckoo.common.office.olevba import detect_patterns
-from lib.cuckoo.common.office.olevba import detect_suspicious
-from lib.cuckoo.common.office.olevba import filter_vba
-from lib.cuckoo.common.office.olevba import VBA_Parser
+try:
+    from lib.cuckoo.common.office.oleid import OleID
+    from lib.cuckoo.common.office.olevba import detect_autoexec
+    from lib.cuckoo.common.office.olevba import detect_hex_strings
+    from lib.cuckoo.common.office.olevba import detect_patterns
+    from lib.cuckoo.common.office.olevba import detect_suspicious
+    from lib.cuckoo.common.office.olevba import filter_vba
+    from lib.cuckoo.common.office.olevba import VBA_Parser
+    HAS_OLETOOLS = True
+except ImportError:
+    print("Ensure oletools are installed")
+    HAS_OLETOOLS = False
 from lib.cuckoo.common.utils import convert_to_printable
 from lib.cuckoo.common.pdftools.pdfid import PDFiD, PDFiD2JSON
 from lib.cuckoo.common.peepdf.PDFCore import PDFParser
 from lib.cuckoo.common.peepdf.JSAnalysis import analyseJS
 
-log = logging.getLogger(__name__)
 
 
 # Obtained from
@@ -1058,20 +1062,25 @@ class Office(object):
 
     def _parse(self, filepath):
         """Parses an office document for static information.
-        Currently (as per olefile) the following formats are supported:
-        - Word 97-2003 (.doc, .dot), Word 2007+ (.docm, .dotm)
-        - Excel 97-2003 (.xls), Excel 2007+ (.xlsm, .xlsb)
-        - PowerPoint 2007+ (.pptm, .ppsm)
+        Supported formats:
+            - Word 97-2003 (.doc, .dot), Word 2007+ (.docm, .dotm)
+            - Excel 97-2003 (.xls), Excel 2007+ (.xlsm, .xlsb)
+            - PowerPoint 97-2003 (.ppt), PowerPoint 2007+ (.pptm, .ppsm)
+            - Word/PowerPoint 2007+ XML (aka Flat OPC)
+            - Word 2003 XML (.xml)
+            - Word/Excel Single File Web Page / MHTML (.mht)
+            - Publisher (.pub)
 
         @param filepath: Path to the file to be analyzed.
         @return: results dict or None
         """
 
         results = dict()
-        try:
-            vba = VBA_Parser(filepath)
-        except:
-            return results
+        if HAS_OLETOOLS:
+            try:
+                vba = VBA_Parser(filepath)
+            except:
+                return results
 
         officeresults = results["office"] = { }
 
@@ -1178,7 +1187,7 @@ class Java(object):
         results = {}
 
         results["java"] = { }
-        
+
         if self.decomp_jar:
             f = open(self.file_path, "rb")
             data = f.read()
@@ -1450,7 +1459,7 @@ class Static(Processing):
                     static.update(DotNETExecutable(self.file_path, self.results).run())
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
                 static = PDF(self.file_path).run()
-            elif package in ("doc", "ppt", "xls"):
+            elif package in ("doc", "ppt", "xls", "pub"):
                 static = Office(self.file_path).run()
             elif "Java Jar" in thetype or self.task["target"].endswith(".jar"):
                 decomp_jar = self.options.get("procyon_path", None)

@@ -1,7 +1,7 @@
 sqlalchemy
 jinja2
 markupsafe
-libvirt-python 
+libvirt-python
 pymongo
 bottle
 #pefile
@@ -10,7 +10,7 @@ chardet
 pygal
 clamd
 pycrypto
-rarfile 
+rarfile
 jsbeautifier
 dpkt
 nose
@@ -31,3 +31,4 @@ git+https://github.com/kbandla/pydeep.git
 pyvmomi>=6.0
 imagehash
 upx
+oletools==0.53.1

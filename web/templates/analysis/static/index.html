@@ -29,7 +29,7 @@
                 {% include "analysis/static/_script.html" %}
             {% elif analysis.info.package == "vbs" or analysis.info.package == "js" %}
                 {% include "analysis/static/_script.html" %}
-            {% elif analysis.info.package == "doc" or analysis.info.package == "ppt" or analysis.info.package == "xls" %}
+            {% elif analysis.info.package == "doc" or analysis.info.package == "ppt" or analysis.info.package == "xls" or analysis.info.package == "pub" %}
                 {% include "analysis/static/_office.html" %}
             {% elif "Java Jar" in analysis.target.file.type or analysis.target.file.name|endswith:".jar" %}
                 {% include "analysis/static/_java.html" %}
