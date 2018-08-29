@@ -146,6 +146,11 @@ def init_logging():
     dh = DatabaseHandler()
     dh.setLevel(logging.ERROR)
     log.addHandler(dh)
+    
+    trfh = logging.handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "cuckoo.log"), when="midnight", backupCount=30)
+    log.addHandler(trfh)
+    tpfh = logging.handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "process.log"), when="midnight", backupCount=30)
+    log.addHandler(tpfh)
 
     log.setLevel(logging.INFO)
 
