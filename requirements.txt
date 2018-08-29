@@ -30,5 +30,9 @@ git+https://github.com/jsocol/django-ratelimit
 git+https://github.com/kbandla/pydeep.git
 pyvmomi>=6.0
 imagehash
-upx
+pyinstaller
+requests
+sqlalchemy
+# upx
+maec
 oletools==0.53.1

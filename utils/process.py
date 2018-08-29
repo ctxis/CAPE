@@ -21,7 +21,7 @@ from lib.cuckoo.core.database import Database, Task, TASK_REPORTED, TASK_COMPLET
 from lib.cuckoo.core.database import TASK_FAILED_PROCESSING
 from lib.cuckoo.core.plugins import GetFeeds, RunProcessing, RunSignatures
 from lib.cuckoo.core.plugins import RunReporting
-from lib.cuckoo.core.startup import init_modules, ConsoleHandler
+from lib.cuckoo.core.startup import init_modules, init_yara, ConsoleHandler
 
 repconf = Config("reporting")
 if repconf.mongodb.enabled:
@@ -217,7 +217,8 @@ def main():
     parser.add_argument("-r", "--report", help="Re-generate report", action="store_true", required=False)
     parser.add_argument("-p", "--parallel", help="Number of parallel threads to use (auto mode only).", type=int, required=False, default=1)
     args = parser.parse_args()
-
+    
+    init_yara()
     init_modules()
 
     if args.id == "auto":

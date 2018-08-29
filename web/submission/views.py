@@ -27,6 +27,7 @@ from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.rooter import vpns
+from utils import submit_utils
 
 # Conditional decorator for web authentication
 class conditional_login_required(object):
@@ -58,8 +59,42 @@ def update_options(gw, orig_options):
 
     return options
 
+
+def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines):
+    onesuccess = False
+    if content is False:
+        try:
+            r = requests.get(url, params=params, headers=headers, verify=False)
+        except requests.exceptions.RequestException as e:
+            return "error", render(request, "error.html", {"error": "Error completing connection to {1}: {0}".format(e, service)})
+
+        if r.status_code == 200:
+            content = r.content
+        elif r.status_code == 403:
+            return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
+    try:
+        f = open(filename, 'wb')
+        f.write(content)
+        f.close()
+    except:
+        return "error", render(request, "error.html", {"error": "Error writing {} download file to temporary path".format(service)})
+
+    onesuccess = True
+
+    for gw in task_gateways:
+        options = update_options(gw, orig_options)
+
+        for entry in task_machines:
+            task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
+                                                         machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock)
+            task_ids.extend(task_ids_new)
+    if not onesuccess:
+        return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
+    return "ok", task_ids
+
+
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
-def index(request):
+def index(request, resubmit_hash=False):
     if request.method == "POST":
         package = request.POST.get("package", "")
         timeout = min(force_int(request.POST.get("timeout")), 60 * 60 * 24)
@@ -73,7 +108,11 @@ def index(request):
         enforce_timeout = bool(request.POST.get("enforce_timeout", False))
         referrer = validate_referrer(request.POST.get("referrer", None))
         tags = request.POST.get("tags", None)
-
+        opt_filename = ""
+        for option in options.split(","):
+            if option.startswith("filename="):
+                opt_filename = option.split("filename=")[1]
+                break
         task_gateways = []
         ipaddy_re = re.compile(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")
 
@@ -168,7 +207,29 @@ def index(request):
         else:
             task_machines.append(machine)
 
-        if "sample" in request.FILES:
+        status = "ok"
+        if "hash" in request.POST and request.POST.get("hash", False) and request.POST.get("hash")[0] != '':
+            resubmission_hash = request.POST.get("hash").strip()
+            paths = db.sample_path_by_hash(resubmission_hash)
+            if paths:
+                content = ""
+                content = submit_utils.get_file_content(paths)
+                if content is False:
+                    return render(request, "error.html", {"error": "Can't find {} on disk".format(resubmission_hash)})
+                
+                if opt_filename:
+                    filename = opt_filename
+                else:
+                    filename = resubmission_hash
+                path = store_temp_file(content, filename)
+                headers = {}
+                url = 'local'
+                params = {}
+
+                status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
+                                                 clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+
+        elif "sample" in request.FILES:
             samples = request.FILES.getlist("sample")
             for sample in samples:
                 # Error if there was only one submitted sample and it's empty.
@@ -293,71 +354,58 @@ def index(request):
                                          clock=clock)
                     if task_id:
                         task_ids.append(task_id)
-        elif settings.VTDL_ENABLED and "vtdl" in request.POST:
-            vtdl = request.POST.get("vtdl")
+        elif settings.VTDL_ENABLED and "vtdl" in request.POST and request.POST.get("vtdl", False) and request.POST.get("vtdl")[0] != '':
+            vtdl = request.POST.get("vtdl").strip()
             if (not settings.VTDL_PRIV_KEY and not settings.VTDL_INTEL_KEY) or not settings.VTDL_PATH:
                     return render(request, "error.html",
-                                              {"error": "You specified VirusTotal but must edit the file and specify your VTDL_PRIV_KEY or VTDL_INTEL_KEY variable and VTDL_PATH base directory"})
+                                  {"error": "You specified VirusTotal but must edit the file and specify your VTDL_PRIV_KEY or VTDL_INTEL_KEY variable and VTDL_PATH base directory"})
             else:
-                base_dir = tempfile.mkdtemp(prefix='cuckoovtdl',dir=settings.VTDL_PATH)
+
+                base_dir = tempfile.mkdtemp(prefix='cuckoovtdl', dir=settings.VTDL_PATH)
                 hashlist = []
                 if "," in vtdl:
-                    hashlist=vtdl.replace(" ", "").strip().split(",")
+                    hashlist = vtdl.replace(" ", "").strip().split(",")
                 else:
-                    hashlist=vtdl.split()
-                onesuccess = False
+                    hashlist.append(vtdl)
 
                 for h in hashlist:
-                    filename = base_dir + "/" + h
-                    if settings.VTDL_PRIV_KEY:
-                        url = 'https://www.virustotal.com/vtapi/v2/file/download'
-                        params = {'apikey': settings.VTDL_PRIV_KEY, 'hash': h}
+                    if opt_filename:
+                         filename = base_dir + "/" + opt_filename
                     else:
-                        url = 'https://www.virustotal.com/intelligence/download/'
-                        params = {'apikey': settings.VTDL_INTEL_KEY, 'hash': h}
+                        filename = base_dir + "/" + h
 
-                    try:
-                        r = requests.get(url, params=params, verify=True)
-                    except requests.exceptions.RequestException as e:
-                        return render(request, "error.html",
-                                              {"error": "Error completing connection to VirusTotal: {0}".format(e)})
-                    if r.status_code == 200:
-                        try:
-                            f = open(filename, 'wb')
-                            f.write(r.content)
-                            f.close()
-                        except:
-                            return render(request, "error.html",
-                                              {"error": "Error writing VirusTotal download file to temporary path"})
+                    paths = db.sample_path_by_hash(h)
+                    content = ""
+                    if paths is not None:
+                        content = submit_utils.get_file_content(paths)
 
-                        onesuccess = True
+                    headers = {}
+                    url = 'https://www.virustotal.com/intelligence/download/'
+                    params = {'apikey': settings.VTDL_INTEL_KEY, 'hash': h}
 
-                        for gw in task_gateways:
-                            options = update_options(gw, orig_options)
+                    if content is False:
+                        if settings.VTDL_PRIV_KEY:
+                            url = 'https://www.virustotal.com/vtapi/v2/file/download'
+                            params = {
+                                'apikey': settings.VTDL_PRIV_KEY, 'hash': h}
 
-                            for entry in task_machines:
-                                task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
-                                                                             machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock)
-                                task_ids.extend(task_ids_new)
-                    elif r.status_code == 403:
-                        return render(request, "error.html",
-                                                  {"error": "API key provided is not a valid VirusTotal key or is not authorized for VirusTotal downloads"})
+                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "VirusTotal", filename, package, timeout, options, priority, machine, gateway,
+                                                         clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+                    else:
 
-
-                if not onesuccess:
-                    return render(request, "error.html",
-                                              {"error": "Provided hash not found on VirusTotal"})
-
-
-
+                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
+                                                         clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+            if status == "error":
+                # is render msg
+                return task_ids
         tasks_count = len(task_ids)
         if tasks_count > 0:
             return render(request, "submission/complete.html",
-                                      {"tasks" : task_ids,
-                                       "tasks_count" : tasks_count})
+                          {"tasks": task_ids,
+                           "tasks_count": tasks_count})
         else:
             return render(request, "error.html",
-                                      {"error": "Error adding task to Cuckoo's database."})
+                          {"error": "Error adding task to Cuckoo's database."})
     else:
         cfg = Config("cuckoo")
         enabledconf = dict()
@@ -417,7 +465,9 @@ def index(request):
                                    "inetsim": cfg.routing.inetsim,
                                    "tor": cfg.routing.tor,
                                    "gateways": settings.GATEWAYS,
-                                   "config": enabledconf})
+                                   "config": enabledconf,
+                                   "resubmit": resubmit_hash,
+                                })
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def status(request, task_id):

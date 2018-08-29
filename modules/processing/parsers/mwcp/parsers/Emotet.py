@@ -28,10 +28,12 @@ rule Emotet
     strings:
         $snippet1 = {FF 15 ?? ?? ?? ?? 83 C4 0C 68 40 00 00 F0 6A 18}
         $snippet2 = {6A 13 68 01 00 01 00 FF 15 ?? ?? ?? ?? 85 C0}
+        $snippet3 = {83 3D ?? ?? ?? ?? 00 C7 05 ?? ?? ?? ?? ?? ?? ?? ?? C7 05 ?? ?? ?? ?? ?? ?? ?? ?? 74 0A 51 E8 ?? ?? ?? ?? 83 C4 04 C3 33 C0 C3}
+        $snippet4 = {33 C0 C7 05 ?? ?? ?? ?? ?? ?? ?? ?? C7 05 ?? ?? ?? ?? ?? ?? ?? ?? A3 ?? ?? ?? ?? A3 ?? ?? ?? ?? A3 ?? ?? ?? ?? 39 05 ?? ?? ?? ?? 74 1D 8D 49 00 40 A3 ?? ?? ?? ?? 83 3C C5 ?? ?? ?? ?? 00 75 F0 51 E8 ?? ?? ?? ?? 83 C4 04 C3}
         $c2list = {?? ?? ?? ?? (50 00|2F 10|BB 01|90 1F|A8 1B) 00 00 ?? ?? ?? ?? (50 00|2F 10|BB 01|90 1F|A8 1B) 00 00 ?? ?? ?? ?? (50 00|2F 10|BB 01|90 1F|A8 1B) 00 00 ?? ?? ?? ?? (50 00|2F 10|BB 01|90 1F|A8 1B) 00 00}
     condition:
         //check for MZ Signature at offset 0
-        uint16(0) == 0x5A4D and all of them
+        uint16(0) == 0x5A4D and (($snippet1) and ($snippet2) and ($c2list)) or ($snippet3) or ($snippet4)
 }
 
 '''
@@ -62,19 +64,56 @@ class Emotet(malwareconfigparser):
         
         if c2list:
             ips_offset = int(c2list['$c2list'])
-        else:
-            return        
                 
-        ip = struct.unpack('I', filebuf[ips_offset:ips_offset+4])[0]
-        
-        while ip:
-            c2_address = socket.inet_ntoa(struct.pack('!L', ip))
-            port = str(struct.unpack('h', filebuf[ips_offset+4:ips_offset+6])[0])
-
-            if c2_address and port:
-                self.reporter.add_metadata('address', c2_address+':'+port)
-            
-            ips_offset += 8
             ip = struct.unpack('I', filebuf[ips_offset:ips_offset+4])[0]
-        
-        return
+            
+            while ip:
+                c2_address = socket.inet_ntoa(struct.pack('!L', ip))
+                port = str(struct.unpack('h', filebuf[ips_offset+4:ips_offset+6])[0])
+
+                if c2_address and port:
+                    self.reporter.add_metadata('address', c2_address+':'+port)
+                
+                ips_offset += 8
+                ip = struct.unpack('I', filebuf[ips_offset:ips_offset+4])[0]
+            return
+        else:
+            refc2list = yara_scan(filebuf, '$snippet3')
+        if refc2list:
+            c2list_va_offset = int(refc2list['$snippet3'])
+
+            c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0] - image_base
+            c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+            
+            while 1:
+                ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                if ip == 0:
+                    return
+                c2_address = socket.inet_ntoa(struct.pack('!L', ip))
+                port = str(struct.unpack('H', filebuf[c2_list_offset+4:c2_list_offset+6])[0])
+
+                if c2_address and port:
+                    self.reporter.add_metadata('address', c2_address+':' + port)
+                else:
+                    return
+                c2_list_offset += 8
+        else:
+            refc2list = yara_scan(filebuf, '$snippet4')
+            if refc2list:
+                c2list_va_offset = int(refc2list['$snippet4'])
+
+                c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+8:c2list_va_offset+12])[0] - image_base
+                c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+                
+                while 1:
+                    ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                    if ip == 0:
+                        return
+                    c2_address = socket.inet_ntoa(struct.pack('!L', ip))
+                    port = str(struct.unpack('H', filebuf[c2_list_offset+4:c2_list_offset+6])[0])
+
+                    if c2_address and port:
+                        self.reporter.add_metadata('address', c2_address+':' + port)
+                    else:
+                        return
+                    c2_list_offset += 8
