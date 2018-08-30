@@ -143,6 +143,14 @@ def init_logging():
     ch.setFormatter(formatter)
     log.addHandler(ch)
 
+    cfg = Config()
+    if cfg.logging.enabled:
+        days = cfg.logging.backupCount
+        trfh = logging.handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "cuckoo.log"), when="midnight", backupCount=days)
+        log.addHandler(trfh)
+        tpfh = logging.handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "process.log"), when="midnight", backupCount=days)
+        log.addHandler(tpfh)
+
     dh = DatabaseHandler()
     dh.setLevel(logging.ERROR)
     log.addHandler(dh)
