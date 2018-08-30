@@ -216,11 +216,11 @@ def index(request, resubmit_hash=False):
                 content = submit_utils.get_file_content(paths)
                 if content is False:
                     return render(request, "error.html", {"error": "Can't find {} on disk".format(resubmission_hash)})
-                
+                base_dir = tempfile.mkdtemp(prefix='resubmit_',dir=settings.TEMP_PATH)
                 if opt_filename:
-                    filename = opt_filename
+                    filename = base_dir + "/" + opt_filename
                 else:
-                    filename = resubmission_hash
+                    filename = base_dir + "/" + resubmission_hash
                 path = store_temp_file(content, filename)
                 headers = {}
                 url = 'local'
