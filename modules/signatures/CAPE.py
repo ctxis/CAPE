@@ -50,14 +50,18 @@ class CAPE_Compression(Signature):
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
             buf = self.get_raw_argument(call, "UncompressedBuffer")
+            size = int(self.get_raw_argument(call, "UncompressedBufferLength"), 0)
             dos_header = buf[:DOS_HEADER_LIMIT]
             nt_headers = None
 
+            if size < PE_HEADER_LIMIT:
+                return
+                
             # Check for sane value in e_lfanew
             e_lfanew, = struct.unpack("<L", dos_header[60:64])
             if not e_lfanew or e_lfanew > PE_HEADER_LIMIT:
                 offset = 0
-                while offset < PE_HEADER_LIMIT-2:
+                while offset < PE_HEADER_LIMIT-86:
                     machine_probe = struct.unpack("<H", buf[offset:offset+2])[0]
                     if machine_probe == IMAGE_FILE_MACHINE_I386 or machine_probe == IMAGE_FILE_MACHINE_AMD64:
                         nt_headers = buf[offset-4:offset+252]
