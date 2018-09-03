@@ -355,18 +355,17 @@ def index(request, resubmit_hash=False):
                     if task_id:
                         task_ids.append(task_id)
         elif settings.VTDL_ENABLED and "vtdl" in request.POST and request.POST.get("vtdl", False) and request.POST.get("vtdl")[0] != '':
-            vtdl = request.POST.get("vtdl").strip()
+            vtdl = request.POST.get("vtdl")
             if (not settings.VTDL_PRIV_KEY and not settings.VTDL_INTEL_KEY) or not settings.VTDL_PATH:
                     return render(request, "error.html",
                                   {"error": "You specified VirusTotal but must edit the file and specify your VTDL_PRIV_KEY or VTDL_INTEL_KEY variable and VTDL_PATH base directory"})
             else:
-
                 base_dir = tempfile.mkdtemp(prefix='cuckoovtdl', dir=settings.VTDL_PATH)
                 hashlist = []
                 if "," in vtdl:
                     hashlist = vtdl.replace(" ", "").strip().split(",")
                 else:
-                    hashlist.append(vtdl)
+                    hashlist = vtdl.split()
 
                 for h in hashlist:
                     if opt_filename:
