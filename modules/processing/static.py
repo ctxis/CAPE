@@ -1150,7 +1150,7 @@ class Office(object):
                             macrores["Analysis"]["IOCs"].append((pattern, match))
                     if hex_strs:
                         for encoded, decoded in hex_strs:
-                            macrores["Analysis"]["HexStrings"].append((encoded, decoded))
+                            macrores["Analysis"]["HexStrings"].append((encoded, convert_to_printable(decoded)))
             # Delete and keys which had no results. Otherwise we pollute the
             # Django interface with null data.
             if macrores["Analysis"]["AutoExec"] == []:
@@ -1171,7 +1171,7 @@ class Office(object):
                     if vba_code:
                         vba2graph_gen(vba_code, vba2graph_path)
                 except Exception as e:
-                    log.debug(e)
+                    log.info(e)
         else:
             metares["HasMacros"] = "No"
 

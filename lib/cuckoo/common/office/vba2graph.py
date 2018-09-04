@@ -845,7 +845,6 @@ def vba2graph_from_vba_object(filepath):
             return False
     full_vba_code = ""
     for (subfilename, stream_path, vba_filename, vba_code) in vba.extract_macros():
-        logging.info(vba_code)
         full_vba_code += 'VBA MACRO %s \n' % vba_filename
         full_vba_code += '- '*39 + '\n'
         full_vba_code += vba_code
