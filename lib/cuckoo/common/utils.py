@@ -1368,8 +1368,18 @@ def pretty_print_arg(category, api_name, arg_name, arg_val):
     elif arg_name == "ProcessInformationClass":
         val = int(arg_val, 10)
         return {
+                0 : "ProcessBasicInformation",
+                7 : "ProcessDebugPort",
                 29 : "ProcessBreakOnTermination",
-                34 : "ProcessDEPPolicy",
+                30 : "ProcessDebugObjectHandle",
+                31 : "ProcessDebugFlags",
+                34 : "ProcessExecuteFlags",
+         }.get(val, None)
+    elif arg_name == "ThreadInformationClass":
+        val = int(arg_val, 10)
+        return {
+                0 : "ThreadBasicInformation",
+                17 : "ThreadHideFromDebugger",
          }.get(val, None)
     elif arg_name == "MemType":
         val = int(arg_val, 16)
