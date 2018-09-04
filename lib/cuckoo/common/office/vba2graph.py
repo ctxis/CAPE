@@ -842,7 +842,7 @@ def vba2graph_from_vba_object(filepath):
         try:
             vba = VBA_Parser(filepath)
         except Exception as e:
-            return
+            return False
     full_vba_code = ""
     for (subfilename, stream_path, vba_filename, vba_code) in vba.extract_macros():
         logging.info(vba_code)
