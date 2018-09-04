@@ -837,6 +837,13 @@ def report(request, task_id):
         except:
             pass
 
+    vba2graph = False
+    vba2graph_svg_content = ""
+    vba2graph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "vba2graph", "svg", "vba2graph.svg")
+    if os.path.exists(vba2graph_svg_path):
+        vba2graph_svg_content = open(vba2graph_svg_path, "rb").read()
+        vba2graph = True
+
     return render(request, "analysis/report.html",
                              {"analysis": report,
                               "children" : children,
@@ -844,7 +851,9 @@ def report(request, task_id):
                               "iplookups": iplookups,
                               "similar": similarinfo,
                               "settings": settings,
-                              "config": enabledconf})
+                              "config": enabledconf,
+                              "vba2graph": {"enabled": vba2graph, "content": vba2graph_svg_content}
+                              })
 
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
