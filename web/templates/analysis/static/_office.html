@@ -145,6 +145,11 @@
             </div>
             <hr />
             {% endif %}
+            {% if vba2graph.enabled %}
+                <h4>Vba2Graph</h4>
+                {{ vba2graph.content|safe }} 
+            {% endif %}
+
         {% endif %}
 
     {% else %}
