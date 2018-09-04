@@ -4,8 +4,6 @@
 
 import json
 from lib.cuckoo.common.utils import store_temp_file
-import lib.cuckoo.common.office.olefile as olefile
-import lib.cuckoo.common.office.vbadeobf as vbadeobf
 import lib.cuckoo.common.decoders.darkcomet as darkcomet
 import lib.cuckoo.common.decoders.njrat as njrat
 import lib.cuckoo.common.decoders.nanocore as nanocore
