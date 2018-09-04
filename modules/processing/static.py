@@ -1171,7 +1171,7 @@ class Office(object):
                     if vba_code:
                         vba2graph_gen(vba_code, vba2graph_path)
                 except Exception as e:
-                    log.debug(e)
+                    log.info(e)
         else:
             metares["HasMacros"] = "No"
 
