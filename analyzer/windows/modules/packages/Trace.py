@@ -17,6 +17,8 @@ class Trace(Package):
         self.pids = []
         self.options["dll"] = "Trace.dll"
         self.options["dll_64"] = "Trace_x64.dll"
+        self.options["loader"] = "newloader.exe"
+        self.options["loader_64"] = "newloader_x64.exe"
 
     def start(self, path):
         args = self.options.get("arguments")

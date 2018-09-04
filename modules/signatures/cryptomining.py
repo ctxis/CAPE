@@ -13,55 +13,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 from lib.cuckoo.common.abstracts import Signature
 
 class CryptominingStratumCommand(Signature):
     name = "cyrptomining_stratum_command"
-    description = "A cryptomining command containing a stratum protocol address was executed"
+    description = "A cryptomining command was executed"
     severity = 3
     confidence = 90
     categories = ["cryptomining"]
-    authors = ["Kevin Ross"]
+    authors = ["Kevin Ross", "Cuckoo Technologies"]
     minimum = "1.3"
     evented = True
-    references = ["blog.talosintelligence.com/2018/01/malicious-xmr-mining.html"]
+    references = ["blog.talosintelligence.com/2018/01/malicious-xmr-mining.html", "www.fireeye.com/blog/threat-research/2018/07/cryptocurrencies-cyber-crime-growth-of-miners.html"]
 
     def run(self):
-        ret = False
-        for cmdline in self.results["behavior"]["summary"]["executed_commands"]:
-            if "stratum+tcp://" in cmdline.lower():
-                self.data.append({"command" : cmdline })
-                ret = True
-
-        return ret
-
-class CryptominingCommand(Signature):
-    name = "cyrptomining_command"
-    description = "A possible cryptomining command was executed"
-    severity = 3
-    confidence = 50
-    categories = ["cryptomining"]
-    authors = ["Kevin Ross"]
-    minimum = "1.3"
-    evented = True
-    references = ["blog.talosintelligence.com/2018/01/malicious-xmr-mining.html"]
-
-    def run(self):
-        commands = [
-            "--donate-level=",
-            "--max-cpu-usage=",
-        ]
+        xmr_address_re = '-u[ ]*4[0-9AB][123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{93}'
+        xmr_strings = ["stratum+tcp://", "xmrig", "xmr-stak", "supportxmr.com:", "dwarfpool.com:", "minergate", "xmr.", "monero."]
 
         ret = False
         for cmdline in self.results["behavior"]["summary"]["executed_commands"]:
-            lower = cmdline.lower()
-            if "-o " in lower and "-u " in lower and "-p " in lower:
+            if re.search(xmr_address_re, cmdline):
                 self.data.append({"command" : cmdline })
                 ret = True
-            else:
-                for command in commands:
-                    if command in lower:
-                        self.data.append({"command" : cmdline })
-                        ret = True
+            for xmr_string in xmr_strings:
+                if xmr_string in cmdline.lower():
+                    self.data.append({"command" : cmdline })
+                    ret = True
 
         return ret

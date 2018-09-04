@@ -2,12 +2,15 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+import os, subprocess
 import xml.etree.ElementTree as ET
 import libvirt
+import logging
 
 from lib.cuckoo.common.abstracts import LibVirtMachinery
 from lib.cuckoo.common.exceptions import CuckooMachineError, CuckooCriticalError
 
+log = logging.getLogger(__name__)
 
 class KVMRemote(LibVirtMachinery):
     """Virtualization layer for KVM based on python-libvirt."""
@@ -79,5 +82,51 @@ class KVMRemote(LibVirtMachinery):
         if not self.db.view_machine_by_label(label).interface:
             self.db.set_machine_interface(label, self._get_interface(label))
 
+    def dump_memory(self, label, path):
+        """Takes a memory dump.
+        @param path: path to where to store the memory dump.
+        """
 
+	# ssh and create save file then copy to path
+        try:
+            # create the memory dump file ourselves first so it doesn't end up root/root 0600
+            # it'll still be owned by root, so we can't delete it, but at least we can read it
+            fd = open(path, "w")
+            fd.close()
+
+	    try:
+		    from subprocess import DEVNULL # py3k
+	    except ImportError:
+		    import os
+		    DEVNULL = open(os.devnull, 'wb')
+
+	    # this triggers local dump
+
+            #self.vms[label].coreDump(path, flags=libvirt.VIR_DUMP_MEMORY_ONLY)
+
+	    machine_label = None
+	    hypverv_cfg = None
+	    # use first
+            for machine in self.machines():
+                machine_cfg = self.options.get(machine.label)
+                hyperv_cfg = self.options.get(machine_cfg.hypervisor)
+		break
+
+	    remote_host = hyperv_cfg['remote_host']
+
+	    log.info("Dumping volatile memory remotely @ %s (%s)" % (remote_host, label))
+
+	    remote_output = subprocess.check_output(['ssh', remote_host, "virsh", "dump", "--memory-only", label, "/data/memory/%s.memory.dump" % (label)  ], stderr=DEVNULL)
+	    log.debug("Copying memory from remote host")
+	    remote_output = subprocess.check_output(['scp', '-q', remote_host + ":/data/memory/%s.memory.dump" % label, path ], stderr=DEVNULL)
+	    log.debug("Removing memory from remote host")
+	    remote_output = subprocess.check_output(['ssh', remote_host, "rm", "-f", "/data/memory/%s.memory.dump" % (label) ], stderr=DEVNULL)
+
+	    if not os.path.isfile(path):
+            	raise CuckooMachineError("Error dumping memory virtual machine "
+                                     "{0}: {1}".format(label, "file not found"))
+
+        except libvirt.libvirtError as e:
+            raise CuckooMachineError("Error dumping memory virtual machine "
+                                     "{0}: {1}".format(label, e))
 

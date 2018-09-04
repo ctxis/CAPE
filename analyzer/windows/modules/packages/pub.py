@@ -2,6 +2,7 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+import os
 from lib.common.abstracts import Package
 
 from _winreg import (OpenKey, CreateKeyEx, SetValueEx, CloseKey, QueryInfoKey, EnumKey,
@@ -52,4 +53,7 @@ class PUB(Package):
     def start(self, path):
          self.set_keys()
          publisher = self.get_path_glob("Microsoft Office Publisher")
-         return self.execute(publisher, "/o \"%s\"" % path, path)
+         if not path.endswith(".pub"):
+             os.rename(path, path + ".pub")
+             path += ".pub"
+         return self.execute(publisher, "\"%s\"" % path, path)

@@ -9,7 +9,7 @@ rule AgentTesla
         $string2 = "appdata" wide
         $string3 = "76487-337-8429955-22614" wide
         $string4 = "yyyy-MM-dd HH:mm:ss" wide
-        $string5 = "%site_username%" wide
+        //$string5 = "%site_username%" wide
         $string6 = "webpanel" wide
         $string7 = "<br>UserName&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:" wide
         $string8 = "<br>IP Address&nbsp;&nbsp;:" wide

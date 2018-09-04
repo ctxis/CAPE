@@ -1,5 +1,5 @@
 # CAPE - Config And Payload Extraction
-# Copyright(C) 2015, 2016 Context Information Security. (kevin.oreilly@contextis.com)
+# Copyright(C) 2015 - 2018 Context Information Security. (kevin.oreilly@contextis.com)
 # 
 # This program is free software : you can redistribute it and / or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,21 +17,24 @@
 import struct
 from lib.cuckoo.common.abstracts import Signature
 
-IMAGE_DOS_SIGNATURE             = 0x5A4D
-IMAGE_NT_SIGNATURE              = 0x00004550
-OPTIONAL_HEADER_MAGIC_PE        = 0x10b
-OPTIONAL_HEADER_MAGIC_PE_PLUS   = 0x20b
-IMAGE_FILE_EXECUTABLE_IMAGE     = 0x0002
-PE_HEADER_LIMIT                 = 0x200
+IMAGE_DOS_SIGNATURE                 = 0x5A4D
+IMAGE_NT_SIGNATURE                  = 0x00004550
+OPTIONAL_HEADER_MAGIC_PE            = 0x10b
+OPTIONAL_HEADER_MAGIC_PE_PLUS       = 0x20b
+IMAGE_FILE_EXECUTABLE_IMAGE         = 0x0002
+IMAGE_FILE_MACHINE_I386             = 0x014c
+IMAGE_FILE_MACHINE_AMD64            = 0x8664    
+DOS_HEADER_LIMIT                    = 0x40
+PE_HEADER_LIMIT                     = 0x200
 
-EXECUTABLE_FLAGS                = 0x10 | 0x20 | 0x40 | 0x80
-EXTRACTION_MIN_SIZE             = 0x1001
+EXECUTABLE_FLAGS                    = 0x10 | 0x20 | 0x40 | 0x80
+EXTRACTION_MIN_SIZE                 = 0x1001
 
-PLUGX_SIGNATURE		            = 0x5658
+PLUGX_SIGNATURE		                = 0x5658
 
 class CAPE_Compression(Signature):
     name = "Compression"
-    description = "CAPE detection: Compression (or decompression)"
+    description = "Behavioural detection: Decompression of executable module(s)."
     severity = 1
     categories = ["malware"]
     authors = ["kevoreilly"]
@@ -47,17 +50,28 @@ class CAPE_Compression(Signature):
     def on_call(self, call, process):
         if call["api"] == "RtlDecompressBuffer":
             buf = self.get_raw_argument(call, "UncompressedBuffer")
-            dos_header = buf[:64]
+            size = int(self.get_raw_argument(call, "UncompressedBufferLength"), 0)
+            dos_header = buf[:DOS_HEADER_LIMIT]
+            nt_headers = None
 
-            if struct.unpack("<H", dos_header[0:2])[0] == IMAGE_DOS_SIGNATURE:
-                self.compressed_binary = True
-
+            if size < PE_HEADER_LIMIT:
+                return
+                
             # Check for sane value in e_lfanew
             e_lfanew, = struct.unpack("<L", dos_header[60:64])
             if not e_lfanew or e_lfanew > PE_HEADER_LIMIT:
+                offset = 0
+                while offset < PE_HEADER_LIMIT-86:
+                    machine_probe = struct.unpack("<H", buf[offset:offset+2])[0]
+                    if machine_probe == IMAGE_FILE_MACHINE_I386 or machine_probe == IMAGE_FILE_MACHINE_AMD64:
+                        nt_headers = buf[offset-4:offset+252]
+                        break
+                    offset = offset + 2
+            else:
+                nt_headers = buf[e_lfanew:e_lfanew+256]
+
+            if nt_headers == None:
                 return
-            
-            nt_headers = buf[e_lfanew:e_lfanew+256]
 
             #if ((pNtHeader->FileHeader.Machine == 0) || (pNtHeader->FileHeader.SizeOfOptionalHeader == 0 || pNtHeader->OptionalHeader.SizeOfHeaders == 0)) 
             if struct.unpack("<H", nt_headers[4:6]) == 0 or struct.unpack("<H", nt_headers[20:22]) == 0 or struct.unpack("<H", nt_headers[84:86]) == 0:
@@ -84,7 +98,7 @@ class CAPE_Compression(Signature):
 
 class CAPE_Extraction(Signature):
     name = "Extraction"
-    description = "CAPE detection: Executable code extraction"
+    description = "Behavioural detection: Executable code extraction"
     severity = 1
     categories = ["allocation"]
     authors = ["kevoreilly"]
@@ -121,8 +135,8 @@ class CAPE_Extraction(Signature):
 
 class CAPE_InjectionCreateRemoteThread(Signature):
     name = "InjectionCreateRemoteThread"
-    description = "CAPE detection: Injection with CreateRemoteThread in a remote process"
-    severity = 1
+    description = "Behavioural detection: Injection with CreateRemoteThread in a remote process"
+    severity = 3
     categories = ["injection"]
     authors = ["JoseMi Holguin", "nex", "Optiv", "kevoreilly", "KillerInstinct"]
     minimum = "1.3"
@@ -194,8 +208,8 @@ class CAPE_InjectionCreateRemoteThread(Signature):
 
 class CAPE_InjectionProcessHollowing(Signature):
     name = "InjectionProcessHollowing"
-    description = "CAPE detection: Injection (Process Hollowing)"
-    severity = 1
+    description = "Behavioural detection: Injection (Process Hollowing)"
+    severity = 3
     categories = ["injection"]
     authors = ["glysbaysb", "Optiv", "KillerInstinct"]
     minimum = "1.3"
@@ -210,8 +224,6 @@ class CAPE_InjectionProcessHollowing(Signature):
     def on_call(self, call, process):
         if process is not self.lastprocess:
             self.sequence = 0
-            # technically we should have a separate state machine for each created process, but since this
-            # code doesn't deal with handles properly as it is, this is sufficient
             self.process_handles = set()
             self.thread_handles = set()
             self.process_map = dict()
@@ -255,8 +267,8 @@ class CAPE_InjectionProcessHollowing(Signature):
       
 class CAPE_InjectionSetWindowLong(Signature):
     name = "InjectionSetWindowLong"
-    description = "CAPE detection: Injection with SetWindowLong in a remote process"
-    severity = 1
+    description = "Behavioural detection: Injection with SetWindowLong in a remote process"
+    severity = 3
     categories = ["injection"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -297,8 +309,8 @@ class CAPE_InjectionSetWindowLong(Signature):
                 
 class CAPE_Injection(Signature):
     name = "InjectionInterProcess"
-    description = "CAPE detection: Injection (inter-process)"
-    severity = 1
+    description = "Behavioural detection: Injection (inter-process)"
+    severity = 3
     categories = ["injection"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -315,7 +327,7 @@ class CAPE_Injection(Signature):
             self.process_handles = set()
             self.lastprocess = process
 
-        if call["api"] == "CreateProcessInternalW":
+        if call["api"] == "CreateProcessInternalW" or call["api"] == "OpenProcess" or call["api"] == "NtOpenProcess":
             phandle = self.get_argument(call, "ProcessHandle")
             pid = self.get_argument(call, "ProcessId")
             self.process_handles.add(phandle)
@@ -325,8 +337,8 @@ class CAPE_Injection(Signature):
       
 class CAPE_EvilGrab(Signature):
     name = "EvilGrab"
-    description = "CAPE detection: EvilGrab"
-    severity = 1
+    description = "Behavioural detection: EvilGrab"
+    severity = 3
     categories = ["malware"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -358,8 +370,8 @@ class CAPE_EvilGrab(Signature):
 
 class CAPE_PlugX(Signature):
     name = "PlugX"
-    description = "CAPE detection: PlugX"
-    severity = 1
+    description = "Behavioural detection: PlugX"
+    severity = 3
     categories = ["chinese", "malware"]
     families = ["plugx"]
     authors = ["kevoreilly"]
@@ -405,8 +417,8 @@ class CAPE_PlugX(Signature):
 
 class CAPE_Doppelganging(Signature):
     name = "Doppelganging"
-    description = "CAPE detection: Process Doppelganging"
-    severity = 1
+    description = "Behavioural detection: Process Doppelganging"
+    severity = 3
     categories = ["injection"]
     authors = ["kevoreilly"]
     minimum = "1.3"
@@ -433,5 +445,38 @@ class CAPE_Doppelganging(Signature):
         elif call["api"] == "NtCreateProcessEx":
             if self.get_argument(call, "SectionHandle") == self.sectionhandle:
                 return True
-      
-            
+
+class CAPE_TransactedHollowing(Signature):
+    name = "TransactedHollowing"
+    description = "Behavioural detection: Transacted Hollowing"
+    severity = 3
+    categories = ["injection"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    filter_apinames = set(["RtlSetCurrentTransaction", "NtRollbackTransaction", "NtMapViewOfSection"])
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.transaction_set = False
+        self.transaction_rollback = False
+        self.transacted_hollowing = False
+
+    def on_call(self, call, process):
+
+        if call["api"] == "RtlSetCurrentTransaction":
+            self.transaction_set = True
+
+        if call["api"] == "NtRollbackTransaction":
+            if self.transaction_set == True:
+                self.transaction_rollback = True
+
+        if (call["api"] == "NtMapViewOfSection"):
+            handle = self.get_argument(call, "ProcessHandle")
+            if handle != "0xffffffff" and self.transaction_rollback == True:
+                self.transacted_hollowing = True
+
+    def on_complete(self):
+        if self.transacted_hollowing == True:
+            return True
