@@ -34,8 +34,8 @@ cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "DumpOnAPI", "Doppelganging", "EvilGrab",
         "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Extraction_jar", "Hancitor",
         "Hancitor_doc", "Injection", "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "PlugX",
-        "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "UPX",
-        "UPX_dll", "Ursnif"
+        "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "Sedreco", "Sedreco_dll", "Shellcode-Extraction", 
+        "Trace", "Trace_dll", "TrickBot", "UPX", "UPX_dll", "Ursnif"
     ];
 
 def pirpi_password(strings):
@@ -144,6 +144,24 @@ class SubmitCAPE(Report):
         if cape_yara["name"] == "Hancitor":
             detections.add('Hancitor')
 
+        if cape_yara["name"] == "QakBot":
+            anti_sandbox = cape_yara["addresses"].get("anti_sandbox")
+            if anti_sandbox:
+                anti_sandbox = anti_sandbox + 19 # Offset of "JLE" instruction from Yara hit
+                for item in self.task_options_stack:
+                    if 'bp0' in item:
+                        self.task_options_stack.remove(item)
+                self.task_options_stack.append("bp0={0}".format(anti_sandbox))
+                detections.add('QakBot')
+            decrypt_config = cape_yara["addresses"].get("decrypt_config")
+            if decrypt_config:
+                decrypt_config = decrypt_config + 16 # Offset of "CALL" (decrypt)
+                for item in self.task_options_stack:
+                    if 'bp1' in item:
+                        self.task_options_stack.remove(item)
+                self.task_options_stack.append("bp1={0}".format(decrypt_config))
+                detections.add('QakBot')
+                    
     def run(self, results):
         self.task_options_stack = []
         self.task_options = None
@@ -344,6 +362,9 @@ class SubmitCAPE(Report):
             if parent_package=='doc' or parent_package=='Injection_doc':
                 package = 'Hancitor_doc'
 
+        if 'QakBot' in detections:
+            package = 'QakBot'	
+            
         # we want to switch off automatic process dumps in CAPE submissions
         if self.task_options and 'procdump=1' in self.task_options:
             self.task_options = self.task_options.replace(u"procdump=1", u"procdump=0", 1)

@@ -108,7 +108,8 @@ def get_analysis_info(db, id=-1, task=None):
                        "info.custom":1, "info.shrike_msg":1, "malscore": 1, "malfamily": 1,
                        "network.pcap_sha256": 1,
                        "mlist_cnt": 1, "f_mlist_cnt": 1, "info.package": 1, "target.file.clamav": 1,
-                       "suri_tls_cnt": 1, "suri_alert_cnt": 1, "suri_http_cnt": 1, "suri_file_cnt": 1
+                       "suri_tls_cnt": 1, "suri_alert_cnt": 1, "suri_http_cnt": 1, "suri_file_cnt": 1,
+                      "trid" : 1
                    }, sort=[("_id", pymongo.DESCENDING)]
                )
 
@@ -162,6 +163,8 @@ def get_analysis_info(db, id=-1, task=None):
             new["package"] = rtmp["info"]["package"]
         if rtmp.has_key("target") and rtmp["target"].has_key("file") and rtmp["target"]["file"].has_key("clamav"):
             new["clamav"] = rtmp["target"]["file"]["clamav"]
+        if rtmp.has_key("target") and rtmp["target"].has_key("file") and rtmp["target"]["file"].has_key("trid"):
+            new["trid"] = rtmp["target"]["file"]["trid"]
 
         if "display_shrike" in enabledconf and enabledconf["display_shrike"] and rtmp.has_key("info") and rtmp["info"].has_key("shrike_msg") and rtmp["info"]["shrike_msg"]:
             new["shrike_msg"] = rtmp["info"]["shrike_msg"]
@@ -837,6 +840,13 @@ def report(request, task_id):
         except:
             pass
 
+    vba2graph = False
+    vba2graph_svg_content = ""
+    vba2graph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "vba2graph", "svg", "vba2graph.svg")
+    if os.path.exists(vba2graph_svg_path):
+        vba2graph_svg_content = open(vba2graph_svg_path, "rb").read()
+        vba2graph = True
+
     return render(request, "analysis/report.html",
                              {"analysis": report,
                               "children" : children,
@@ -844,7 +854,9 @@ def report(request, task_id):
                               "iplookups": iplookups,
                               "similar": similarinfo,
                               "settings": settings,
-                              "config": enabledconf})
+                              "config": enabledconf,
+                              "vba2graph": {"enabled": vba2graph, "content": vba2graph_svg_content}
+                              })
 
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
@@ -1095,6 +1107,7 @@ def perform_search(term, value):
         "type" : "target.file.type",
         "string" : "strings",
         "ssdeep" : "target.file.ssdeep",
+        "trid" : "trid",
         "crc32" : "target.file.crc32",
         "file" : "behavior.summary.files",
         "command" : "behavior.summary.executed_commands",

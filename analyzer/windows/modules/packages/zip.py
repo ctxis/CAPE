@@ -24,6 +24,7 @@ class Zip(Package):
              ("SystemRoot", "system32", "cmd.exe"),
              ("SystemRoot", "system32", "wscript.exe"),
              ("SystemRoot", "system32", "rundll32.exe"),
+             ("SystemRoot", "sysnative", "WindowsPowerShell", "v1.0", "powershell.exe"),
             ]
     def extract_zip(self, zip_path, extract_path, password, recursion_depth):
         """Extracts a nested ZIP file.
@@ -141,5 +142,9 @@ class Zip(Package):
                 shutil.copy(rundll32, newname)
                 rundll32 = newname
             return self.execute(rundll32, dll_args, file_path)
+        elif file_name.lower().endswith(".ps1"):
+            powershell = self.get_path_app_in_path("powershell.exe")
+            args = "-NoProfile -ExecutionPolicy bypass -File \"{0}\"".format(path)
+            return self.execute(powershell, args, file_path)
         else:
             return self.execute(file_path, self.options.get("arguments"), file_path)

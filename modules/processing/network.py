@@ -607,34 +607,34 @@ class Pcap:
                     if not isinstance(tcp, dpkt.tcp.TCP):
                         tcp = dpkt.tcp.TCP(tcp)
 
+                    connection["sport"] = tcp.sport
+                    connection["dport"] = tcp.dport
                     if len(tcp.data) > 0:
-                        connection["sport"] = tcp.sport
-                        connection["dport"] = tcp.dport
                         self._tcp_dissect(connection, tcp.data)
 
-                        src, sport, dst, dport = (
-                            connection["src"], connection["sport"], connection["dst"], connection["dport"])
-                        if not ((dst, dport, src, sport) in self.tcp_connections_seen or (
-                                src, sport, dst, dport) in self.tcp_connections_seen):
-                            self.tcp_connections.append((src, sport, dst, dport, offset, ts - first_ts))
-                            self.tcp_connections_seen.add((src, sport, dst, dport))
+                    src, sport, dst, dport = (
+                        connection["src"], connection["sport"], connection["dst"], connection["dport"])
+                    if not ((dst, dport, src, sport) in self.tcp_connections_seen or (
+                             src, sport, dst, dport) in self.tcp_connections_seen):
+                        self.tcp_connections.append((src, sport, dst, dport, offset, ts - first_ts))
+                        self.tcp_connections_seen.add((src, sport, dst, dport))
 
                 elif ip.p == dpkt.ip.IP_PROTO_UDP:
                     udp = ip.data
                     if not isinstance(udp, dpkt.udp.UDP):
                         udp = dpkt.udp.UDP(udp)
 
+                    connection["sport"] = udp.sport
+                    connection["dport"] = udp.dport
                     if len(udp.data) > 0:
-                        connection["sport"] = udp.sport
-                        connection["dport"] = udp.dport
                         self._udp_dissect(connection, udp.data)
 
-                        src, sport, dst, dport = (
-                            connection["src"], connection["sport"], connection["dst"], connection["dport"])
-                        if not ((dst, dport, src, sport) in self.udp_connections_seen or (
-                                src, sport, dst, dport) in self.udp_connections_seen):
-                            self.udp_connections.append((src, sport, dst, dport, offset, ts - first_ts))
-                            self.udp_connections_seen.add((src, sport, dst, dport))
+                    src, sport, dst, dport = (
+                        connection["src"], connection["sport"], connection["dst"], connection["dport"])
+                    if not ((dst, dport, src, sport) in self.udp_connections_seen or (
+                             src, sport, dst, dport) in self.udp_connections_seen):
+                        self.udp_connections.append((src, sport, dst, dport, offset, ts - first_ts))
+                        self.udp_connections_seen.add((src, sport, dst, dport))
 
                 elif ip.p == dpkt.ip.IP_PROTO_ICMP:
                     icmp = ip.data

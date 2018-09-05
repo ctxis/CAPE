@@ -66,59 +66,72 @@ $(document).ready( function() {
             {% csrf_token %}
             <div class="tabbable">
                 <ul class="nav nav-tabs">
-                    <li class="active"><a href="#file" data-toggle="tab"><span class="glyphicon glyphicon-file"></span> File</a></li>
-                    <li><a href="#quarantine" data-toggle="tab"><span class="glyphicon glyphicon-fire"></span> Quarantine File</a></li>
-                    <li><a href="#url" data-toggle="tab"><span class="glyphicon glyphicon-globe"></span> URL</a></li>
-                    {% if config.vt %}
-                    <li><a href="#vtdl" data-toggle="tab"><span class="glyphicon glyphicon-cloud-download"></span> VirusTotal Download</a></li>
+                    {% if resubmit %}
+                        <li class="active"><a href="#resubmit" data-toggle="tab"><span class="glyphicon glyphicon-file"></span> File resubmission</a></li>
+                    {% else %}
+                        <li class="active"><a href="#file" data-toggle="tab"><span class="glyphicon glyphicon-file"></span> File</a></li>
+                        <li><a href="#quarantine" data-toggle="tab"><span class="glyphicon glyphicon-fire"></span> Quarantine File</a></li>
+                        <li><a href="#url" data-toggle="tab"><span class="glyphicon glyphicon-globe"></span> URL</a></li>
+                        {% if config.vt %}
+                        <li><a href="#vtdl" data-toggle="tab"><span class="glyphicon glyphicon-cloud-download"></span> VirusTotal Download</a></li>
+                        {% endif %}
+                        <li><a href="#pcap" data-toggle="tab"><span class="glyphicon glyphicon-transfer"></span> PCAP</a></li>
                     {% endif %}
-                    <li><a href="#pcap" data-toggle="tab"><span class="glyphicon glyphicon-transfer"></span> PCAP</a></li>
                 </ul>
                 <div class="tab-content">
-                    <div class="tab-pane fade in active" id="file">
-                        <div class="input-group col-md-6">
-                            <span class="input-group-btn">
-                                <input type="text" class="form-control" readonly>
-                                <span class="btn btn-primary btn-file">
-                                    Select <input type="file" name="sample" multiple="multiple">
+                    {% if resubmit %}
+                        <div class="tab-pane fade in active" id="resubmit">
+                            <div class="input-group col-md-12">
+                                <label class="sr-only" form="form_resubmission"> File resubmission</label>
+                                <input type="text" class="form-control" id="form_resubmission" name="hash" value="{{resubmit}}" />
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="tab-pane fade in active" id="file">
+                            <div class="input-group col-md-6">
+                                <span class="input-group-btn">
+                                    <input type="text" class="form-control" readonly>
+                                    <span class="btn btn-primary btn-file">
+                                        Select <input type="file" name="sample" multiple="multiple">
+                                    </span>
                                 </span>
-                            </span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="tab-pane fade" id="quarantine">
-                        <div class="input-group col-md-6">
-                            <span class="input-group-btn">
-                                <input type="text" class="form-control" readonly>
-                                <span class="btn btn-primary btn-file">
-                                    Select <input type="file" name="quarantine" multiple="multiple">
+                        <div class="tab-pane fade" id="quarantine">
+                            <div class="input-group col-md-6">
+                                <span class="input-group-btn">
+                                    <input type="text" class="form-control" readonly>
+                                    <span class="btn btn-primary btn-file">
+                                        Select <input type="file" name="quarantine" multiple="multiple">
+                                    </span>
                                 </span>
-                            </span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="tab-pane fade" id="url">
-                        <div class="input-group col-md-12">
-                            <label class="sr-only" form="form_url">URL</label>
-                            <input type="text" class="form-control" id="form_url" name="url" placeholder="URL" />
+                        <div class="tab-pane fade" id="url">
+                            <div class="input-group col-md-12">
+                                <label class="sr-only" form="form_url">URL</label>
+                                <input type="text" class="form-control" id="form_url" name="url" placeholder="URL" />
+                            </div>
                         </div>
-                    </div>
-                    {% if config.vt %}
-                    <div class="tab-pane fade" id="vtdl">
-                        <div class="input-group col-md-12">
-                            <label class="sr-only" form="form_vtdl">VirusTotal Download</label>
-                            <input type="text" class="form-control" id="form_vtdl" name="vtdl" placeholder="Enter Hash Here" />
+                        {% if config.vt %}
+                        <div class="tab-pane fade" id="vtdl">
+                            <div class="input-group col-md-12">
+                                <label class="sr-only" form="form_vtdl">VirusTotal Download</label>
+                                <input type="text" class="form-control" id="form_vtdl" name="vtdl" placeholder="Enter a hash or a comma or whitespace separated hash list" />
+                            </div>
                         </div>
-                    </div>
+                        {% endif %}
+                        <div class="tab-pane fade" id="pcap">
+                            <div class="input-group col-md-6">
+                                <span class="input-group-btn">
+                                    <input type="text" class="form-control" readonly>
+                                    <span class="btn btn-primary btn-file">
+                                        Select <input type="file" name="pcap" multiple="multiple">
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
                     {% endif %}
-                    <div class="tab-pane fade" id="pcap">
-                        <div class="input-group col-md-6">
-                            <span class="input-group-btn">
-                                <input type="text" class="form-control" readonly>
-                                <span class="btn btn-primary btn-file">
-                                    Select <input type="file" name="pcap" multiple="multiple">
-                                </span>
-                            </span>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="panel" id="accordion" style="margin-top: 20px;">
@@ -165,19 +178,24 @@ $(document).ready( function() {
                                 </div>
                                 {% endif %}
                                 <div class="form-group">
--                               <strong>Network routing through TOR, VPN, or Simulated Interenet</strong>
--                               </div>
--                               <div class="form-group">
--                               <select class="form-control" id="form_route" name="route">
--                               <option value="inetsim">inetsim (simulated Internet access)</option>
--                               {% if internet != "none" %}
--                                   <option value="internet"{% if route == "internet" %} selected{% endif %}>Internet (dirty line, {{ internet }})</option>
--                               {% endif %}
--                               {% if tor %}
--                                   <option value="tor" >tor (tor anonymized onion network)</option>
--                               {% endif %}
--                               </select>
--                               </div>
+                                    <strong>Network routing through <i>dirty line</i> or VPN</strong>
+                                </div>
+                                <div class="form-group">
+                                    <select class="form-control" id="form_route" name="route">
+                                        {% if internet != "none" %}
+                                            <option value="internet"{% if route == "internet" %} selected{% endif %}>Internet (dirty line, {{ internet }})</option>
+                                        {% endif %}
+                                        {% if inetsim %}
+                                            <option value="inetsim" >inetsim</option>
+                                        {% endif %}
+                                        {% if tor %}
+                                            <option value="tor" >tor</option>
+                                        {% endif %}
+                                        {% for vpn in vpns %}
+                                            <option value="{{ vpn.name }}"{% if route == vpn.name %} selected{% endif %}>{{ vpn.description }} (VPN, {{ vpn.interface }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                                 <div class="form-group">
                                     <label for="form_timeout">Timeout</label>
                                     <input type="text" class="form-control" id="form_timeout" name="timeout" />
@@ -285,6 +303,14 @@ $(document).ready( function() {
                                                 <tr>
                                                     <td><code>dump-on-api</code></td>
                                                     <td>Dump the calling module when a function from the colon-separated list of APIs is used (requires DumpOnAPI package)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>depth</code></td>
+                                                    <td>Sets the depth an instruction trace will step into (defaults to 0, requires Trace package)</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>count</code></td>
+                                                    <td>Sets the number of instructions in a trace (defaults to 128, requires Trace package)</td>
                                                 </tr>
                                                 <tr>
                                                     <td><code>referrer</code></td>

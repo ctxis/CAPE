@@ -152,38 +152,6 @@ class SuspiciousCommandTools(Signature):
 
         return ret
 
-class LongCommandline(Signature):
-    name = "long_commandline"
-    description = "Executed a very long command line or script command which may be indicative of chained commands or obfuscation"
-    severity = 2
-    confidence = 50
-    categories = ["commands"]
-    authors = ["Kevin Ross"]
-    minimum = "1.3"
-    evented = True
-
-    def run(self):
-        utilities = [
-            "cmd ",
-            "cmd.exe",
-            "cscript",
-            "hta ",
-            "hta.exe",
-            "powershell",
-            "wscript",
-        ]
-
-        ret = False
-        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
-        for cmdline in cmdlines:
-            lower = cmdline.lower()
-            for utility in utilities:
-                if utility in lower and len(lower) > 250:
-                    ret = True
-                    self.data.append({"command" : cmdline})
-
-        return ret
-
 class ScriptToolExecuted(Signature):
     name = "script_tool_executed"
     description = "A scripting utility was executed"
