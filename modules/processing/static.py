@@ -1089,7 +1089,7 @@ class Office(object):
         """
 
         results = dict()
-        if HAS_OLETOOLS:
+        if HAVE_OLETOOLS:
             try:
                 vba = VBA_Parser(filepath)
             except:
