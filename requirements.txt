@@ -31,3 +31,4 @@ git+https://github.com/kbandla/pydeep.git
 pyvmomi>=6.0
 imagehash
 upx
+sflock
