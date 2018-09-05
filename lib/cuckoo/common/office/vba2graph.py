@@ -904,52 +904,56 @@ def vba2graph_gen(input_vba_content, output_folder, input_file_name="vba2graph",
     # Generate functions listing for debugging #
     ############################################
 
-    bas_folder = output_folder + os.sep + "bas"
     try:
-        os.makedirs(bas_folder)
-    except OSError as exc:
-        if exc.errno != errno.EEXIST:
-            logger.error("Error creating debugging output folder")
-    code_output_path = bas_folder + os.sep + input_file_name + '.bas'
-    create_functions_listing(vba_func_dict, code_output_path)
+        bas_folder = output_folder + os.sep + "bas"
+        try:
+            os.makedirs(bas_folder)
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                logger.error("Error creating debugging output folder")
+        code_output_path = bas_folder + os.sep + input_file_name + '.bas'
+        create_functions_listing(vba_func_dict, code_output_path)
 
-    ################################
-    # Generate DOT file from graph #
-    ################################
-    dot_folder = output_folder + os.sep + "dot"
-    try:
-        os.makedirs(dot_folder)
-    except OSError as exc:
-        if exc.errno != errno.EEXIST:
-            logger.error("Error creating DOT output folder")
-    dot_output_path = dot_folder + os.sep + input_file_name + '.dot'
-    write_dot(DG, dot_output_path)
+        ################################
+        # Generate DOT file from graph #
+        ################################
+        dot_folder = output_folder + os.sep + "dot"
+        try:
+            os.makedirs(dot_folder)
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                logger.error("Error creating DOT output folder")
+        dot_output_path = dot_folder + os.sep + input_file_name + '.dot'
+        write_dot(DG, dot_output_path)
 
-    ##############################
-    # Generate PNG file from DOT #
-    ##############################
-    png_folder = output_folder + os.sep + "png"
-    try:
-        os.makedirs(png_folder)
-    except OSError as exc:
-        if exc.errno != errno.EEXIST:
-            logger.error("Error creating PNG output folder")
-    png_output_path = png_folder + os.sep + input_file_name + '.png'
-    process = Popen(['dot', '-Tpng', dot_output_path, '-o', png_output_path])
-    process.wait()
+        ##############################
+        # Generate PNG file from DOT #
+        ##############################
+        png_folder = output_folder + os.sep + "png"
+        try:
+            os.makedirs(png_folder)
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                logger.error("Error creating PNG output folder")
+        png_output_path = png_folder + os.sep + input_file_name + '.png'
+        process = Popen(['dot', '-Tpng', dot_output_path, '-o', png_output_path])
+        process.wait()
 
-    ##############################
-    # Generate SVG file from DOT #
-    ##############################
-    svg_folder = output_folder + os.sep + "svg"
-    try:
-        os.makedirs(svg_folder)
-    except OSError as exc:
-        if exc.errno != errno.EEXIST:
-            logger.error("Error creating PNG output folder")
-    svg_output_path = svg_folder + os.sep + input_file_name + '.svg'
-    process = Popen(['dot', '-Tsvg', dot_output_path, '-o', svg_output_path])
-    process.wait()
+        ##############################
+        # Generate SVG file from DOT #
+        ##############################
+        svg_folder = output_folder + os.sep + "svg"
+        try:
+            os.makedirs(svg_folder)
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                logger.error("Error creating PNG output folder")
+        svg_output_path = svg_folder + os.sep + input_file_name + '.svg'
+        process = Popen(['dot', '-Tsvg', dot_output_path, '-o', svg_output_path])
+        process.wait()
+    except Exception as e:
+        logger.info("Make sure what graphviz is installed")
+        logger.error(e)
 
 def main():
     global color_scheme
