@@ -72,6 +72,9 @@ class SmokeLoader(malwareconfigparser):
             # Second C2 URL
             c2_offset = c2_offset + c2_size + 9
             c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
+            if c2_size == 0:
+                c2_offset = c2_offset + 1
+                c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
             c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
             try:
                 c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
@@ -98,6 +101,9 @@ class SmokeLoader(malwareconfigparser):
             # Second C2 URL
             c2_offset = c2_offset + c2_size + 9
             c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
+            if c2_size == 0:
+                c2_offset = c2_offset + 1
+                c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
             c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
             try:
                 c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
