@@ -74,17 +74,16 @@ from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.config import Config
 
+import lib.cuckoo.common.office.vbadeobf as vbadeobf
 try:
-    import lib.cuckoo.common.office.olefile as olefile
-    import lib.cuckoo.common.office.vbadeobf as vbadeobf
-    from lib.cuckoo.common.office.oleid import OleID
-    from lib.cuckoo.common.office.olevba import detect_autoexec
-    from lib.cuckoo.common.office.olevba import detect_hex_strings
-    from lib.cuckoo.common.office.olevba import detect_patterns
-    from lib.cuckoo.common.office.olevba import detect_suspicious
-    from lib.cuckoo.common.office.olevba import filter_vba
-    from lib.cuckoo.common.office.olevba import VBA_Parser
-
+    import oletools.thirdparty.olefile as olefile
+    from oletools.oleid import OleID
+    from oletools.olevba import detect_autoexec
+    from oletools.olevba import detect_hex_strings
+    from oletools.olevba import detect_patterns
+    from oletools.olevba import detect_suspicious
+    from oletools.olevba import filter_vba
+    from oletools.olevba import VBA_Parser
     HAVE_OLETOOLS = True
 except ImportError:
     print("Ensure oletools are installed")
@@ -1477,6 +1476,9 @@ class Static(Processing):
             if "info" in self.results and "package" in self.results["info"]:
                 package = self.results["info"]["package"]
 
+            if not HAVE_OLETOOLS and "Zip archive data, at least v2.0" in thetype and package in ("doc", "ppt", "xls", "pub"):
+                log.info("Missed dependencies: pip install oletools")
+                
             thetype = File(self.file_path).get_type()
             if HAVE_PEFILE and ("PE32" in thetype or "MS-DOS executable" in thetype):
                 static = PortableExecutable(self.file_path, self.results).run()
@@ -1484,7 +1486,7 @@ class Static(Processing):
                     static.update(DotNETExecutable(self.file_path, self.results).run())
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
                 static = PDF(self.file_path).run()
-            elif package in ("doc", "ppt", "xls", "pub"):
+            elif HAVE_OLETOOLS and package in ("doc", "ppt", "xls", "pub"):
                 static = Office(self.file_path, self.results).run()
             elif "Java Jar" in thetype or self.task["target"].endswith(".jar"):
                 decomp_jar = self.options.get("procyon_path", None)
@@ -1495,8 +1497,8 @@ class Static(Processing):
             # zip. So until we have static analysis for zip files, we can use
             # oleid to fail us out silently, yeilding no static analysis
             # results for actual zip files.
-            elif "Zip archive data, at least v2.0" in thetype:
-                static = Office(self.file_path).run()
+            elif HAVE_OLETOOLS and "Zip archive data, at least v2.0" in thetype:
+                static = Office(self.file_path, self.results).run()
             elif package == "wsf" or thetype == "XML document text" or self.task["target"].endswith(".wsf") or package == "hta":
                 static = WindowsScriptFile(self.file_path).run()
             elif package == "js" or package == "vbs":
