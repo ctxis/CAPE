@@ -76,7 +76,13 @@ from lib.cuckoo.common.config import Config
 
 import lib.cuckoo.common.office.vbadeobf as vbadeobf
 try:
-    import oletools.thirdparty.olefile as olefile
+    import olefile
+    HAVE_OLEFILE = True
+except ImportError:
+    HAVE_OLEFILE = False
+    print("Missed olefile dependency: pip install olefile")
+
+try:
     from oletools.oleid import OleID
     from oletools.olevba import detect_autoexec
     from oletools.olevba import detect_hex_strings
@@ -1072,6 +1078,18 @@ class Office(object):
         else:
             return "None"
 
+    def _get_meta(self, meta):
+        ret = dict()
+        ret["SummaryInformation"] = dict()
+        for prop in meta.SUMMARY_ATTRIBS:
+            value = getattr(meta, prop)
+            ret["SummaryInformation"][prop] = convert_to_printable(str(value))
+        ret["DocumentSummaryInformation"] = dict()
+        for prop in meta.DOCSUM_ATTRIBS:
+            value = getattr(meta, prop)
+            ret["DocumentSummaryInformation"][prop] = convert_to_printable(str(value))
+        return ret
+
     def _parse(self, filepath):
         """Parses an office document for static information.
         Supported formats:
@@ -1101,11 +1119,11 @@ class Office(object):
         metares = officeresults["Metadata"] = dict()
         # The bulk of the metadata checks are in the OLE Structures
         # So don't check if we're dealing with XML.
-        if olefile.isOleFile(filepath):
+        if HAVE_OLEFILE and olefile.isOleFile(filepath):
             ole = olefile.OleFileIO(filepath)
             meta = ole.get_metadata()
             # must be left this way or we won't see the results
-            officeresults["Metadata"] = meta.get_meta()
+            officeresults["Metadata"] = self._get_meta()
             metares = officeresults["Metadata"]
             # Fix up some output formatting
             buf = self.convert_dt_string(metares["SummaryInformation"]["create_time"])
