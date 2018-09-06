@@ -1475,10 +1475,10 @@ class Static(Processing):
             if "info" in self.results and "package" in self.results["info"]:
                 package = self.results["info"]["package"]
 
+            thetype = File(self.file_path).get_type()
             if not HAVE_OLETOOLS and "Zip archive data, at least v2.0" in thetype and package in ("doc", "ppt", "xls", "pub"):
                 log.info("Missed dependencies: pip install oletools")
                 
-            thetype = File(self.file_path).get_type()
             if HAVE_PEFILE and ("PE32" in thetype or "MS-DOS executable" in thetype):
                 static = PortableExecutable(self.file_path, self.results).run()
                 if static and "Mono" in thetype:
