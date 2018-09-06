@@ -1105,7 +1105,7 @@ class Office(object):
             ole = olefile.OleFileIO(filepath)
             meta = ole.get_metadata()
             # must be left this way or we won't see the results
-            officeresults["Metadata"] = meta.get_meta()
+            officeresults["Metadata"] = meta.SUMMARY_ATTRIBS
             metares = officeresults["Metadata"]
             # Fix up some output formatting
             buf = self.convert_dt_string(metares["SummaryInformation"]["create_time"])
