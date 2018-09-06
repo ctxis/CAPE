@@ -74,7 +74,6 @@ from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.config import Config
 
-import lib.cuckoo.common.office.vbadeobf as vbadeobf
 try:
     import oletools.thirdparty.olefile as olefile
     from oletools.oleid import OleID
