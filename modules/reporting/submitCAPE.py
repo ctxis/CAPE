@@ -361,6 +361,8 @@ class SubmitCAPE(Report):
         if 'Hancitor' in detections:
             if parent_package=='doc' or parent_package=='Injection_doc':
                 package = 'Hancitor_doc'
+        else:
+            package = 'Hancitor'
 
         if 'QakBot' in detections:
             package = 'QakBot'	
