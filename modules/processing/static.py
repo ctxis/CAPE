@@ -1136,7 +1136,7 @@ class Office(object):
                     macrores["Code"][outputname].append((convert_to_printable(vba_filename),convert_to_printable(vba_code)))
                     autoexec = detect_autoexec(vba_code)
                     suspicious = detect_suspicious(vba_code)
-                    iocs = vbadeobf.parse_macro(vba_code)
+                    iocs = detect_patterns(vba_code)
                     hex_strs = detect_hex_strings(vba_code)
                     if autoexec:
                         for keyword, description in autoexec:
