@@ -325,14 +325,19 @@ class CAPE_Injection(Signature):
     def on_call(self, call, process):
         if process is not self.lastprocess:
             self.process_handles = set()
+            self.write_handles = set()
             self.lastprocess = process
 
         if call["api"] == "CreateProcessInternalW" or call["api"] == "OpenProcess" or call["api"] == "NtOpenProcess":
             phandle = self.get_argument(call, "ProcessHandle")
-            pid = self.get_argument(call, "ProcessId")
             self.process_handles.add(phandle)
         elif (call["api"] == "NtWriteVirtualMemory" or call["api"] == "NtWow64WriteVirtualMemory64" or call["api"] == "WriteProcessMemory" or call["api"] == "NtMapViewOfSection"):
-            if self.get_argument(call, "ProcessHandle") in self.process_handles:
+            whandle = self.get_argument(call, "ProcessHandle")
+            self.write_handles.add(whandle)
+
+    def on_complete(self):
+        for handle in self.process_handles:
+            if handle in self.write_handles:
                 return True
       
 class CAPE_EvilGrab(Signature):
