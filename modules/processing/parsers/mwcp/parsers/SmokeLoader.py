@@ -14,6 +14,7 @@
     
 from mwcp.malwareconfigparser import malwareconfigparser
 import struct, socket
+import pefile
 import yara
 
 rule_source = '''
@@ -25,8 +26,8 @@ rule SmokeLoader
         cape_type = "SmokeLoader Payload"
     strings:
         $decrypt1 = {44 0F B6 CF 48 8B D0 49 03 D9 4C 2B D8 8B 4B 01 41 8A 04 13 41 BA 04 00 00 00 0F C9 32 C1 C1 F9 08 49 FF CA 75 F6 F6 D0 88 02 48 FF C2 49 FF C9 75 DB 49 8B C0 48 8B 5C 24 30 48 83 C4 20 5F C3}
-        $ref1 = {3D 00 10 00 00 0F 8E ?? ?? 00 00 39 07 0F 85 ?? 02 00 00 8B 4F 04 81 F1 ?? ?? ?? ?? 0F 85 ?? 02 00 00 44 8A 67 0C 44 88 65 78 45 84 E4 0F 84 CD 02 00 00 48 8D 0D ?? E4 FF FF E8}
-        $ref2 = {3D 00 10 00 00 0F 8E ?? ?? 00 00 39 07 0F 85 ?? 02 00 00 8B 4F 04 81 F1 ?? ?? ?? ?? 0F 85 ?? 02 00 00 44 8A 67 0C 45 84 E4 0F 84 C7 02 00 00 48 8D 0D}
+        $ref1 = {40 53 48 83 EC 20 8B 05 ?? ?? ?? ?? 83 F8 03 75 27 33 C0 89 05 ?? ?? ?? ?? 84 C9 74 1B BB E8 03 00 00 B9 58 02 00 00 FF 15 ?? ?? ?? ?? 48 FF CB 75 F0 8B 05 ?? ?? ?? ?? 48 63 C8 48 8D 05}
+        $ref2 = {8B 05 ?? ?? ?? ?? 33 C9 83 F8 04 0F 44 C1 48 63 C8 89 05 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 8B 0C C8 E9}
     condition:
         $decrypt1 and (any of ($ref*))
 }
@@ -55,60 +56,55 @@ class SmokeLoader(malwareconfigparser):
 
     def run(self):
         filebuf = self.reporter.data
-        c2ref = yara_scan(filebuf, '$ref1')
-        if c2ref:
-            c2ref_offset = int(c2ref['$ref1'])
-            c2_delta = struct.unpack('i', filebuf[c2ref_offset+54:c2ref_offset+58])[0]
-            c2_offset = c2ref_offset + c2_delta + 58
-            # First C2 URL
-            c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
-            c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            try:
-                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
-                if c2_url:
-                    self.reporter.add_metadata('address', c2_url)
-            except:
-                pass
-            # Second C2 URL
-            c2_offset = c2_offset + c2_size + 9
-            c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
-            if c2_size == 0:
-                c2_offset = c2_offset + 1
+        
+        try:
+            pe = pefile.PE(data=filebuf, fast_load=False)
+            image_base = pe.OPTIONAL_HEADER.ImageBase
+        except:
+            image_base = 0
+
+        table_ref = yara_scan(filebuf, '$ref1')
+        if table_ref:
+            table_ref_offset = int(table_ref['$ref1'])
+            table_delta = struct.unpack('i', filebuf[table_ref_offset+62:table_ref_offset+66])[0]
+            table_offset = table_ref_offset + table_delta + 66
+
+            for index in range(0, 3):
+                if image_base:
+                    c2_rva = struct.unpack('Q', filebuf[table_offset:table_offset+8])[0] - image_base
+                    c2_offset = pe.get_offset_from_rva(c2_rva)
+                else:
+                    c2_offset = struct.unpack('I', filebuf[table_offset:table_offset+4])[0] & 0xffff
                 c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
-            c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            try:
-                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
-                if c2_url:
-                    self.reporter.add_metadata('address', c2_url)
-            except:
-                pass
+                c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
+                try:
+                    c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                    if c2_url:
+                        self.reporter.add_metadata('address', c2_url)
+                except:
+                    pass
+                table_offset = table_offset + 8
             return
         else:
-            c2ref = yara_scan(filebuf, '$ref2')
-        if c2ref:
-            c2ref_offset = int(c2ref['$ref2'])
-            c2_delta = struct.unpack('i', filebuf[c2ref_offset+50:c2ref_offset+54])[0]
-            c2_offset = c2ref_offset + c2_delta + 54
-            # First C2 URL
-            c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
-            c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            try:
-                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
-                if c2_url:
-                    self.reporter.add_metadata('address', c2_url)
-            except:
-                pass
-            # Second C2 URL
-            c2_offset = c2_offset + c2_size + 9
-            c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
-            if c2_size == 0:
-                c2_offset = c2_offset + 1
+            table_ref = yara_scan(filebuf, '$ref2')
+        if table_ref:
+            table_ref_offset = int(table_ref['$ref2'])
+            table_delta = struct.unpack('i', filebuf[table_ref_offset+26:table_ref_offset+30])[0]
+            table_offset = table_ref_offset + table_delta + 30
+
+            for index in range(0, 2):
+                if image_base:
+                    c2_rva = struct.unpack('Q', filebuf[table_offset:table_offset+8])[0] - image_base
+                    c2_offset = pe.get_offset_from_rva(c2_rva)
+                else:
+                    c2_offset = struct.unpack('I', filebuf[table_offset:table_offset+4])[0] & 0xffff
                 c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
-            c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-            try:
-                c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
-                if c2_url:
-                    self.reporter.add_metadata('address', c2_url)
-            except:
-                pass
+                c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
+                try:
+                    c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                    if c2_url:
+                        self.reporter.add_metadata('address', c2_url)
+                except:
+                    pass
+                table_offset = table_offset + 8
             return
