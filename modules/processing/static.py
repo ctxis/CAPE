@@ -1154,6 +1154,7 @@ class Office(object):
                     macrores["Code"][outputname].append((convert_to_printable(vba_filename),convert_to_printable(vba_code)))
                     autoexec = detect_autoexec(vba_code)
                     suspicious = detect_suspicious(vba_code)
+                    iocs = False
                     try:
                         iocs = vbadeobf.parse_macro(vba_code)
                     except Exception as e:
