@@ -319,6 +319,7 @@ class CAPE_Injection(Signature):
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
         self.lastprocess = None
+        self.process_handles = None
 
     filter_categories = set(["process"])
 
@@ -336,9 +337,10 @@ class CAPE_Injection(Signature):
             self.write_handles.add(whandle)
 
     def on_complete(self):
-        for handle in self.process_handles:
-            if handle in self.write_handles:
-                return True
+        if self.process_handles:
+            for handle in self.process_handles:
+       	        if handle in self.write_handles:
+                    return True
       
 class CAPE_EvilGrab(Signature):
     name = "EvilGrab"
