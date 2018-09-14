@@ -72,5 +72,7 @@ def choose_package(file_type, file_name, exports):
         return "wsf"
     elif "HTML" in file_type:
         return "html"
+    elif file_name.endswith(".mht"):
+        return "mht"
     else:
         return "generic"
