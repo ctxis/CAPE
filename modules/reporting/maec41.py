@@ -35,6 +35,7 @@ try:
                              ProcessTree, AVClassification)
     from maec.package import MalwareSubject, Package, Analysis
     import maec.utils
+    import mixbox
     HAVE_MAEC = True
 except ImportError as e:
     HAVE_MAEC = False
@@ -91,12 +92,12 @@ class MAEC41Report(Report):
         """Generates MAEC Package, Malware Subject, and Bundle structure"""
         # Instantiate the Namespace class for automatic ID generation.
         NS = Namespace("http://www.cuckoosandbox.org", "Cuckoosandbox")
-        maec.utils.idgen.set_id_namespace(NS)
+        mixbox.idgen.set_id_namespace(NS)
         # Setup the MAEC components
         if "target" in self.results and self.results["target"]["category"] == "file":
-            self.tool_id = maec.utils.idgen.create_id(prefix=self.results["target"]["file"]["md5"])
+            self.tool_id = mixbox.idgen.create_id(prefix=self.results["target"]["file"]["md5"])
         elif "target" in self.results and self.results["target"]["category"] == "url":
-            self.tool_id = maec.utils.idgen.create_id(prefix=hashlib.md5(self.results["target"]["file"]).hexdigest())
+            self.tool_id = mixbox.idgen.create_id(prefix=hashlib.md5(self.results["target"]["file"]).hexdigest())
         else:
             raise CuckooReportError("Unknown target type or targetinfo module disabled")
 
@@ -165,7 +166,7 @@ class MAEC41Report(Report):
         else:
             object_properties = {"xsi:type": "NetworkConnectionObjectType",
                                  "layer4_protocol": {"value": layer4_protocol, "force_datatype": True}}
-        associated_object = {"id": maec.utils.idgen.create_id(prefix="object"), "properties": object_properties}
+        associated_object = {"id": mixbox.idgen.create_id(prefix="object"), "properties": object_properties}
         # General network connection properties.
         if layer7_protocol is None:
             object_properties["source_socket_address"] = {"ip_address": {"category": src_category, "address_value": network_data["src"]},
@@ -193,7 +194,7 @@ class MAEC41Report(Report):
                                                                                      }
                                                                                     ]}
                                                        }
-        action_dict = {"id": maec.utils.idgen.create_id(prefix="action"),
+        action_dict = {"id": mixbox.idgen.create_id(prefix="action"),
                        "name": action_name,
                        "associated_objects": [associated_object]}
         # Add the Action to the dynamic analysis bundle.
@@ -214,7 +215,7 @@ class MAEC41Report(Report):
             root_node = self.results["behavior"]["processtree"][0]
 
             if root_node:
-                root_node_dict = {"id": maec.utils.idgen.create_id(prefix="process_tree_node"),
+                root_node_dict = {"id": mixbox.idgen.create_id(prefix="process_tree_node"),
                                   "pid": root_node["pid"],
                                   "name": root_node["name"],
                                   "initiated_actions": self.pidActionMap[root_node["pid"]],
@@ -226,7 +227,7 @@ class MAEC41Report(Report):
         """Creates a single ProcessTreeNode corresponding to a single node in the tree observed cuckoo.
         @param process: process from cuckoo dict.
         """
-        process_node_dict = {"id": maec.utils.idgen.create_id(prefix="process_tree_node"),
+        process_node_dict = {"id": mixbox.idgen.create_id(prefix="process_tree_node"),
                              "pid": process["pid"],
                              "name": process["name"],
                              "initiated_actions": self.pidActionMap[process["pid"]],
@@ -280,7 +281,7 @@ class MAEC41Report(Report):
             action_dict["implementation"] = self.processActionImplementation(call, parameter_list)
 
         # Add the common Action properties.
-        action_dict["id"] = maec.utils.idgen.create_id(prefix="action")
+        action_dict["id"] = mixbox.idgen.create_id(prefix="action")
         action_dict["ordinal_position"] = pos
         action_dict["action_status"] = self.mapActionStatus(call["status"])
         action_dict["timestamp"] = str(call["timestamp"]).replace(" ", "T").replace(",", ".")
@@ -300,7 +301,7 @@ class MAEC41Report(Report):
             api_call_dict = {"function_name": call["api"],
                              "return_value": call["return"]}
         # Generate the action implementation dictionary.
-        action_implementation_dict = {"id": maec.utils.idgen.create_id(prefix="action"),
+        action_implementation_dict = {"id": mixbox.idgen.create_id(prefix="action"),
                                       "type": "api call",
                                       "api_call": api_call_dict}
         return action_implementation_dict
@@ -340,7 +341,7 @@ class MAEC41Report(Report):
         if "group_together" in associated_objects_dict:
             grouped_list = associated_objects_dict["group_together"]
             associated_object_dict = {}
-            associated_object_dict["id"] = maec.utils.idgen.create_id(prefix="object")
+            associated_object_dict["id"] = mixbox.idgen.create_id(prefix="object")
             associated_object_dict["properties"] = {}
             for parameter_name in grouped_list:
                 parameter_value = self.getParameterValue(parameter_list, parameter_name)
@@ -396,9 +397,9 @@ class MAEC41Report(Report):
 
         # Add the named object collections if they do not exist.
         if not self.dynamic_bundle.collections.object_collections.has_collection("Handle-mapped Objects"):
-            self.dynamic_bundle.add_named_object_collection("Handle-mapped Objects", maec.utils.idgen.create_id(prefix="object"))
+            self.dynamic_bundle.add_named_object_collection("Handle-mapped Objects", mixbox.idgen.create_id(prefix="object"))
         if self.options["output_handles"] and not self.dynamic_bundle.collections.object_collections.has_collection("Windows Handles"):
-            self.dynamic_bundle.add_named_object_collection("Windows Handles", maec.utils.idgen.create_id(prefix="object"))
+            self.dynamic_bundle.add_named_object_collection("Windows Handles", mixbox.idgen.create_id(prefix="object"))
         # Determine the types of objects we're dealing with.
         for associated_object_dict in associated_objects_list:
             object_type = associated_object_dict["properties"]["xsi:type"]
@@ -485,7 +486,7 @@ class MAEC41Report(Report):
                                 else:
                                     merged_dict[k] = v
                             # Assign the merged object a new ID.
-                            merged_dict["id"] = maec.utils.idgen.create_id()
+                            merged_dict["id"] = mixbox.idgen.create_id()
                             # Set the association type to that of the input object.
                             merged_dict["association_type"] = input_object["association_type"]
                             # Add the new object to the list of associated objects.
@@ -567,7 +568,7 @@ class MAEC41Report(Report):
         """
         if not associated_object_dict:
             associated_object_dict = {}
-            associated_object_dict["id"] = maec.utils.idgen.create_id(prefix="object")
+            associated_object_dict["id"] = mixbox.idgen.create_id(prefix="object")
             associated_object_dict["properties"] = {}
         # Set the Association Type if it has not been set already.
         if "association_type" not in associated_object_dict:
@@ -647,7 +648,7 @@ class MAEC41Report(Report):
         for call in process["calls"]:
             # Generate the action collection name and create a new named action collection if one does not exist.
             action_collection_name = str(call["category"]).capitalize() + " Actions"
-            self.dynamic_bundle.add_named_action_collection(action_collection_name, maec.utils.idgen.create_id(prefix="action"))
+            self.dynamic_bundle.add_named_action_collection(action_collection_name, mixbox.idgen.create_id(prefix="action"))
 
             # Generate the Action dictionary.
             action_dict = self.apiCallToAction(call, pos)
@@ -790,7 +791,7 @@ class MAEC41Report(Report):
                     if k["name"].lower() == "specialbuild":
                         version_info["specialbuild"] = k["value"]
                 resources.append(version_info)
-            object_dict = {"id": maec.utils.idgen.create_id(prefix="object"),
+            object_dict = {"id": mixbox.idgen.create_id(prefix="object"),
                            "properties": {"xsi:type":"WindowsExecutableFileObjectType",
                                             "imports": imports,
                                             "exports": exports,
@@ -807,7 +808,7 @@ class MAEC41Report(Report):
         for extracted_string in self.results["strings"]:
             extracted_string_list.append({"string_value": self._illegal_xml_chars_RE.sub("?", extracted_string)})
         extracted_features = {"strings": extracted_string_list}
-        object_dict = {"id": maec.utils.idgen.create_id(prefix="object"),
+        object_dict = {"id": mixbox.idgen.create_id(prefix="object"),
                         "properties": {"xsi:type":"FileObjectType",
                                         "extracted_features": extracted_features
                                         }
@@ -831,7 +832,7 @@ class MAEC41Report(Report):
                       {"type": "SHA1", "simple_hash_value": file["sha1"]},
                       {"type": "SHA256", "simple_hash_value": file["sha256"]},
                       {"type": "SHA512", "simple_hash_value": file["sha512"]}]
-        object_dict = {"id": maec.utils.idgen.create_id(prefix="object"),
+        object_dict = {"id": mixbox.idgen.create_id(prefix="object"),
                         "properties": {"xsi:type":"FileObjectType",
                                         "file_name": file["name"],
                                         "file_path": {"value": file["path"]},
@@ -849,29 +850,29 @@ class MAEC41Report(Report):
             self.subject.set_malware_instance_object_attributes(self.createFileObj(self.results["target"]["file"]))
         # URL Object.
         elif self.results["target"]["category"] == "url":
-            url_object_dict = {"id": maec.utils.idgen.create_id(prefix="object"), "properties":  {"xsi:type": "URIObjectType", "value": self.results["target"]["url"]}}
+            url_object_dict = {"id": mixbox.idgen.create_id(prefix="object"), "properties":  {"xsi:type": "URIObjectType", "value": self.results["target"]["url"]}}
             self.subject.set_malware_instance_object_attributes(Object.from_dict(url_object_dict))
 
     def addAnalyses(self):
         """Adds analysis header."""
         # Add the dynamic analysis.
-        dynamic_analysis = Analysis(maec.utils.idgen.create_id(prefix="analysis"), "dynamic", "triage", [BundleReference.from_dict({'bundle_idref': self.dynamic_bundle.id_})])
+        dynamic_analysis = Analysis(mixbox.idgen.create_id(prefix="analysis"), "dynamic", "triage", [BundleReference.from_dict({'bundle_idref': self.dynamic_bundle.id_})])
         dynamic_analysis.start_datetime = datetime_to_iso(self.results["info"]["started"])
         dynamic_analysis.complete_datetime = datetime_to_iso(self.results["info"]["ended"])
         dynamic_analysis.summary = StructuredText("Cuckoo Sandbox dynamic analysis of the malware instance object.")
-        dynamic_analysis.add_tool(ToolInformation.from_dict({"id": maec.utils.idgen.create_id(prefix="tool"),
+        dynamic_analysis.add_tool(ToolInformation.from_dict({"id": mixbox.idgen.create_id(prefix="tool"),
                                                              "name": "Cuckoo Sandbox",
                                                              "version": self.results["info"]["version"],
                                                              "vendor": "http://www.cuckoosandbox.org"}))
         self.subject.add_analysis(dynamic_analysis)
 
         # Add the static analysis.
-        if self.options["static"] and self.results["static"]:
-            static_analysis = Analysis(maec.utils.idgen.create_id(prefix="analysis"), "static", "triage", [BundleReference.from_dict({"bundle_idref": self.static_bundle.id_})])
+        if "static" in self.options and self.options["static"] and "static" in self.results and self.results["static"]:
+            static_analysis = Analysis(mixbox.idgen.create_id(prefix="analysis"), "static", "triage", [BundleReference.from_dict({"bundle_idref": self.static_bundle.id_})])
             static_analysis.start_datetime = datetime_to_iso(self.results["info"]["started"])
             static_analysis.complete_datetime = datetime_to_iso(self.results["info"]["ended"])
             static_analysis.summary = StructuredText("Cuckoo Sandbox static (PE) analysis of the malware instance object.")
-            static_analysis.add_tool(ToolInformation.from_dict({"id": maec.utils.idgen.create_id(prefix="tool"),
+            static_analysis.add_tool(ToolInformation.from_dict({"id": mixbox.idgen.create_id(prefix="tool"),
                                                                 "name": "Cuckoo Sandbox Static Analysis",
                                                                 "version": self.results["info"]["version"],
                                                                 "vendor": "http://www.cuckoosandbox.org"}))
@@ -879,12 +880,12 @@ class MAEC41Report(Report):
             # Add the static file results.
             self.static_bundle.add_object(self.createWinExecFileObj())
         # Add the strings analysis.
-        if self.options["strings"] and self.results["strings"]:
-            strings_analysis = Analysis(maec.utils.idgen.create_id(prefix="analysis"), "static", "triage", [BundleReference.from_dict({"bundle_idref": self.strings_bundle.id_})])
+        if "strings" in self.options and self.options["strings"] and "strings" in self.results and self.results["strings"]:
+            strings_analysis = Analysis(mixbox.idgen.create_id(prefix="analysis"), "static", "triage", [BundleReference.from_dict({"bundle_idref": self.strings_bundle.id_})])
             strings_analysis.start_datetime = datetime_to_iso(self.results["info"]["started"])
             strings_analysis.complete_datetime = datetime_to_iso(self.results["info"]["ended"])
             strings_analysis.summary = StructuredText("Cuckoo Sandbox strings analysis of the malware instance object.")
-            strings_analysis.add_tool(ToolInformation.from_dict({"id": maec.utils.idgen.create_id(prefix="tool"),
+            strings_analysis.add_tool(ToolInformation.from_dict({"id": mixbox.idgen.create_id(prefix="tool"),
                                                                     "name": "Cuckoo Sandbox Strings",
                                                                     "version": self.results["info"]["version"],
                                                                     "vendor": "http://www.cuckoosandbox.org"}))
@@ -893,11 +894,11 @@ class MAEC41Report(Report):
             self.strings_bundle.add_object(self.createFileStringsObj())
         # Add the VirusTotal analysis.
         if self.options["virustotal"] and "virustotal" in self.results and self.results["virustotal"]:
-            virustotal_analysis = Analysis(maec.utils.idgen.create_id(prefix="analysis"), "static", "triage", [BundleReference.from_dict({"bundle_idref": self.virustotal_bundle.id_})])
+            virustotal_analysis = Analysis(mixbox.idgen.create_id(prefix="analysis"), "static", "triage", [BundleReference.from_dict({"bundle_idref": self.virustotal_bundle.id_})])
             virustotal_analysis.start_datetime = datetime_to_iso(self.results["info"]["started"])
             virustotal_analysis.complete_datetime = datetime_to_iso(self.results["info"]["ended"])
             virustotal_analysis.summary = StructuredText("Virustotal results for the malware instance object.")
-            virustotal_analysis.add_tool(ToolInformation.from_dict({"id": maec.utils.idgen.create_id(prefix="tool"),
+            virustotal_analysis.add_tool(ToolInformation.from_dict({"id": mixbox.idgen.create_id(prefix="tool"),
                                                                     "name": "VirusTotal",
                                                                     "vendor": "https://www.virustotal.com/"}))
             self.subject.add_analysis(virustotal_analysis)
@@ -917,7 +918,7 @@ class MAEC41Report(Report):
         #if self.results["target"]["category"] == "file":
         #    objs.append(self.results["target"]["file"])
         # Add the named object collection.
-        self.dynamic_bundle.add_named_object_collection("Dropped Files", maec.utils.idgen.create_id(prefix="object"))
+        self.dynamic_bundle.add_named_object_collection("Dropped Files", mixbox.idgen.create_id(prefix="object"))
         for file in objs:
             self.dynamic_bundle.add_object(self.createFileObj(file), "Dropped Files")
 

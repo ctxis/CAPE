@@ -41,3 +41,4 @@ regex
 graphviz>=0.8.4
 pydot>=1.2.4
 olefile==0.45.1
+mixbox
