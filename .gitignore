@@ -2,7 +2,7 @@
 db/cuckoo.db
 
 # Ignore Cuckoo logs
-log/*.log
+log/*.log*
 
 # Ignore Cuckoo analyses
 storage/*
