@@ -89,7 +89,10 @@ class Sniffer(Auxiliary):
                pargs.extend(["-Z", user])
 
         pargs.extend(["-w", file_path])
-        pargs.extend(["host", host])
+        if remote:
+            pargs.extend(["'", "host", host])
+        else:
+            pargs.extend(["host", host])
         # Do not capture XMLRPC agent traffic.
         pargs.extend(["and", "not", "(", "dst", "host", host, "and", "dst", "port",
                       str(CUCKOO_GUEST_PORT), ")", "and", "not", "(", "src", "host",
