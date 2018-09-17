@@ -180,16 +180,13 @@ class Pcap:
         """Add IPs to unique list.
         @param connection: connection data
         """
-        if enabled_whitelist:
-            if connection["src"] in self.ip_whitelist:
-                 return False
-            if connection["dst"] in self.ip_whitelist:
-                 return False
         try:
             if connection["dst"] not in self.hosts:
                 ip = convert_to_printable(connection["dst"])
 
                 if ip not in self.hosts:
+                    if ip in self.ip_whitelist:
+                         return False
                     self.hosts.append(ip)
 
                     # We add external IPs to the list, only the first time
@@ -693,12 +690,6 @@ class Pcap:
         self._process_smtp()
 
         # Remove hosts that have an IP which correlate to a whitelisted domain
-        if enabled_whitelist:
-            for delip in self.ip_whitelist:
-                if delip in self.unique_hosts:
-                    self.unique_hosts.remove(delip)
-                if delip in self.hosts:
-                    self.hosts.remove(delip)
 
         # Build results dict.
         self.results["hosts"] = self._enrich_hosts(self.unique_hosts)
@@ -711,6 +702,28 @@ class Pcap:
         self.results["smtp"] = self.smtp_requests
         self.results["irc"] = self.irc_requests
 
+        if enabled_whitelist:
+            
+            for host in self.results["hosts"]:
+                for delip in self.ip_whitelist:
+                    if delip == host["ip"]:
+                        self.results["hosts"].remove(host)
+
+            for host in self.results["tcp"]:
+                for delip in self.ip_whitelist:
+                    if delip == host["src"] or delip == host["dst"]:
+                        self.results["tcp"].remove(host)
+
+            for host in self.results["udp"]:
+                for delip in self.ip_whitelist:
+                    if delip == host["src"] or delip == host["dst"]:
+                        self.results["udp"].remove(host)
+
+            for host in self.results["icmp"]:
+                for delip in self.ip_whitelist:
+                    if delip == host["src"] or delip == host["dst"]:
+                        self.results["icmp"].remove(host)
+            
         return self.results
 
 
