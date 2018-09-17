@@ -102,9 +102,7 @@ class Sniffer(Auxiliary):
                       "src", "port", resultserver_port, ")"])
 
         if bpf:
-            pargs.extend(["and", "(", bpf, ")" ] )
-
-        #pargs.extend(["'"])
+            pargs.extend(["and", "(", bpf, ")"])
 
         if remote and not remote_host:
             log.exception("Failed to start sniffer, remote enabled but no ssh string has been specified")
