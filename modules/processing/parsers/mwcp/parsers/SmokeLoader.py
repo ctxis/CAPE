@@ -26,7 +26,7 @@ rule SmokeLoader
         cape_type = "SmokeLoader Payload"
     strings:
         $decrypt1 = {44 0F B6 CF 48 8B D0 49 03 D9 4C 2B D8 8B 4B 01 41 8A 04 13 41 BA 04 00 00 00 0F C9 32 C1 C1 F9 08 49 FF CA 75 F6 F6 D0 88 02 48 FF C2 49 FF C9 75 DB 49 8B C0 48 8B 5C 24 30 48 83 C4 20 5F C3}
-        $ref1 = {40 53 48 83 EC 20 8B 05 ?? ?? ?? ?? 83 F8 03 75 27 33 C0 89 05 ?? ?? ?? ?? 84 C9 74 1B BB E8 03 00 00 B9 58 02 00 00 FF 15 ?? ?? ?? ?? 48 FF CB 75 F0 8B 05 ?? ?? ?? ?? 48 63 C8 48 8D 05}
+        $ref1 = {40 53 48 83 EC 20 8B 05 ?? ?? ?? ?? 83 F8 ?? 75 27 33 C0 89 05 ?? ?? ?? ?? 84 C9 74 1B BB E8 03 00 00 B9 58 02 00 00 FF 15 ?? ?? ?? ?? 48 FF CB 75 F0 8B 05 ?? ?? ?? ?? 48 63 C8 48 8D 05}
         $ref2 = {8B 05 ?? ?? ?? ?? 33 C9 83 F8 04 0F 44 C1 48 63 C8 89 05 ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 8B 0C C8 E9}
     condition:
         $decrypt1 and (any of ($ref*))
@@ -69,20 +69,28 @@ class SmokeLoader(malwareconfigparser):
             table_delta = struct.unpack('i', filebuf[table_ref_offset+62:table_ref_offset+66])[0]
             table_offset = table_ref_offset + table_delta + 66
 
-            for index in range(0, 3):
+            table_loop = True
+            while table_loop:
+                c2_offset = 0
                 if image_base:
                     c2_rva = struct.unpack('Q', filebuf[table_offset:table_offset+8])[0] - image_base
-                    c2_offset = pe.get_offset_from_rva(c2_rva)
+                    if c2_rva < 0x8000:
+                        c2_offset = pe.get_offset_from_rva(c2_rva)
+                    else:
+                        table_loop = False
                 else:
                     c2_offset = struct.unpack('I', filebuf[table_offset:table_offset+4])[0] & 0xffff
                 c2_size = struct.unpack('B', filebuf[c2_offset:c2_offset+1])[0]
                 c2_key = struct.unpack('I', filebuf[c2_offset+c2_size+1:c2_offset+c2_size+5])[0]
-                try:
-                    c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
-                    if c2_url:
-                        self.reporter.add_metadata('address', c2_url)
-                except:
-                    pass
+                if c2_offset < 0x8000:
+                    try:
+                        c2_url = xor_decode(filebuf[c2_offset+1:c2_offset+c2_size+1], c2_key).decode('ascii')
+                        if c2_url:
+                            self.reporter.add_metadata('address', c2_url)
+                    except:
+                        table_loop = False
+                else:
+                    table_loop = False
                 table_offset = table_offset + 8
             return
         else:
