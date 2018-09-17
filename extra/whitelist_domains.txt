@@ -10,6 +10,7 @@ client-office365-tas\.msedge\.net$
 \.skype\.com$
 api\.onedrive\.com$
 \.live\.com$
+\.bing.com$
 
 # Microsoft
 watson\.telemetry\.microsoft\.com$
@@ -20,11 +21,14 @@ adl\.windows\.com$
 fe2\.update\.microsoft\.com$
 fe3\.delivery\.mp\.microsoft\.com$
 download\.windowsupdate\.com$
-\.microsoft\.com
-\.windowsupdate\.com
+\.microsoft\.com$
+\.windowsupdate\.com$
 \.windows\.com$
 \.edgesuite\.net$
-blob\.core\.windows\.net$
+\.blob\.core\.windows\.net$
+
+\.windows\.com\.akadns\.net$
+\.microsoft\.com\.nsatc\.net$
 
 # Google
 update\.googleapis\.com$
