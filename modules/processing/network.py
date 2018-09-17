@@ -53,6 +53,7 @@ Packet = namedtuple("Packet", ["raw", "ts"])
 log = logging.getLogger(__name__)
 
 enabled_whitelist = Config("processing").network.dnswhitelist
+whitelist_file = Config("processing").network.dnswhitelist_file
 
 class Pcap:
     """Reads network data from PCAP file."""
@@ -96,10 +97,22 @@ class Pcap:
         self.domain_whitelist = [
             # Certificate Trust Update domains
             "^ocsp\.usertrust\.com$",
+            "\.windows\.com$",
             "^ocsp\.comodoca\.com$",
             "^ctldl\.windowsupdate\.com$",
             "^crl\.microsoft\.com$",
+            "\.microsoft\.com$",
+            "\.skype\.com$",
+            "\.live\.com$",
+            "\clients[0-9]+\.google\.com$",
+            "\.googleapis\.com$",
+            "\.gvt1\.com$",
+            "\.msedge\.net$",
+            "\.msftncsi\.com$",
         ]
+        if enabled_whitelist and whitelist_file:
+             with open(whitelist_file, 'r') as f:
+                  self.domain_whitelist = self.domain_whitelist + f.read().split("\n")
         self.ip_whitelist = set()
 
     def _dns_gethostbyname(self, name):
@@ -166,6 +179,11 @@ class Pcap:
         """Add IPs to unique list.
         @param connection: connection data
         """
+        if enabled_whitelist:
+            if connection["src"] in self.ip_whitelist:
+                 return False
+            if connection["dst"] in self.ip_whitelist:
+                 return False
         try:
             if connection["dst"] not in self.hosts:
                 ip = convert_to_printable(connection["dst"])
@@ -377,10 +395,13 @@ class Pcap:
 
             if enabled_whitelist:
                 for reject in self.domain_whitelist:
-                    if re.match(reject, query["request"]):
+                    if reject.startswith("#") or len(reject.strip()) == 0:
+			continue # comment or empty line
+                    if re.search(reject, query["request"]):
                         if query["answers"]:
                             for addip in query["answers"]:
-                                self.ip_whitelist.add(addip["data"])
+                                if addip["type"] == "A" or addip["type"] == "AAAA":
+                                     self.ip_whitelist.add(addip["data"])
                         return True
 
             self._add_domain(query["request"])
@@ -456,6 +477,14 @@ class Pcap:
             else:
                 entry["host"] = conn["dst"]
 
+            if enabled_whitelist:
+                for reject in self.domain_whitelist:
+                    if reject.startswith("#") or len(reject.strip()) == 0:
+			continue # comment or empty line
+                    if re.search(reject, entry["host"]):
+                        return False
+
+
             entry["port"] = conn["dport"]
 
             # Manually deal with cases when destination port is not the default one,
@@ -523,6 +552,12 @@ class Pcap:
 	    @param conn: TCP connection info.
         @param tcpdata: TCP data in flow
         """
+
+        if enabled_whitelist:
+            if conn["src"] in self.ip_whitelist:
+                 return False
+            if conn["dst"] in self.ip_whitelist:
+                 return False
 
         try:
             reqc = ircMessage()
@@ -661,6 +696,8 @@ class Pcap:
             for delip in self.ip_whitelist:
                 if delip in self.unique_hosts:
                     self.unique_hosts.remove(delip)
+                if delip in self.hosts:
+                    self.hosts.remove(delip)
 
         # Build results dict.
         self.results["hosts"] = self._enrich_hosts(self.unique_hosts)
