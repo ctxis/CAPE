@@ -31,7 +31,7 @@ class Sniffer(Auxiliary):
         if remote:
             file_path = "/tmp/tcp.dump.%d" % self.task.id
         else:
-            file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses","%s" % self.task.id, "dump.pcap")
+            file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.task.id), "dump.pcap")
         host = self.machine.ip
         # Selects per-machine interface if available.
         if self.machine.interface:
