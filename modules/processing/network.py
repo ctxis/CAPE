@@ -24,6 +24,7 @@ from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.utils import convert_to_printable
 from lib.cuckoo.common.exceptions import CuckooProcessingError
 from dns.reversename import from_address
+from lib.cuckoo.common.constants import CUCKOO_ROOT
 
 try:
     import GeoIP
@@ -111,7 +112,7 @@ class Pcap:
             "\.msftncsi\.com$",
         ]
         if enabled_whitelist and whitelist_file:
-             with open(whitelist_file, 'r') as f:
+             with open(os.path.join(CUCKOO_ROOT, whitelist_file), 'r') as f:
                   self.domain_whitelist = self.domain_whitelist + f.read().split("\n")
         self.ip_whitelist = set()
 
