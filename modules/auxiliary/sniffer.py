@@ -13,22 +13,22 @@ from lib.cuckoo.common.abstracts import Auxiliary
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.constants import CUCKOO_ROOT, CUCKOO_GUEST_PORT
 from lib.cuckoo.core.resultserver import ResultServer
+from lib.cuckoo.common.exceptions import CuckooOperationalError
 
 log = logging.getLogger(__name__)
 
 
 class Sniffer(Auxiliary):
+    def __init__(self):
+        Auxiliary.__init__(self)
+        self.proc = None
+
     def start(self):
         # Get updated machine info
         self.machine = self.db.view_machine_by_label(self.machine.label)
         tcpdump = self.options.get("tcpdump", "/usr/sbin/tcpdump")
         bpf = self.options.get("bpf", "")
-        remote = self.options.get("remote", "no")
-        remote_host = self.options.get("host", "")
-	if remote:
-		file_path = "/tmp/tcp.dump.%d" % self.task.id
-	else:
-        	file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
+        file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                                  "%s" % self.task.id, "dump.pcap")
         host = self.machine.ip
         # Selects per-machine interface if available.
@@ -83,11 +83,10 @@ class Sniffer(Auxiliary):
         except:
             pass
         else:
-	    if not remote:
-	            pargs.extend(["-Z", user])
+            pargs.extend(["-Z", user])
 
         pargs.extend(["-w", file_path])
-        pargs.extend(["'", "host", host])
+        pargs.extend(["host", host])
         # Do not capture XMLRPC agent traffic.
         pargs.extend(["and", "not", "(", "dst", "host", host, "and", "dst", "port",
                       str(CUCKOO_GUEST_PORT), ")", "and", "not", "(", "src", "host",
@@ -100,83 +99,90 @@ class Sniffer(Auxiliary):
                       "src", "port", resultserver_port, ")"])
 
         if bpf:
-            pargs.extend(["and", "("] + bpf.split(' ') + [ ")" ] )
+            pargs.extend(["and", "(", bpf, ")"])
 
-        pargs.extend(["'"])
+        try:
+            self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE, close_fds=True)
+        except (OSError, ValueError):
+            log.exception("Failed to start sniffer (interface=%s, host=%s, "
+                          "dump path=%s)", interface, host, file_path)
+            return
 
-	if remote and not remote_host:
-		log.exception("Failed to start sniffer, remote enabled but no ssh string has been specified")
-		return
-	elif remote:
+        log.info("Started sniffer with PID %d (interface=%s, host=%s, "
+                 "dump path=%s)", self.proc.pid, interface, host, file_path)
 
-		try:
-		    from subprocess import DEVNULL # py3k
-		except ImportError:
-		    DEVNULL = open(os.devnull, 'wb')
+    def _check_output(self, out, err):
+        if out:
+            raise CuckooOperationalError(
+                "Potential error while running tcpdump, did not expect "
+                "standard output, got: %r." % out
+            )
 
-		f = open("/tmp/%d.sh" % self.task.id, "w")
-		if f:
-			f.write( ' '.join(pargs)  + ' & PID=$!')
-			f.write("\n")
-			f.write( 'echo $PID > /tmp/%d.pid' % self.task.id )
-			f.write("\n")
-			f.close()
+        err_whitelist_start = (
+            "tcpdump: listening on ",
+        )
 
-		remote_output = subprocess.check_output(['scp', '-q', "/tmp/%d.sh" % self.task.id, remote_host + ":/tmp/%d.sh" % self.task.id  ], stderr=DEVNULL)
-		remote_output = subprocess.check_output(['ssh', remote_host, 'nohup', "/bin/bash", '/tmp/%d.sh' % self.task.id, '>','/tmp/log','2>','/tmp/err' ], stderr=subprocess.STDOUT)
+        err_whitelist_ends = (
+            "packet captured",
+            "packets captured",
+            "packet received by filter",
+            "packets received by filter",
+            "packet dropped by kernel",
+            "packets dropped by kernel",
+            "dropped privs to root",
+        )
 
-		self.pid = subprocess.check_output(['ssh', remote_host, 'cat', '/tmp/%d.pid' % self.task.id ], stderr=DEVNULL).strip()
-		log.info("Started remote sniffer @ %s with (interface=%s, host=%s, "
-			"dump path=%s, pid=%s)", remote_host, interface, host, file_path, self.pid)
-		remote_output = subprocess.check_output(['ssh', remote_host, 'rm', '-f', '/tmp/%d.pid' % self.task.id, '/tmp/%d.sh' % self.task.id ], stderr=DEVNULL)
+        for line in err.split("\n"):
+            if not line or line.startswith(err_whitelist_start):
+                continue
 
-	else:
-	        try:
-		    self.proc = subprocess.Popen(pargs, stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE)
-	        except (OSError, ValueError):
-	            log.exception("Failed to start sniffer (interface=%s, host=%s, "
-	                          "dump path=%s)", interface, host, file_path)
-	            return
+            if line.endswith(err_whitelist_ends):
+                continue
 
-	        log.info("Started sniffer with PID %d (interface=%s, host=%s, "
-	      	         "dump path=%s)", self.proc.pid, interface, host, file_path)
+            raise CuckooOperationalError(
+                "Potential error while running tcpdump, did not expect "
+                "the following standard error output: %r." % line
+            )
 
     def stop(self):
         """Stop sniffing.
         @return: operation status.
         """
-        remote = self.options.get("remote", "no")
-	if remote: 
-        	remote_host = self.options.get("host", "")
-		remote_args = [ 'ssh', remote_host, 'kill' , '-2', self.pid ]
+        # The tcpdump process was never started in the first place.
+        if not self.proc:
+            return
 
-		try:
-		    from subprocess import DEVNULL # py3k
-		except ImportError:
-		    DEVNULL = open(os.devnull, 'wb')
+        # The tcpdump process has already quit, generally speaking this
+        # indicates an error such as "permission denied".
+        if self.proc.poll():
+            out, err = self.proc.communicate()
+            raise CuckooOperationalError(
+                "Error running tcpdump to sniff the network traffic during "
+                "the analysis; stdout = %r and stderr = %r. Did you enable "
+                "the extra capabilities to allow running tcpdump as non-root "
+                "user and disable AppArmor properly (the latter only applies "
+                "to Ubuntu-based distributions with AppArmor, see also %s)?" %
+                (out, err, "permission-denied-for-tcpdump")
+            )
 
-		remote_output = subprocess.check_output(remote_args, stderr=DEVNULL)
 
-        	file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
-                                 "%s" % self.task.id, "dump.pcap")
-		file_path2 = "/tmp/tcp.dump.%d" % self.task.id
-
-		remote_output = subprocess.check_output([ 'scp', '-q', remote_host + ":" + file_path2, file_path ], stderr=DEVNULL)
-		remote_output = subprocess.check_output([ 'ssh', remote_host, 'rm', '-f', file_path2 ], stderr=DEVNULL)
-		return
-
-        if self.proc and not self.proc.poll():
+        try:
+            self.proc.terminate()
+        except:
             try:
-                self.proc.terminate()
-            except:
-                try:
-                    if not self.proc.poll():
-                        log.debug("Killing sniffer")
-                        self.proc.kill()
-                except OSError as e:
-                    log.debug("Error killing sniffer: %s. Continue", e)
-                    pass
-                except Exception as e:
-                    log.exception("Unable to stop the sniffer with pid %d: %s",
-                                  self.proc.pid, e)
+                if not self.proc.poll():
+                    log.debug("Killing sniffer")
+                    self.proc.kill()
+            except OSError as e:
+                log.debug("Error killing sniffer: %s. Continue", e)
+            except Exception as e:
+                log.exception("Unable to stop the sniffer with pid %d: %s",
+                                 self.proc.pid, e)
+
+        # Ensure expected output was received from tcpdump.
+        out, err = self.proc.communicate()
+        self._check_output(out, err)
+
+        del self.proc
+
