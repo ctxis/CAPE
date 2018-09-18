@@ -30,7 +30,6 @@ from lib.cuckoo.common.email_utils import find_attachments_in_email
 from lib.cuckoo.common.office.msgextract import Message
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 
-logging.basicConfig()
 log = logging.getLogger()
 
 demux_extensions_list = [
