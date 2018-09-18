@@ -120,7 +120,12 @@ def init_logging(auto=False, tid=0, debug=False):
     log.addHandler(ch)
     
     if auto:
-        fh = logging.handlers.WatchedFileHandler(os.path.join(CUCKOO_ROOT, "log", "process.log"))
+        cfg = Config()
+        if cfg.logging.enabled:
+            days = cfg.logging.backupCount
+            fh = logging.handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "process.log"), when="midnight", backupCount=days)
+        else:
+            fh = logging.handlers.WatchedFileHandler(os.path.join(CUCKOO_ROOT, "log", "process.log"))
     else:
         fh = logging.handlers.WatchedFileHandler(os.path.join(CUCKOO_ROOT, "log", "process-%s.log" % tid))
 
