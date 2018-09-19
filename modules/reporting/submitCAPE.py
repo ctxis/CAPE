@@ -254,6 +254,9 @@ class SubmitCAPE(Report):
                         if parent_package=='jar':
                             detections.add('Extraction_jar')
                             continue
+                        if parent_package=='pdf':
+                            detections.add('Extraction_pdf')    
+                            continue
                         if parent_package=='js':
                             detections.add('Extraction_js')
                             continue
@@ -270,6 +273,9 @@ class SubmitCAPE(Report):
                         if parent_package=='doc':
                             detections.add('Compression_doc')    
                             continue                            
+                        if parent_package=='pdf':
+                            detections.add('Compression_pdf')    
+                            continue
                         if parent_package=='js':
                             detections.add('Compression_js')
                             continue

@@ -6,7 +6,7 @@ import os
 
 from lib.common.abstracts import Package
 
-class JS(Package):
+class Injection_JS(Package):
     """JavaScript analysis package."""
     PATHS = [
         ("SystemRoot", "system32", "wscript.exe"),

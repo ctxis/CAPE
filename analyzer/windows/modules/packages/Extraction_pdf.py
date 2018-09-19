@@ -4,10 +4,10 @@
 
 from lib.common.abstracts import Package
 
-class Extraction_Jar(Package):
-    """Java analysis package."""
+class Extraction_PDF(Package):
+    """PDF analysis package."""
     PATHS = [
-        ("ProgramFiles", "Java", "jre*", "bin", "java.exe"),
+        ("ProgramFiles", "Adobe", "*a*", "Reader", "AcroRd32.exe"),
     ]
 
     def __init__(self, options={}, config=None):
@@ -15,15 +15,7 @@ class Extraction_Jar(Package):
         self.config = config
         self.options = options
         self.options["dll"] = "Extraction.dll"
-        #self.options["dll_64"] = "Extraction_x64.dll"
 
     def start(self, path):
-        java = self.get_path_glob("Java")
-        class_path = self.options.get("class")
-
-        if class_path:
-            args = "-cp \"%s\" %s" % (path, class_path)
-        else:
-            args = "-jar \"%s\"" % path
-
-        return self.execute(java, args, path)
+        reader = self.get_path_glob("Adobe Reader")
+        return self.execute(reader, "\"%s\"" % path, path)
