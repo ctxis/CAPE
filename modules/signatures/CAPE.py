@@ -320,11 +320,17 @@ class CAPE_Injection(Signature):
         Signature.__init__(self, *args, **kwargs)
         self.lastprocess = None
         self.process_handles = None
+        self.write_handles = None
+        self.injection_detected = False
 
     filter_categories = set(["process"])
 
     def on_call(self, call, process):
         if process is not self.lastprocess:
+            if self.process_handles:
+                for handle in self.process_handles:
+                    if handle in self.write_handles:
+                        self.injection_detected = True
             self.process_handles = set()
             self.write_handles = set()
             self.lastprocess = process
@@ -337,7 +343,9 @@ class CAPE_Injection(Signature):
             self.write_handles.add(whandle)
 
     def on_complete(self):
-        if self.process_handles:
+        if self.injection_detected == True:
+            return True
+        elif self.process_handles:
             for handle in self.process_handles:
                 if handle in self.write_handles:
                     return True
