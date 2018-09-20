@@ -339,7 +339,7 @@ class CAPE_Injection(Signature):
     def on_complete(self):
         if self.process_handles:
             for handle in self.process_handles:
-       	        if handle in self.write_handles:
+                if handle in self.write_handles:
                     return True
       
 class CAPE_EvilGrab(Signature):
