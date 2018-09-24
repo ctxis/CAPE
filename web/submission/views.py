@@ -226,7 +226,7 @@ def index(request, resubmit_hash=False):
                 url = 'local'
                 params = {}
 
-                status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
+                status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", path, package, timeout, options, priority, machine, gateway,
                                                  clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
 
         elif "sample" in request.FILES:
