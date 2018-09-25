@@ -1,6 +1,10 @@
 import os
-import re
+try:
+    import re2 as re
+except ImportError:
+    import re
 import ast
+import base64
 import logging
 import itertools
 import xml.etree.ElementTree as ET
@@ -12,8 +16,8 @@ log = logging.getLogger(__name__)
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "jwhite@paloaltonetworks.com"
-__version__ = "1.0.9"
-__date__    = "27AUG2018"
+__version__ = "1.0.10"
+__date__    = "25SEP2018"
 __credits__ = ["@noottrak", "@doomedraven"]
 
 def buildBehaviors(entry, behaviorTags):
@@ -74,7 +78,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Uninstalls Apps"] = [["foreach", "UninstallString"]]
 
-    behaviorCol["Obfuscation"] = [["-Join", "[int]", "-as", "[char]"]]
+    behaviorCol["Obfuscation"] = [["-Join", "[int]", "-as", "[char]", "-enc"]]
 
     behaviorCol["Crypto"] = [["System.Security.Cryptography.AESCryptoServiceProvider", "Mode", "Key", "IV"],
                              ["CreateEncryptor().TransformFinalBlock"],
@@ -208,6 +212,35 @@ def adjustCase(inputString, MODFLAG):
     if MODFLAG == 0:
         MODFLAG = 0
     return inputString.lower(), MODFLAG
+
+def replaceBrakets(inputString, MODFLAG):
+    # OLD: [char]39
+    # NEW: set -
+    matched = re.findall("\[char\]\d+\+?", inputString, re.I)
+    if matched:
+        if MODFLAG == 0:
+            MODFLAG = 1
+        for pattern in matched:
+            try:
+                inputString = inputString.replace(pattern, chr(int(pattern.lower().replace("+", "").replace("[char]", ""))))
+            except Exception as e:
+                log.error(e)
+
+    return inputString, MODFLAG
+        
+def base64FindAndDecode(inputString):
+    # OLD: TVo=
+    # NEW: set MZ
+    matched = re.findall("[-A-Za-z0-9+]+={1,2}", inputString)
+    if matched:
+        for pattern in matched:
+            try:
+                decoded = base64.b64decode(pattern)
+                inputString = inputString.replace(pattern, decoded)
+            except Exception as e:
+                log.error(e)
+
+    return inputString
 
 def replaceDecoder(inputString, MODFLAG):
     # OLD: (set GmBtestGmb).replace('GmB',[Char]39)
@@ -424,6 +457,9 @@ class Curtain(Processing):
                     # Attempt to further decode token replacement/other common obfuscation
                     # Original and altered will be saved
                     ALTMSG = MESSAGE.strip()
+
+                    if re.findall("\[char\]\d+\+?", ALTMSG):
+                        ALTMSG, MODFLAG = replaceBrakets(ALTMSG, MODFLAG)
 
                     if re.search("\x00", ALTMSG):
                         ALTMSG, MODFLAG = removeNull(ALTMSG, MODFLAG)
