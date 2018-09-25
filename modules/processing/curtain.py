@@ -78,7 +78,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Uninstalls Apps"] = [["foreach", "UninstallString"]]
 
-    behaviorCol["Obfuscation"] = [["-Join", "[int]", "-as", "[char]", "-enc"]]
+    behaviorCol["Obfuscation"] = [["-Join", "[int]", "-as", "[char]"]]
 
     behaviorCol["Crypto"] = [["System.Security.Cryptography.AESCryptoServiceProvider", "Mode", "Key", "IV"],
                              ["CreateEncryptor().TransformFinalBlock"],
