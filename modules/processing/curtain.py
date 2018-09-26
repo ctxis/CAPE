@@ -177,7 +177,7 @@ def charReplace(inputString, MODFLAG):
     # NEW: e
     for value in re.findall("\[[Cc][Hh][Aa][Rr]\][0-9]{1,3}", inputString):
         inputString = inputString.replace(value, '"%s"' % chr(int(value.split("]")[1])))
-     if MODFLAG == 0:
+    if MODFLAG == 0:
         MODFLAG = 1
     return inputString, MODFLAG
 
