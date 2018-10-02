@@ -179,7 +179,7 @@ class SubmitCAPE(Report):
                     "timeout": timeout,
                     "options": task_options,
                     "priority": priority,
-                    "machine": machine,
+                    #"machine": machine,
                     "platform": platform,
                     "memory": memory,
                     "enforce_timeout": enforce_timeout,
