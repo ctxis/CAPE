@@ -1,3 +1,4 @@
+# encoding: utf-8
 # Copyright (C) 2015 Kevin O'Reilly kevin.oreilly@contextis.co.uk 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,12 +16,14 @@
 import os
 import logging
 import pprint
+import requests
 
 try:
     import re2 as re
 except ImportError:
     import re
 
+from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.abstracts import Report
 from lib.cuckoo.common.exceptions import CuckooDependencyError
 from lib.cuckoo.common.exceptions import CuckooReportError
@@ -29,6 +32,10 @@ from lib.cuckoo.common.utils import to_unicode
 from lib.cuckoo.core.database import Database
 
 log = logging.getLogger(__name__)
+
+reporting_conf = Config("reporting")
+distributed = reporting_conf.submitCAPE.distributed
+report_key = reporting_conf.submitCAPE.key
 
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "Compression_js", "Compression_pdf", 
@@ -162,8 +169,55 @@ class SubmitCAPE(Report):
                         self.task_options_stack.remove(item)
                 self.task_options_stack.append("bp1={0}".format(decrypt_config))
                 detections.add('QakBot')
-                    
+
+    def submit_task(self, target, package, timeout, task_options, priority, machine, platform, memory, enforce_timeout, clock, tags, parent_id):
+        if os.path.exists(target):
+            task_id = False
+            if distributed:
+                options = {
+                    "package": package,
+                    "timeout": timeout,
+                    "options": task_options,
+                    "priority": priority,
+                    "machine": machine,
+                    "platform": platform,
+                    "memory": memory,
+                    "enforce_timeout": enforce_timeout,
+                    "clock": clock,
+                    "tags": tags,
+                    "parent_id": parent_id,
+                } 
+                multipart_file = [("file", (os.path.basename(target), open(target, "rb")))]
+                try:
+                    res = requests.post(reporting_conf.submitCAPE.url , files=multipart_file, data=options)
+                    if res and res.ok:
+                        task_id = res.json()["data"]["task_ids"][0]
+                except Exception as e:
+                    log.error(e)
+            else:
+                task_id = db.add_path(
+                            file_path=target,
+                            package=package,
+                            timeout=timeout,
+                            options=task_options,
+                            priority=priority,   # increase priority to expedite related submission
+                            machine=machine,
+                            platform=platform,
+                            memory=memory,
+                            enforce_timeout=enforce_timeout,
+                            clock=None,
+                            tags=None,
+                            parent_id=parent_id,
+                )
+            if task_id:
+                log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(target, package, task_id))
+            else:
+                log.warn("Error adding CAPE task to database: {0}".format(package))
+        else:
+            log.info("File doesn't exists")
+
     def run(self, results):
+
         self.task_options_stack = []
         self.task_options = None
         self.task_custom = None
@@ -171,6 +225,10 @@ class SubmitCAPE(Report):
         report = dict(results)
         db = Database()
         detections = set()
+
+        # allow custom extractors
+        if report_key in results:
+            return
 
         self.task_options = self.task["options"]
 
@@ -188,28 +246,15 @@ class SubmitCAPE(Report):
                 if "cape_yara" in file:
                     for entry in file["cape_yara"]:
                         self.process_cape_yara(entry, detections)
-                        
-        if "procdump" in results:
-            if results["procdump"] is not None:
-                for file in results["procdump"]:
-                    if "cape_yara" in file:
-                        for entry in file["cape_yara"]:
-                            self.process_cape_yara(entry, detections)
         
-        if "CAPE" in results:
-            if results["CAPE"] is not None:
-                for file in results["CAPE"]:
-                    if "cape_yara" in file:
-                        for entry in file["cape_yara"]:
-                            self.process_cape_yara(entry, detections)
-                            
-        if "dropped" in results:
-            if results["dropped"] is not None:
-                for file in results["dropped"]:
-                    if "cape_yara" in file:
-                        for entry in file["cape_yara"]:
-                            self.process_cape_yara(entry, detections)
-
+        for pattern in ("procdump", "CAPE", "dropped"):
+            if pattern in results:
+                if results[pattern] is not None:
+                    for file in results[pattern]:
+                        if "cape_yara" in file:
+                            for entry in file["cape_yara"]:
+                                self.process_cape_yara(entry, detections)
+        
         ##### Dynamic CAPE hits
         ##### Packers, injection or other generic dumping
         #####
@@ -393,23 +438,21 @@ class SubmitCAPE(Report):
             self.task_custom="Parent_Task_ID:%s" % report["info"]["id"]
             if report["info"].has_key("custom") and report["info"]["custom"]:
                 self.task_custom = "%s Parent_Custom:%s" % (self.task_custom,report["info"]["custom"])
-
-            task_id = db.add_path(file_path=self.task["target"],
-                                    package=package,
-                                    timeout=self.task["timeout"],
-                                    options=self.task_options,
-                                    priority=self.task["priority"]+1,   # increase priority to expedite related submission
-                                    machine=self.task["machine"],
-                                    platform=self.task["platform"],
-                                    memory=self.task["memory"],
-                                    enforce_timeout=self.task["enforce_timeout"],
-                                    clock=None,
-                                    tags=None,
-                                    parent_id=int(report["info"]["id"]))
-            if task_id:
-                log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(self.task["target"], package, task_id))
-            else:
-                log.warn("Error adding CAPE task to database: {0}".format(package))
+            
+            self.submit_task(
+                self.task["target"],
+                package,
+                self.task["timeout"],
+                self.task_options,
+                self.task["priority"]+1,   # increase priority to expedite related submission
+                self.task["machine"],
+                self.task["platform"],
+                self.task["memory"],
+                self.task["enforce_timeout"],
+                None,
+                None,
+                int(report["info"]["id"])
+            )
             
         else: # nothing submitted, only 'dumpers' left
             if parent_package in cape_package_list:
@@ -420,20 +463,18 @@ class SubmitCAPE(Report):
                 self.task_custom = "%s Parent_Custom:%s" % (self.task_custom,report["info"]["custom"])
 
             for dumper in detections:
-                task_id = db.add_path(file_path=self.task["target"],
-                                package=dumper,
-                                timeout=self.task["timeout"],
-                                options=self.task_options,
-                                priority=self.task["priority"]+1,   # increase priority to expedite related submission
-                                machine=self.task["machine"],
-                                platform=self.task["platform"],
-                                memory=self.task["memory"],
-                                enforce_timeout=self.task["enforce_timeout"],
-                                clock=None,
-                                tags=None,
-                                parent_id=int(report["info"]["id"]))
-                if task_id:
-                    log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(self.task["target"], dumper, task_id))
-                else:
-                    log.warn("Error adding CAPE task to database: {0}".format(dumper))
+                self.submit_task(
+                    self.task["target"],
+                    dumper,
+                    self.task["timeout"],
+                    self.task_options,
+                    self.task["priority"]+1,   # increase priority to expedite related submission
+                    self.task["machine"],
+                    self.task["platform"],
+                    self.task["memory"],
+                    self.task["enforce_timeout"],
+                    None,
+                    None,
+                    int(report["info"]["id"])
+            )
         return
