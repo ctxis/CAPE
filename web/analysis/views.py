@@ -16,6 +16,7 @@ import json
 import zipfile
 import tempfile
 import zlib
+import subprocess
 
 import subprocess
 from bson.binary import Binary
@@ -897,6 +898,24 @@ def file(request, category, task_id, dlfile):
         path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                             task_id, "dump.pcap")
         cd = "application/vnd.tcpdump.pcap"
+    elif category in ("samplezip", "droppedzip"):
+        # ability to download password protected zip archives
+        path = ""
+        if category == "samplezip":
+            path = os.path.join(CUCKOO_ROOT, "storage", "binaries", file_name)
+        elif category == "droppedzip":
+            path = os.path.join(CUCKOO_ROOT, "storage",
+                                "analyses", str(task_id), "files", file_name)
+        TMPDIR = "/tmp"
+        if path:
+            try:
+                cmd = ["7z", "a", "-y", "-pinfected", os.path.join(TMPDIR, file_name + ".zip"), path]
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                output = e.output
+            file_name += ".zip"
+            path = os.path.join(TMPDIR, file_name)
+            cd = "application/zip"        
     elif category == "screenshot":
         file_name += ".jpg"
         #print file_name
