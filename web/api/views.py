@@ -878,6 +878,8 @@ def ext_tasks_search(request):
                 records = results_db.analysis.find({"target.file.clamav": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
             elif option == "yaraname":
                 records = results_db.analysis.find({"target.file.yara.name": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
+            elif option == "capeyara":
+                records = results_db.analysis.find({"target.file.cape_yara.name": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
             elif option == "procmemyara":
                 records = results_db.analysis.find({"procmemory.yara.name": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
             elif option == "virustotal":
@@ -948,6 +950,8 @@ def ext_tasks_search(request):
                 records = es.search(index=fullidx, doc_type="analysis", q="target.file.clamav: %s" % value)["hits"]["hits"]
             elif term == "yaraname":
                 records = es.search(index=fullidx, doc_type="analysis", q="target.file.yara.name: %s" % value)["hits"]["hits"]
+            elif term == "capeyara":
+                records = es.search(index=fullidx, doc_type="analysis", q="target.file.cape_yara.name: %s" % value)["hits"]["hits"]
             elif term == "procmemyara":
                 records = es.search(index=fullidx, doc_type="analysis", q="procmemory.yara.name: %s" % value)["hits"]["hits"]
             elif term == "virustotal":
