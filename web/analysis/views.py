@@ -17,6 +17,7 @@ import zipfile
 import tempfile
 import zlib
 
+import subprocess
 from bson.binary import Binary
 from bson.binary import Binary
 from django.conf import settings
@@ -872,6 +873,24 @@ def file(request, category, task_id, dlfile):
     if category == "sample":
         path = os.path.join(CUCKOO_ROOT, "storage", "binaries", dlfile)
         #file_name += ".bin"
+    elif category in ("samplezip", "droppedzip"):
+        # ability to download password protected zip archives
+        path = ""
+        if category == "samplezip":
+            path = os.path.join(CUCKOO_ROOT, "storage", "binaries", file_name)
+        elif category == "droppedzip":
+            path = os.path.join(CUCKOO_ROOT, "storage",
+                                "analyses", str(task_id), "files", file_name)
+        TMPDIR = "/tmp"
+        if path:
+            try:
+                cmd = ["7z", "a", "-y", "-pinfected", os.path.join(TMPDIR, file_name + ".zip"), path]
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                output = e.output
+            file_name += ".zip"
+            path = os.path.join(TMPDIR, file_name)
+            cd = "application/zip"
     elif category == "pcap":
         file_name += ".pcap"
         # Forcefully grab dump.pcap, serve it as [sha256].pcap
