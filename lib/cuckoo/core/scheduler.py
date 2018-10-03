@@ -509,7 +509,7 @@ class AnalysisManager(threading.Thread):
                     self.route = value
                     break
 
-        if self.route == "none" or self.route == "None":
+        if self.route == "none" or self.route == "None" or self.route == "drop":
             self.interface = None
             self.rt_table = None
         elif self.route == "inetsim":
@@ -560,6 +560,9 @@ class AnalysisManager(threading.Thread):
             rooter("tor_enable", self.machine.ip, str(self.cfg.resultserver.port),
                 str(self.cfg.routing.tor_dnsport), str(self.cfg.routing.tor_proxyport))
 
+        if self.route == "none" or self.route == "None" or self.route == "drop":
+            rooter("drop_enable", self.machine.ip, str(self.cfg.resultserver.port))
+
         if self.interface:
             rooter("forward_enable", self.machine.interface,
                    self.interface, self.machine.ip)
@@ -592,6 +595,9 @@ class AnalysisManager(threading.Thread):
         if self.route == "tor":
             rooter("tor_disable", self.machine.ip, str(self.cfg.resultserver.port),
                 str(self.cfg.routing.tor_dnsport), str(self.cfg.routing.tor_proxyport))
+
+        if self.route == "none" or self.route == "None" or self.route == "drop":
+            rooter("drop_disable", self.machine.ip, str(self.cfg.resultserver.port))
 
 class Scheduler:
     """Tasks Scheduler.
