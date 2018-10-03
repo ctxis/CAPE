@@ -255,12 +255,11 @@ def drop_disable(ipaddr, resultserver_port):
   run(settings.iptables, "-D", "INPUT", "--destination", ipaddr, "-p", "tcp", "--dport", "8000", "-j", "ACCEPT")
   run(settings.iptables, "-D", "INPUT", "--destination", ipaddr, "-p", "tcp", "--sport", resultserver_port, "-j", "ACCEPT")
   run(settings.iptables, "-D", "OUTPUT", "--destination", ipaddr, "-p", "tcp", "--dport", "8000", "-j", "ACCEPT")
-  run(settings.iptables, "-d", "OUTPUT", "--destination", ipaddr, "-p", "tcp",  "--sport", resultserver_port, "-j", "ACCEPT")
+  run(settings.iptables, "-D", "OUTPUT", "--destination", ipaddr, "-p", "tcp",  "--sport", resultserver_port, "-j", "ACCEPT")
   run(settings.iptables, "-D", "OUTPUT", "--destination", ipaddr, "-j", "DROP")
 
 
 handlers = {
-
     "nic_available": nic_available,
     "rt_available": rt_available,
     "vpn_status": vpn_status,

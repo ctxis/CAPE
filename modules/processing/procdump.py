@@ -19,8 +19,7 @@ class ProcDump(Processing):
         self.key = "procdump"
         procdump_files = []
         buf = self.options.get("buffer", 8192)
-
-        if not os.path.exists(self.procdump_path):
+        if not hasattr(self, "procdump_path") or not os.path.exists(self.procdump_path):
             return None
         file_names = os.listdir(self.procdump_path)
         for file_name in file_names:

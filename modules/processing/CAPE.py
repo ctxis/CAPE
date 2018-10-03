@@ -33,6 +33,7 @@ from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
+from lib.cuckoo.common.exceptions import CuckooProcessingError
 from struct import unpack_from, calcsize
 from socket import inet_ntoa
 import collections
@@ -699,24 +700,26 @@ class CAPE(Processing):
         cape_config = {}
         self.key = "CAPE"
         CAPE_output = []
-        
-        # Process dynamically dumped CAPE files
-        for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
-            for file_name in file_names:
-                file_path = os.path.join(dir_name, file_name)
-        # We want to exclude duplicate files from display in ui
-                if len(file_name) <= 64:
-                    self.process_file(file_path, CAPE_output, True)
-                else:
-                    self.process_file(file_path, CAPE_output, False)
+
+        if hasattr(self, "CAPE_path"):
+            # Process dynamically dumped CAPE files
+            for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
+                for file_name in file_names:
+                    file_path = os.path.join(dir_name, file_name)
+            # We want to exclude duplicate files from display in ui
+                    if len(file_name) <= 64:
+                        self.process_file(file_path, CAPE_output, True)
+                    else:
+                        self.process_file(file_path, CAPE_output, False)
         # We want to process procdumps too just in case they might
         # be detected as payloads and trigger config parsing
-        for dir_name, dir_names, file_names in os.walk(self.procdump_path):
-            for file_name in file_names:
-                file_path = os.path.join(dir_name, file_name)
-        # We set append_file to False as we don't wan't to include
-        # the files by default in the CAPE tab
-                self.process_file(file_path, CAPE_output, False)
+        if hasattr(self, "procdump_path"):
+            for dir_name, dir_names, file_names in os.walk(self.procdump_path):
+                for file_name in file_names:
+                    file_path = os.path.join(dir_name, file_name)
+            # We set append_file to False as we don't wan't to include
+            # the files by default in the CAPE tab
+                    self.process_file(file_path, CAPE_output, False)
         # We want to process dropped files too 
         for dir_name, dir_names, file_names in os.walk(self.dropped_path):
             for file_name in file_names:

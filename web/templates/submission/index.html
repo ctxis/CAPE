@@ -194,6 +194,7 @@ $(document).ready( function() {
                                         {% for vpn in vpns %}
                                             <option value="{{ vpn.name }}"{% if route == vpn.name %} selected{% endif %}>{{ vpn.description }} (VPN, {{ vpn.interface }})</option>
                                         {% endfor %}
+                                        <option value="none" >Drop all VM traffic</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
