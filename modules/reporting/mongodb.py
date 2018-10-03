@@ -180,7 +180,11 @@ class MongoDB(Report):
         # with large amounts of data.
         # Note: Silently ignores the creation if the index already exists.
         self.db.analysis.create_index("info.id", background=True)
-
+        
+        #trick for distributed api
+        if results.get("info", {}).get("options", {}).get("main_task_id", ""):
+            report["info"]["id"] = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
+            
         # Store the report and retrieve its object id.
         try:
             self.db.analysis.save(report)
