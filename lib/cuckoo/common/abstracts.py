@@ -1416,7 +1416,11 @@ class Signature(object):
             pattern = "http://"+pattern
 
         if HAVE_TLDEXTRACT:
-            tld_res = tldextract.extract(pattern)
+            try:
+                EXTRA_SUFFIXES = ('bit',)
+                tld_res = tldextract.TLDExtract(extra_suffixes=EXTRA_SUFFIXES, suffix_list_urls=None)(pattern)
+            except Exception as e:
+                return False
             if tld_res.domain + "." + tld_res.suffix in self._alexadb:
                 # no subdomain, mean alexa match
                 if tld_res.subdomain == "":
