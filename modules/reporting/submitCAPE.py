@@ -171,6 +171,9 @@ class SubmitCAPE(Report):
                 detections.add('QakBot')
 
     def submit_task(self, target, package, timeout, task_options, priority, machine, platform, memory, enforce_timeout, clock, tags, parent_id):
+
+        db = Database()
+
         if os.path.exists(target):
             task_id = False
             if distributed:
@@ -223,7 +226,6 @@ class SubmitCAPE(Report):
         self.task_custom = None
         filesdict = {}
         report = dict(results)
-        db = Database()
         detections = set()
 
         # allow custom extractors
