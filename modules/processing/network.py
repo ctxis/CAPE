@@ -113,7 +113,8 @@ class Pcap:
         ]
         if enabled_whitelist and whitelist_file:
              with open(os.path.join(CUCKOO_ROOT, whitelist_file), 'r') as f:
-                  self.domain_whitelist = self.domain_whitelist + f.read().split("\n")
+                  self.domain_whitelist += self.domain_whitelist + f.read().split("\n")
+                  self.domain_whitelist = list(set(self.domain_whitelist))
         self.ip_whitelist = set()
 
     def _dns_gethostbyname(self, name):
@@ -394,7 +395,7 @@ class Pcap:
             if enabled_whitelist:
                 for reject in self.domain_whitelist:
                     if reject.startswith("#") or len(reject.strip()) == 0:
-			continue # comment or empty line
+			            continue # comment or empty line
                     if re.search(reject, query["request"]):
                         if query["answers"]:
                             for addip in query["answers"]:
@@ -478,7 +479,7 @@ class Pcap:
             if enabled_whitelist:
                 for reject in self.domain_whitelist:
                     if reject.startswith("#") or len(reject.strip()) == 0:
-			continue # comment or empty line
+			            continue # comment or empty line
                     if re.search(reject, entry["host"]):
                         return False
 
@@ -690,6 +691,10 @@ class Pcap:
         self._process_smtp()
 
         # Remove hosts that have an IP which correlate to a whitelisted domain
+        if enabled_whitelist:
+            for delip in self.ip_whitelist:
+                if delip in self.unique_hosts:
+                    self.unique_hosts.remove(delip)
 
         # Build results dict.
         self.results["hosts"] = self._enrich_hosts(self.unique_hosts)
