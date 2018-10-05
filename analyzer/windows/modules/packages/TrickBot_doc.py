@@ -7,7 +7,8 @@ import shutil
 
 from lib.common.abstracts import Package
 
-class DOC(Package):
+class TrickBot_doc(Package):
+    """TrickBot package (derived from Dump-on-API)"""
     """Word analysis package."""
     PATHS = [
         ("ProgramFiles", "Microsoft Office", "WINWORD.EXE"),
