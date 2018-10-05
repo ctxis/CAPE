@@ -46,17 +46,9 @@ cape_package_list = [
         "Sedreco_dll", "Shellcode-Extraction", "Trace", "Trace_dll", "TrickBot", "UPX", "UPX_dll", "Ursnif"
     ];
 
-def pirpi_password(strings):
-    string = strings[0]
-    password = string[20] + string[39] + string[58] #+ strings[77]
-    return password
-
 class SubmitCAPE(Report):
     def process_cape_yara(self, cape_yara, detections):
         
-        #if cape_yara["name"] == "Pirpi":
-        #    detections.add('PirpiPassword')
-
         if cape_yara["name"] == "Sedreco" and 'Sedreco' not in detections:
             encrypt1 = cape_yara["addresses"].get("encrypt1")
             encrypt2 = cape_yara["addresses"].get("encrypt2")
@@ -279,7 +271,9 @@ class SubmitCAPE(Report):
                         if parent_package=='js':
                             detections.add('Injection_js')
                             continue
-                        detections.add('Injection')
+                        if parent_package=='exe':
+                            detections.add('Injection')
+                            continue
                 
                 elif entry["name"] == "Extraction":
                     if report["info"].has_key("package"):
@@ -308,7 +302,9 @@ class SubmitCAPE(Report):
                         if parent_package=='js':
                             detections.add('Extraction_js')
                             continue
-                        detections.add('Extraction')
+                        if parent_package=='exe':
+                            detections.add('Extraction')
+                            continue
                 
                 elif entry["name"] == "Compression":
                     if report["info"].has_key("package"):
@@ -327,10 +323,12 @@ class SubmitCAPE(Report):
                         if parent_package=='js':
                             detections.add('Compression_js')
                             continue
-                        detections.add('Compression')
+                        if parent_package=='exe':
+                            detections.add('Compression')
+                            continue
                     
                 elif entry["name"] == "Doppelganging":
-                    if report["info"].has_key("package"):
+                    if report["info"].has_key("package") and parent_package=='exe':
                         detections.add('Doppelganging')
                     
         ##### Specific malware family packages
@@ -349,85 +347,50 @@ class SubmitCAPE(Report):
                         if parent_package=='dll':
                             detections.add('PlugX_dll')    
                             continue
-                        detections.add('PlugX')
+                        if parent_package=='exe':
+                            detections.add('PlugX')
+                            continue
 
-                elif entry["name"] == "PlugX fuzzy":
-                    if report["info"].has_key("package"):
-                        if parent_package=='PlugXPayload':
-                            detections.add('PlugXPayload_fuzzy')
-                            continue
-                        if parent_package=='zip':
-                            detections.add('PlugX_fuzzy_zip')    
-                            continue
-                        if parent_package=='doc':
-                            detections.add('PlugX_fuzzy_doc')
-                            continue
-                        if parent_package=='dll':
-                            detections.add('PlugX_fuzzy_dll')                              
-                            continue
-                        detections.add('PlugX_fuzzy')    
-                                            
                 elif entry["name"] == "EvilGrab":
-                    if report["info"].has_key("package"):
+                    if report["info"].has_key("package") and parent_package=='exe':
                         detections.add('EvilGrab')
         
         # We only want to submit a single job if we have a
         # malware detection. A given package should do 
         # everything we need for its respective family.
         package = None
-        
-        if 'PlugX_fuzzy' in detections:
-            package = 'PlugX_fuzzy'
-        elif 'PlugXPayload_fuzzy' in detections:
-            package = 'PlugXPayload_fuzzy'			
-        elif 'PlugX_fuzzy_zip' in detections:
-            package = 'PlugX_fuzzy_zip'
-        elif 'PlugX_fuzzy_doc' in detections:
-            package = 'PlugX_fuzzy_doc'
-        elif 'PlugX_fuzzy_dll' in detections:
-            package = 'PlugX_fuzzy_dll'
-            
-        # We may have both 'fuzzy' and non 'fuzzy'
-        # but only want to submit non.
-        if 'PlugX' in detections:
-            package = 'PlugX'
-        elif 'PlugXPayload' in detections:
-            package = 'PlugXPayload'
-        elif 'PlugX_zip' in detections:
-            package = 'PlugX_zip'
-        elif 'PlugX_doc' in detections:
-            package = 'PlugX_doc'
-        elif 'PlugX_dll' in detections:
-            package = 'PlugX_dll'
-            
-        if 'EvilGrab' in detections:
-            package = 'EvilGrab'	
-            
+
+        if 'EvilGrab' in detections and parent_package=='exe':
+            package = 'EvilGrab'
+
         if 'Sedreco' in detections:
             if parent_package=='dll':
                 package = 'Sedreco_dll'
-            else:
+            elif parent_package=='exe':
                 package = 'Sedreco'
             
-        if 'Cerber' in detections:
+        if 'Cerber' in detections and parent_package=='exe':
             package = 'Cerber'	
             
         if 'TrickBot' in detections:
-            package = 'TrickBot'
+            if parent_package=='doc':
+                package = 'TrickBot_doc'
+            elif parent_package=='exe':
+                package = 'TrickBot'
 
         if 'Ursnif' in detections:
             if parent_package=='doc' or parent_package=='Injection_doc':
                 package = 'Ursnif_doc'
-            else:
+            elif parent_package=='exe':
                 package = 'Ursnif'
             
         if 'Hancitor' in detections:
             if parent_package=='doc' or parent_package=='Injection_doc':
                 package = 'Hancitor_doc'
-            else:
+            elif parent_package=='exe':
                 package = 'Hancitor'
 
-        if 'QakBot' in detections:
+        if 'QakBot' in detections and parent_package=='exe':
             package = 'QakBot'	
             
         # we want to switch off automatic process dumps in CAPE submissions
