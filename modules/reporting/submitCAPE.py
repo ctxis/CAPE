@@ -43,7 +43,7 @@ cape_package_list = [
         "Extraction_ps1", "Extraction_jar", "Extraction_pdf", "Extraction_js", "Hancitor", "Hancitor_doc", "Injection", 
         "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "Injection_js", "PlugX", 
         "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "Sedreco",
-        "Sedreco_dll", "Shellcode-Extraction", "Trace", "Trace_dll", "TrickBot", "UPX", "UPX_dll", "Ursnif"
+        "Sedreco_dll", "Shellcode-Extraction", "Trace", "Trace_dll", "TrickBot", "TrickBot_doc", "UPX", "UPX_dll", "Ursnif"
     ];
 
 class SubmitCAPE(Report):
