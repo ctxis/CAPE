@@ -145,11 +145,10 @@
             </div>
             <hr />
             {% endif %}
-            {% if vba2graph.enabled %}
+            {% if graphs.vba2graph.enabled %}
                 <h4>Vba2Graph</h4>
-                {{ vba2graph.content|safe }} 
+                {{ graphs.vba2graph.content|safe }} 
             {% endif %}
-
         {% endif %}
 
     {% else %}

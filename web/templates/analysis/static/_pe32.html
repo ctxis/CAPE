@@ -320,4 +320,9 @@
     {% else %}
         Nothing to display.
     {% endif %}
+    {% if graphs.bingraph.enabled %}
+        <h4>BinGraph</h4>
+        {{ graphs.bingraph.content|safe }} 
+    {% endif %}
+
 </section>
