@@ -68,6 +68,11 @@ try:
 except ImportError:
     HAVE_VBA2GRAPH = False
 
+try:
+    from lib.cuckoo.common.graphs.binGraph.binGraph import generate_graphs as binGraph_gen
+    HAVE_BINGRAPH = True
+except ImportError:
+    HAVE_BINGRAPH = False
 
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
@@ -1501,11 +1506,19 @@ class Static(Processing):
             thetype = File(self.file_path).get_type()
             if not HAVE_OLETOOLS and "Zip archive data, at least v2.0" in thetype and package in ("doc", "ppt", "xls", "pub"):
                 log.info("Missed dependencies: pip install oletools")
-                
+
             if HAVE_PEFILE and ("PE32" in thetype or "MS-DOS executable" in thetype):
                 static = PortableExecutable(self.file_path, self.results).run()
                 if static and "Mono" in thetype:
                     static.update(DotNETExecutable(self.file_path, self.results).run())
+                if HAVE_BINGRAPH and processing_conf.binGraph.enabled:
+                    try:
+                        bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
+                        if not os.path.exists(bingraph_path):
+                            os.makedirs(bingraph_path)
+                        binGraph_gen("", self.file_path, bingraph_path)
+                    except Exception as e:
+                        log.info(e)
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
                 static = PDF(self.file_path).run()
             elif HAVE_OLETOOLS and package in ("doc", "ppt", "xls", "pub"):
