@@ -86,7 +86,7 @@ def check_signatures():
         bad = True
 
     if bad:
-        raise CuckooStartupError("Signature modules are not installed.  Please run: utils/community.py --force --rewrite --all")
+        log.info("Signature modules are not installed.  Please run: utils/community.py --force --rewrite --all")
 
 def create_structure():
     """Creates Cuckoo directories."""
