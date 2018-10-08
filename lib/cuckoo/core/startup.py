@@ -744,7 +744,7 @@ def init_routing():
                 rooter("init_rttable", entry.rt_table, entry.interface)
 
     # Check whether the default VPN exists if specified.
-    if cuckoo.routing.route not in ("none", "internet"):
+    if cuckoo.routing.route not in ("none", "internet", "tor", "inetsim"):
         if not vpn.vpn.enabled:
             raise CuckooStartupError(
                 "A VPN has been configured as default routing interface for "
