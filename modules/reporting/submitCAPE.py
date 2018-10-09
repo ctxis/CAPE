@@ -381,13 +381,13 @@ class SubmitCAPE(Report):
         if 'Ursnif' in detections:
             if parent_package=='doc' or parent_package=='Injection_doc':
                 package = 'Ursnif_doc'
-            elif parent_package=='exe':
+            elif parent_package=='exe' or parent_package=='Injection':
                 package = 'Ursnif'
             
         if 'Hancitor' in detections:
             if parent_package=='doc' or parent_package=='Injection_doc':
                 package = 'Hancitor_doc'
-            elif parent_package=='exe':
+            elif parent_package=='exe' or parent_package=='Injection':
                 package = 'Hancitor'
 
         if 'QakBot' in detections and parent_package=='exe':
