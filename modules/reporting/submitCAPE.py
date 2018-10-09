@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 
 reporting_conf = Config("reporting")
 distributed = reporting_conf.submitCAPE.distributed
-report_key = reporting_conf.submitCAPE.key
+report_key = reporting_conf.submitCAPE.keyword
 
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "Compression_js", "Compression_pdf", 
