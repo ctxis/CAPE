@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import locale
 from cStringIO import StringIO
 
 from lib.api.utils import Utils
@@ -130,6 +131,7 @@ class DigiSig(Auxiliary):
             cmd = '{0} verify /pa /v "{1}"'.format(sign_path, file_path)
             ret, out, err = util.cmd_wrapper(cmd)
             # Return was 0, authenticode certificate validated successfully
+            out = out.decode(locale.getpreferredencoding(), errors="ignore")
             if not ret:
                 output = self.parse_digisig(out)
                 self.jsonify("Certificate Chain", self.cert_build)
