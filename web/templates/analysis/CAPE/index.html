@@ -186,6 +186,7 @@
                     <th></th>
                     <td>
                         <a href="{% url "file" "CAPE" analysis.info.id file.sha256 %}" class="btn btn-primary btn-small">Download</a>
+                        <a href="{% url "file" "CAPEZIP" analysis.info.id file.sha256 %}" class="btn btn-primary btn-small">Download ZIP</a>
                     </td>
                 </tr>
                 {% endif %}            </table>
