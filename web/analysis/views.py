@@ -886,16 +886,28 @@ def file(request, category, task_id, dlfile):
     if category == "sample":
         path = os.path.join(CUCKOO_ROOT, "storage", "binaries", dlfile)
         #file_name += ".bin"
-    elif category in ("samplezip", "droppedzip"):
+    elif category in ("samplezip", "droppedzip", "CAPE", "CAPEZIP"):
         # ability to download password protected zip archives
         path = ""
         if category == "samplezip":
             path = os.path.join(CUCKOO_ROOT, "storage", "binaries", file_name)
         elif category == "droppedzip":
-            path = os.path.join(CUCKOO_ROOT, "storage",
-                                "analyses", str(task_id), "files", file_name)
+            path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "files", file_name)
+        elif category.startswith("CAPE"):
+            buf = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "CAPE", file_name)
+            if os.path.isdir(buf):
+                # Backward compat for when each dropped file was in a separate dir
+                # Grab smaller file name as we store guest paths in the
+                # [orig file namoka
+                # ahora e]_info.exe
+                dfile = min(os.listdir(buf), key=len)
+                path = os.path.join(buf, dfile)
+                #file_name = dfile + ".bin"
+            else:
+                path = buf
+                #file_name += ".bin"
         TMPDIR = "/tmp"
-        if path:
+        if path and category in ("droppedzip", "CAPEZIP"):
             try:
                 cmd = ["7z", "a", "-y", "-pinfected", os.path.join(TMPDIR, file_name + ".zip"), path]
                 output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
@@ -945,19 +957,6 @@ def file(request, category, task_id, dlfile):
     elif category == "procdump":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "procdump", file_name)
-        if os.path.isdir(buf):
-            # Backward compat for when each dropped file was in a separate dir
-            # Grab smaller file name as we store guest paths in the
-            # [orig file name]_info.exe
-            dfile = min(os.listdir(buf), key=len)
-            path = os.path.join(buf, dfile)
-            #file_name = dfile + ".bin"
-        else:
-            path = buf
-            #file_name += ".bin"
-    elif category == "CAPE":
-        buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
-                           task_id, "CAPE", file_name)
         if os.path.isdir(buf):
             # Backward compat for when each dropped file was in a separate dir
             # Grab smaller file name as we store guest paths in the
