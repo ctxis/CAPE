@@ -907,7 +907,7 @@ def file(request, category, task_id, dlfile):
                 path = buf
                 #file_name += ".bin"
         TMPDIR = "/tmp"
-        if path and category in ("droppedzip", "CAPEZIP"):
+        if path and category in ("samplezip", "droppedzip", "CAPEZIP"):
             try:
                 cmd = ["7z", "a", "-y", "-pinfected", os.path.join(TMPDIR, file_name + ".zip"), path]
                 output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
