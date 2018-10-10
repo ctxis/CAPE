@@ -389,7 +389,7 @@ class Retriever(threading.Thread):
                 time.sleep(60)
 
     def notification_loop(self):
-        urls = reporting_conf.call.url.split(",")
+        urls = reporting_conf.callback.url.split(",")
         while True:
             db = session()
             tasks = db.query(Task).filter_by(finished=True, retrieved=True, notificated=False).order_by(Task.id.desc()).all()
