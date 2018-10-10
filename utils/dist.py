@@ -25,7 +25,7 @@ from itertools import combinations
 CUCKOO_ROOT = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
 sys.path.append(CUCKOO_ROOT)
 
-logging.basicConfig(format="%(levelname)s:%(module)s:%(threadName)s - %(message)s")
+logging.basicConfig(format="%(asctime)s %(levelname)s:%(module)s:%(threadName)s - %(message)s")
 
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.utils import store_temp_file
@@ -68,6 +68,8 @@ lock_retriever = threading.Lock()
 dist_lock = threading.BoundedSemaphore(int(reporting_conf.distributed.dist_threads))
 remove_lock = threading.BoundedSemaphore(20)
 fetch_lock = threading.BoundedSemaphore(1)
+
+delete_enabled = False
 
 def required(package):
     sys.exit("The %s package is required: pip install %s" %
@@ -340,7 +342,7 @@ class Retriever(threading.Thread):
 
         # Delete the task and all its associated files.
         # (It will still remain in the nodes' database, though.)
-        if reporting_conf.distributed.remove_task_on_slave:
+        if reporting_conf.distributed.remove_task_on_slave or delete_enabled:
             for x in xrange(20):
                 if remove_lock.acquire(blocking=False):
                     thread = threading.Thread(target=self.cleaner, args=())
@@ -355,7 +357,7 @@ class Retriever(threading.Thread):
         thread.daemon = True
         thread.start()
 
-        if reporting_conf.notification.enabled:
+        if reporting_conf.callback.enabled:
             thread = threading.Thread(target=self.notification_loop, args=())
             thread.daemon = True
             thread.start()
@@ -387,7 +389,7 @@ class Retriever(threading.Thread):
                 time.sleep(60)
 
     def notification_loop(self):
-        urls = reporting_conf.notification.url.split(",")
+        urls = reporting_conf.call.url.split(",")
         while True:
             db = session()
             tasks = db.query(Task).filter_by(finished=True, retrieved=True, notificated=False).order_by(Task.id.desc()).all()
@@ -621,6 +623,8 @@ class StatusThread(threading.Thread):
                         tags = ','.join([tag.name for tag in t.tags])
                         # Append a comma, to make LIKE searches more precise
                         if tags: tags += ','
+                        if "msoffice-crypt-tmp" in t.target and "password=" in t.options:
+                            t.options = t.options.replace("password=", "pwd=")
                         args = dict(package=t.package, category = t.category, timeout=t.timeout, priority=t.priority,
                                     options=t.options+",main_task_id={}".format(t.id), machine=t.machine, platform=t.platform,
                                     tags=tags, custom=t.custom, memory=t.memory, clock=t.clock,
@@ -975,11 +979,10 @@ if __name__ == "__main__":
     p.add_argument("--uptime-logfile", type=str, help="Uptime logfile path")
     p.add_argument("--node", type=str, help="Node name to update in distributed DB")
     p.add_argument("--delete-vm", type=str, help="VM name to delete from Node")
-    p.add_argument("--disable", action="store_true",
     p.add_argument("--disable", action="store_true", help="Disable Node provided in --node")
     p.add_argument("--enable", action="store_true", help="Enable Node provided in --node")
     p.add_argument("--clean-slaves", action="store_true", help="Delete reported and notificated tasks from slaves")
-
+    p.add_argument("-ec", "--enable-clean", action="store_true", help="Enable delete tasks from nodes, also will remove tasks submited by humands and not dist")
     args = p.parse_args()
 
     log = logging.getLogger(__name__)
@@ -992,6 +995,7 @@ if __name__ == "__main__":
         cron_cleaner()
         sys.exit()
 
+    delete_enabled = args.enable_clean
     if args.node:
         if args.delete_vm:
             delete_vm_on_node(app, args.node, args.delete_vm)
