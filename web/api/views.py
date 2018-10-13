@@ -1454,7 +1454,7 @@ def tasks_iocs(request, task_id, detail=None):
     if "dropped" in buf:
         for entry in buf["dropped"]:
             tmpdict = {}
-            if entry["clamav"]:
+            if entry.get("clamav", False):
                 tmpdict['clamav'] = entry["clamav"]
             if entry["sha256"]:
                 tmpdict['sha256'] = entry["sha256"]
@@ -1462,7 +1462,7 @@ def tasks_iocs(request, task_id, detail=None):
                 tmpdict['md5'] = entry["md5"]
             if entry["yara"]:
                 tmpdict['yara'] = entry["yara"]
-            if entry["trid"]:
+            if entry.get("trid", False):
                 tmpdict['trid'] = entry["trid"]
             if entry["type"]:
                 tmpdict["type"] = entry["type"]
