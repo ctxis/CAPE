@@ -722,7 +722,27 @@ class Signature(object):
             # initialize only once
             Signature._alexadb = json.loads(open(os.path.join(CUCKOO_ROOT, "data", "alexa.json"), "rb").read())
 
+    def yara_detected(self, name):
+        target = self.results.get("target", {})
+        if target.get("category") == "file" and target.get("file"):
+            for block in self.results["target"]["file"]["yara"]:
+                if re.findall(name, block["name"], re.I):
+                    return "sample", self.results["target"]["file"]["path"], block
 
+        for keyword in ("procmemory", "extracted", "dropped", "CAPE"):
+            for block in self.results.get(keyword, []):
+                if re.findall(name, block["yara"]["name"], re.I):
+                    if keyword in ("dropped", "extracted"):
+                        path = block["path"]
+                    elif keyword == "procmem":
+                        path = block["file"]
+                    elif keyword == "CAPE":
+                        path = block["raw"]
+
+                    return keyword, path, block["yara"]
+
+        return False, False, False
+    
     def add_statistic(self, name, field, value):
         if name not in self.results["statistics"]["signatures"]:
             self.results["statistics"]["signatures"][name] = { }
