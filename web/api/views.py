@@ -1223,7 +1223,7 @@ def tasks_report(request, task_id, report_format="json"):
                           "%s" % task_id, "reports")
 
     # Report validity check
-    if len(os.listdir(srcdir)) == 0:
+    if os.path.exists(srcdir) and len(os.listdir(srcdir)) == 0:
         resp = {"error": True,
                 "error_value": "No reports created for task %s" % task_id}
 
