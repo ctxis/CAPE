@@ -193,7 +193,7 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
     if ibytes:
 
         axBytePc = host.twinx()
-        axBytePc.set_ylabel('Occurrence of "interesting" bytes')
+        #axBytePc.set_ylabel('Occurrence of "interesting" bytes')
         axBytePc.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('{:d}%'.format(int(x)))))
 
         for index, _ in enumerate(ibytes):
