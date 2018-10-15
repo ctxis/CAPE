@@ -394,9 +394,9 @@ def index(request, resubmit_hash=False):
 
                         status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
                                                          clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
-            if status == "error":
-                # is render msg
-                return task_ids
+        if status == "error":
+            # is render msg
+            return task_ids
         tasks_count = len(task_ids)
         if tasks_count > 0:
             return render(request, "submission/complete.html",
