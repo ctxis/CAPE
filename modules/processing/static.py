@@ -69,7 +69,7 @@ except ImportError:
     HAVE_VBA2GRAPH = False
 
 try:
-    from lib.cuckoo.common.graphs.binGraph.binGraph import generate_graphs as binGraph_gen
+    from lib.cuckoo.common.graphs.binGraph.binGraph import generate_graphs as bingraph_gen
     HAVE_BINGRAPH = True
 except ImportError:
     HAVE_BINGRAPH = False
@@ -1516,7 +1516,8 @@ class Static(Processing):
                         bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
                         if not os.path.exists(bingraph_path):
                             os.makedirs(bingraph_path)
-                            binGraph_gen("", self.file_path, bingraph_path)
+                            binggraph_args = '[{"name":"Zeros", "colour": "#15ff04", "bytes": [0]}]'
+                            bingraph_gen(binggraph_args, self.file_path, bingraph_path)
                     except Exception as e:
                         log.info(e)
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
