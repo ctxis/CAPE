@@ -228,8 +228,8 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
                 phy_ep_pointer = bp.get_physical_from_rva(bp.get_virtual_ep()) / nr_chunksize
                 log.debug('{}: {}'.format('Entrypoint', hex(bp.get_virtual_ep())))
 
-                host.axvline(x=phy_ep_pointer, linestyle=':', c='r', zorder=zorder-1)
-                host.text(x=phy_ep_pointer, y=1.07, s='EP', rotation=45, va='bottom', ha='left')
+                host.axvline(x=phy_ep_pointer, linestyle=':', c='#0000ff', zorder=zorder-1)
+                host.text(x=phy_ep_pointer, y=1.07, s='EnryPoint', color='b', rotation=45, va='bottom', ha='left')
 
                 longest_section_name = 0
                 # # Section vlines
@@ -249,9 +249,9 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
 
                 # # Eval the space required to show the section names
                 if longest_section_name <= 9:
-                    title_gap = '\n'
+                    title_gap = '\n\n'
                 elif longest_section_name <= 15:
-                    title_gap = '\n' * 2
+                    title_gap = '\n\n\n'
 
             elif bp.type == 'ELF':
 
@@ -262,7 +262,7 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
                 log.debug('{}: {}'.format('Entrypoint', hex(parsedbin.header.entrypoint)))
 
                 host.axvline(x=phy_ep_pointer, linestyle=':', c='r', zorder=zorder-1)
-                host.text(x=phy_ep_pointer, y=1.07, s='EP', rotation=45, va='bottom', ha='left')
+                host.text(x=phy_ep_pointer, y=1.07, s='Entry', rotation=45, va='bottom', ha='left')
 
                 longest_section_name = 0
                 # # Section vlines
@@ -281,10 +281,12 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
                     longest_section_name = len(section_name) if len(section_name) > longest_section_name else longest_section_name
 
                 # # Eval the space required to show the section names
-                if longest_section_name <= 9:
-                    title_gap = '\n'
-                elif longest_section_name <= 15:
+                if longest_section_name <= 5:
                     title_gap = '\n' * 2
+                elif longest_section_name <= 9:
+                    title_gap = '\n' * 3
+                elif longest_section_name <= 15:
+                    title_gap = '\n' * 4
 
             else:
                 log.debug('File is a currently unsupported format - (supported by lief, not yet supported by binGraph)')
