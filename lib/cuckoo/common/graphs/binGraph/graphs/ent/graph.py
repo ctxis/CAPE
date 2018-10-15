@@ -19,6 +19,7 @@ from __future__ import division
 
 # # Import graph specific libs
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.ticker import MaxNLocator
@@ -229,24 +230,35 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
                 log.debug('{}: {}'.format('Entrypoint', hex(bp.get_virtual_ep())))
 
                 host.axvline(x=phy_ep_pointer, linestyle=':', c='#0000ff', zorder=zorder-1)
-                host.text(x=phy_ep_pointer, y=1.07, s='EnryPoint', color='b', rotation=45, va='bottom', ha='left')
+                host.text(x=phy_ep_pointer, y=1.07, s='EntryPoint', color='b', rotation=45, va='bottom', ha='left')
 
+                end_of_last_section = 0
                 longest_section_name = 0
+                
                 # # Section vlines
                 for index, section in bp.sections():
                     zorder -= 1
 
                     section_name = safe_section_name(section.name, index)
                     section_offset = section.offset / nr_chunksize
+                    section_size = section.size / nr_chunksize
 
                     log.debug('{}: {}'.format(section_name, hex(section.offset)))
 
                     host.axvline(x=section_offset, linestyle='--', zorder=zorder)
                     host.text(x=section_offset, y=1.07, s=section_name, rotation=45, va='bottom', ha='left')
 
+                    # # Get end of last section
+                    if (section_offset + section_size) > end_of_last_section:
+                        end_of_last_section = section_offset + section_size
+
                     # # Get longest section name
                     longest_section_name = len(section_name) if len(section_name) > longest_section_name else longest_section_name
 
+                # # End of final section vline
+                host.axvline(x=end_of_last_section, linestyle='--', zorder=zorder)
+                host.text(x=end_of_last_section, y=1.07, s='Overlay', rotation=45, va='bottom', ha='left')
+            
                 # # Eval the space required to show the section names
                 if longest_section_name <= 9:
                     title_gap = '\n\n'
@@ -394,6 +406,7 @@ class bin_proxy(object):
 
             yield index, section
             index += 1
+
 # # Part of bin_proxy - abstracts section calls
 class section_proxy(object):
     """Abstract for different binary parsers types in use"""
@@ -408,6 +421,7 @@ class section_proxy(object):
         elif self.lib == 'pefile':
             self.name = str(lib_section.Name.rstrip(b'\x00').decode("utf-8"))
             self.offset = self.lib_section.get_offset_from_rva(self.lib_section.VirtualAddress)
+            self.size = self.lib_section.get_offset_from_rva(self.lib_section.VirtualAddress + self.lib_section.Misc_VirtualSize)
 
 # # Read files as chunks
 def get_chunk(fh, chunksize=8192):
