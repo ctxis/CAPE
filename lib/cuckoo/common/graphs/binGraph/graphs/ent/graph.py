@@ -182,7 +182,7 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
 
     host.set_ylabel('Entropy\n'.format(chunksize))
     host.set_xlabel('Raw file offset')
-    host.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('0x{:02X}'.format(int(x * nr_chunksize)))))
+    host.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('0x{:02X}'.format(int(x * chunksize)))))
     host.xaxis.set_major_locator(MaxNLocator(10))
     plt.xticks(rotation=-10, ha='left')
 

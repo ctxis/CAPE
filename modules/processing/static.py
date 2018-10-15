@@ -1516,8 +1516,8 @@ class Static(Processing):
                         bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
                         if not os.path.exists(bingraph_path):
                             os.makedirs(bingraph_path)
-                            binggraph_args = '[{"name":"Zeros", "colour": "#15ff04", "bytes": [0]}]'
-                            bingraph_gen(binggraph_args, self.file_path, bingraph_path)
+                        if not os.listdir(bingraph_path):
+                            bingraph_gen("", self.file_path, bingraph_path)
                     except Exception as e:
                         log.info(e)
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
