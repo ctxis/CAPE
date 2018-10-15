@@ -182,7 +182,7 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
     host.plot(np.array(shannon_samples), label='Entropy', c=kwargs['entcolour'], zorder=1001, linewidth=1.2)
 
     host.set_ylabel('Entropy\n'.format(chunksize))
-    host.set_xlabel('Raw file offset')
+    host.set_xlabel('File offset')
     host.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('0x{:02X}'.format(int(x * chunksize)))))
     host.xaxis.set_major_locator(MaxNLocator(10))
     plt.xticks(rotation=-10, ha='left')
@@ -257,7 +257,7 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
 
                 # # End of final section vline
                 host.axvline(x=end_of_last_section, linestyle='--', zorder=zorder)
-                host.text(x=end_of_last_section, y=1.07, s='Overlay', rotation=45, va='bottom', ha='left')
+                host.text(x=end_of_last_section, y=1.07, s='Overlay', color='b', rotation=45, va='bottom', ha='left')
             
                 # # Eval the space required to show the section names
                 if longest_section_name <= 9:
@@ -420,8 +420,8 @@ class section_proxy(object):
             self.offset = lib_section.offset
         elif self.lib == 'pefile':
             self.name = str(lib_section.Name.rstrip(b'\x00').decode("utf-8"))
-            self.offset = self.lib_section.get_offset_from_rva(self.lib_section.VirtualAddress)
-            self.size = self.lib_section.get_offset_from_rva(self.lib_section.VirtualAddress + self.lib_section.Misc_VirtualSize)
+            self.offset = self.lib_section.PointerToRawData
+            self.size = self.lib_section.SizeOfRawData
 
 # # Read files as chunks
 def get_chunk(fh, chunksize=8192):
