@@ -764,8 +764,16 @@ class Signature(object):
         # in case if bsons too big
         if os.path.exists(logs):
             pids += [pidb.replace(".bson", "") for pidb in os.listdir(logs) if ".bson" in pidb]
-        #log.info(list(set(pids)))
+        
+        # in case if injection not follows
+        if "procmemory" in self.results:
+            pids += [str(block["pid"]) for block in self.results["procmemory"]]
+        if "procdump" in self.results:
+            pids += [str(block["pid"]) for block in self.results["procdump"]]
+
+        log.debug(list(set(pids)))
         return ",".join(list(set(pids)))
+
 
     def yara_detected(self, name):
         target = self.results.get("target", {})
