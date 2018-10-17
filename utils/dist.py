@@ -3,6 +3,8 @@
 # Copyright (C) 2010-2015 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
+# ToDo
+# https://github.com/cuckoosandbox/cuckoo/pull/1694/files
 
 import os
 import sys
@@ -272,7 +274,7 @@ def node_submit_task(task_id, node_id):
                     db.rollback()
                 return
             files = dict(file=open(task.path, "rb"))
-            print(task.path)
+            log.debug(task.path)
             r = requests.post(url,
                             data=data, files=files,
                             auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
@@ -602,17 +604,17 @@ class Retriever(threading.Thread):
                 log.critical("Error deleting task (task #%d, node %s): %s", task_id, node.name, e)
         db.close()
 
+
 class StatusThread(threading.Thread):
 
-    def submit_tasks(self, node_id, pend_tasks_num):
+    def submit_tasks(self, node_id, pend_tasks_num, main_db_tasks):
 
         if pend_tasks_num <= 0:
             return
         db = session()
         node = db.query(Node).filter_by(id = node_id).first()
         if node.name != "master":
-            # Get tasks from main_db submitted through web interface
-            main_db_tasks = main_db.list_tasks(status=TASK_PENDING, order_by=desc("priority"))
+
             if main_db_tasks:
                 log.debug("going to upload {} tasks to node id {}".format(pend_tasks_num, node_id))
                 limit = 0
@@ -724,16 +726,29 @@ class StatusThread(threading.Thread):
                 log.info("Status.. %s -> %s", node.name, status)
                 statuses[node.name] = status
                 STATUSES = statuses
+                # don't do nothing if nothing in pending
+                main_db_tasks = list()
+                # Get tasks from main_db submitted through web interface
+                main_db_tasks = main_db.list_tasks(status=TASK_PENDING, order_by=desc("priority"))
+                temp = main_db.list_tasks(status=TASK_RUNNING, order_by=desc("priority"))
+                for t in temp:
+                    tasks = db.query(Task).filter_by(main_task_id=t.id, node_id=None).all()
+                    if tasks:
+                        main_db_tasks += tasks
+
+                if not main_db_tasks:
+                    time.sleep(INTERVAL)
+                    continue
                 #if node.name == "55" and statuses[node.name]["completed"] > 200:
                 #    continue
                 # If - master only used for storage, not check master queue
                 # elif -  master also analyze samples, check master queue
                 # send tasks to slaves if master queue has extra tasks(pending)
                 if master_storage_only:
-                    self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"])
+                    self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"], main_db_tasks)
                 elif statuses.get("master", {}).get("pending", 0) > MINIMUMQUEUE.get("master", 0) and \
                         status["pending"] < MINIMUMQUEUE[node.name]:
-                      self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"])
+                      self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"], main_db_tasks)
             db.close()
             time.sleep(INTERVAL)
 
@@ -923,7 +938,7 @@ def cron_cleaner():
 
     # Check if we are not runned
     if os.path.exists("/tmp/dist_cleaner.pid"):
-        print("we running")
+        log.debug("we running")
         sys.exit()
 
     pid = open("/tmp/dist_cleaner.pid", "wb")
@@ -998,13 +1013,13 @@ if __name__ == "__main__":
     delete_enabled = args.enable_clean
     if args.node:
         if args.delete_vm:
-            delete_vm_on_node(app, args.node, args.delete_vm)
+            delete_vm_on_node(args.node, args.delete_vm)
         if args.enable:
-            node_enabled(app, args.node, True)
+            node_enabled(args.node, True)
         if args.disable:
-            node_enabled(app, args.node, False)
+            node_enabled(args.node, False)
         if not args.delete_vm and not args.disable and not args.enable:
-            update_machine_table(app, args.node)
+            update_machine_table(args.node)
 
     else:
         app = create_app(database_connection=reporting_conf.distributed.db)
