@@ -417,8 +417,8 @@ class RunSignatures(object):
                             stats[sig.name] += timediff
                         except NotImplementedError:
                             result = False
-                        except:
-                            log.exception("Failed to run signature \"%s\":", sig.name)
+                        except Exception as e:
+                            log.exception("Failed to run signature {}: {}".format(sig.name, e))
                             result = False
 
                         # If the signature returns None we can carry on, the
@@ -468,7 +468,6 @@ class RunSignatures(object):
                     "time": float("%d.%03d" % (value.seconds,
                                              value.microseconds / 1000)),
                     })
-
         # Compat loop for old-style (non evented) signatures.
         if complete_list:
             complete_list.sort(key=lambda sig: sig.order)
@@ -576,7 +575,7 @@ class RunReporting:
     Engine and pass it over to the reporting modules before executing them.
     """
 
-    def __init__(self, task, results):
+    def __init__(self, task, results, reprocess=False):
         """@param analysis_path: analysis folder path."""
         self.task = task
         # remove unwanted/duplicate information from reporting
@@ -586,6 +585,7 @@ class RunReporting:
         self.results = results
         self.analysis_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task["id"]))
         self.cfg = Config("reporting")
+        self.reprocess = reprocess
 
     def process(self, module):
         """Run a single reporting module.
@@ -626,7 +626,11 @@ class RunReporting:
         try:
             log.debug("Executing reporting module \"%s\"", current.__class__.__name__)
             pretime = datetime.now()
-            current.run(self.results)
+
+            if module_name == "submitCAPE" and self.reprocess:
+                return
+            else:
+                current.run(self.results)
             posttime = datetime.now()
             timediff = posttime - pretime
             self.results["statistics"]["reporting"].append({
