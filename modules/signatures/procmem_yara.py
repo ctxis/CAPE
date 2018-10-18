@@ -17,7 +17,7 @@ from lib.cuckoo.common.abstracts import Signature
 
 class Procmem_Yara(Signature):
     name = "procmem_yara"
-    description = "Yara rule detections observed from a process memory dump"
+    description = "Yara rule detections observed from a process memory dump/dropped files/CAPE"
     severity = 1
     authors = ["KillerInstinct"]
     minimum = "0.5"
@@ -31,12 +31,15 @@ class Procmem_Yara(Signature):
             "dridexcfgbotid", "dridexcfgnodelist", "dridexcfgkeylog",
             "kazybot_rat", "darkcometconfig",
         ]
-        if "procmemory" in self.results and self.results["procmemory"]:
-            for process in self.results["procmemory"]:
-                pid = process["pid"]
-                if process["yara"]:
-                    for rule in process["yara"]:
-                        hits.append((pid, rule["name"]))
+
+        for keyword in ("procmemory", "extracted", "dropped", "CAPE"):
+            if keyword in self.results and self.results[keyword]:
+                for process in self.results[keyword]:
+                    pid = process.get("pid", 0)
+                    if process["yara"]:
+                        for rule in process["yara"]:
+                            if (pid, rule["name"]) not in hits:
+                                hits.append((pid, rule["name"]))
 
         if hits:
             for pid, rule in hits:
