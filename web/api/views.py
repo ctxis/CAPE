@@ -1223,7 +1223,7 @@ def tasks_report(request, task_id, report_format="json"):
                           "%s" % task_id, "reports")
 
     # Report validity check
-    if len(os.listdir(srcdir)) == 0:
+    if os.path.exists(srcdir) and len(os.listdir(srcdir)) == 0:
         resp = {"error": True,
                 "error_value": "No reports created for task %s" % task_id}
 
@@ -1629,7 +1629,7 @@ def tasks_dropped(request, task_id):
     srcdir = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                           "%s" % task_id, "files")
 
-    if not len(os.listdir(srcdir)):
+    if not os.path.exists(srcdir) or not len(os.listdir(srcdir)):
         resp = {"error": True,
                 "error_value": "No files dropped for task %s" % task_id}
         return jsonize(resp, response=True)

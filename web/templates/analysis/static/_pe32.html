@@ -1,7 +1,7 @@
 <section id="static_analysis">
     {% load key_tags %}
     {% if graphs.bingraph.enabled %}
-        <h4>BinGraph</h4>
+        <h4>Binary Entropy</h4>
         {{ graphs.bingraph.content|safe }} 
     {% endif %}
     {% if analysis.static and analysis.static.pe %}

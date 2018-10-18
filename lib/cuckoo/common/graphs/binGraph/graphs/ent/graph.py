@@ -17,7 +17,6 @@ entcolour str           Colour of the entropy graph
 """
 from __future__ import division
 
-
 # # Import graph specific libs
 import matplotlib
 matplotlib.use('Agg')
@@ -34,8 +33,13 @@ import json
 import sys
 import re
 
-
-import lief
+try:
+    import pefile
+except ImportError as e1:
+    try:
+        import lief
+    except ImportError as e2:
+        pass
 
 
 # # Python 2/3 fix
@@ -52,7 +56,7 @@ log = logging.getLogger('graph.ent')
 __chunks__ = 750
 __ibytes__= '[ {"name":"0\'s", "colour": "#15ff04", "bytes": [0]}, {"name":"Exploit", "bytes": [44,144], "colour":"#ff2b01"}, {"name":"Printable ASCII", "colour":"b", "bytes": [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126]} ]'
 __ibytes_dict__ = json.loads(__ibytes__)
-__entcolour__ = '#ff01d5'
+__entcolour__ = '#ff00ff'
 
 # # Set args in args parse - the given parser is a sub parser
 def args_setup(arg_parser):
@@ -175,11 +179,11 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
     fig, host = plt.subplots()
 
     log.debug('Plotting shannon samples')
-    host.plot(np.array(shannon_samples), label='Entropy', c=hash_colour('Entropy'), zorder=1001, linewidth=1.5)
+    host.plot(np.array(shannon_samples), label='Entropy', c=kwargs['entcolour'], zorder=1001, linewidth=1.2)
 
     host.set_ylabel('Entropy\n'.format(chunksize))
-    host.set_xlabel('Raw file offset')
-    host.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('0x{:02X}'.format(int(x * nr_chunksize)))))
+    host.set_xlabel('File offset')
+    host.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('0x{:02X}'.format(int(x * chunksize)))))
     host.xaxis.set_major_locator(MaxNLocator(10))
     plt.xticks(rotation=-10, ha='left')
 
@@ -190,13 +194,13 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
     if ibytes:
 
         axBytePc = host.twinx()
-        axBytePc.set_ylabel('Occurrence of "interesting" bytes')
+        #axBytePc.set_ylabel('Occurrence of "interesting" bytes')
         axBytePc.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: ('{:d}%'.format(int(x)))))
 
         for index, _ in enumerate(ibytes):
-            zorder -= 1
             c = ibytes[index]['colour']
-            axBytePc.plot(np.array(ibytes[index]['percentages']), label=ibytes[index]['name'], c=c, zorder=zorder, linewidth=0.7, alpha=0.75)
+            axBytePc.plot(np.array(ibytes[index]['percentages']), label=ibytes[index]['name'], c=c, zorder=zorder, linewidth=1.2, alpha=0.75)
+            zorder -= 1
 
         axBytePc.set_ybound(lower=-0.3, upper=101)
 
@@ -210,52 +214,58 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
         log.warning('Parsing file as blob (as requested)')
     else:
 
-        try:
-            parsedbin = lief.parse(filepath=abs_fpath)
-            log.debug('Parsed with lief as: {}'.format(type(parsedbin)))
+        bp = bin_proxy(abs_fpath)
 
-        except lief.bad_file as e:
-            parsedbin = None
-            log.warning('Failed to parse binary format. Not adding file specific info')
+        if None in (bp.bin, bp.type):
+            log.warning('Failed to parse binary format, parsing like --blob')
 
         else:
 
-            if type(parsedbin) == lief.PE.Binary:
+            if bp.type == 'PE':
 
                 log.debug('Adding PE customisations')
 
                 # # Entrypoint (EP) pointer and vline
-                phy_ep_pointer = parsedbin.rva_to_offset(parsedbin.optional_header.addressof_entrypoint) / nr_chunksize
-                log.debug('{}: {}'.format('Entrypoint', hex(parsedbin.optional_header.addressof_entrypoint)))
+                phy_ep_pointer = bp.get_physical_from_rva(bp.get_virtual_ep()) / nr_chunksize
+                log.debug('{}: {}'.format('Entrypoint', hex(bp.get_virtual_ep())))
 
-                host.axvline(x=phy_ep_pointer, linestyle=':', c='r', zorder=zorder-1)
-                host.text(x=phy_ep_pointer, y=1.07, s='EP', rotation=45, va='bottom', ha='left')
+                host.axvline(x=phy_ep_pointer, linestyle=':', c='#0000ff', zorder=zorder-1)
+                host.text(x=phy_ep_pointer, y=1.07, s='EntryPoint', color='b', rotation=45, va='bottom', ha='left')
 
+                end_of_last_section = 0
                 longest_section_name = 0
+                
                 # # Section vlines
-                for index, section in enumerate(parsedbin.sections):
+                for index, section in bp.sections():
                     zorder -= 1
 
                     section_name = safe_section_name(section.name, index)
                     section_offset = section.offset / nr_chunksize
+                    section_size = section.size / nr_chunksize
 
                     log.debug('{}: {}'.format(section_name, hex(section.offset)))
 
                     host.axvline(x=section_offset, linestyle='--', zorder=zorder)
                     host.text(x=section_offset, y=1.07, s=section_name, rotation=45, va='bottom', ha='left')
 
+                    # # Get end of last section
+                    if (section_offset + section_size) > end_of_last_section:
+                        end_of_last_section = section_offset + section_size
+
                     # # Get longest section name
                     longest_section_name = len(section_name) if len(section_name) > longest_section_name else longest_section_name
 
+                # # End of final section vline
+                host.axvline(x=end_of_last_section, linestyle='--', zorder=zorder)
+                host.text(x=end_of_last_section, y=1.07, s='Overlay', color='b', rotation=45, va='bottom', ha='left')
+            
                 # # Eval the space required to show the section names
-                if longest_section_name <= 5:
-                    title_gap = '\n' * 2
-                elif longest_section_name <= 9:
-                    title_gap = '\n' * 3
+                if longest_section_name <= 9:
+                    title_gap = '\n\n'
                 elif longest_section_name <= 15:
-                    title_gap = '\n' * 4
+                    title_gap = '\n\n\n'
 
-            elif type(parsedbin) == lief.ELF.Binary:
+            elif bp.type == 'ELF':
 
                 log.debug('Adding ELF customisations')
 
@@ -264,7 +274,7 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
                 log.debug('{}: {}'.format('Entrypoint', hex(parsedbin.header.entrypoint)))
 
                 host.axvline(x=phy_ep_pointer, linestyle=':', c='r', zorder=zorder-1)
-                host.text(x=phy_ep_pointer, y=1.07, s='EP', rotation=45, va='bottom', ha='left')
+                host.text(x=phy_ep_pointer, y=1.07, s='Entry', rotation=45, va='bottom', ha='left')
 
                 longest_section_name = 0
                 # # Section vlines
@@ -305,16 +315,113 @@ def generate(abs_fpath, fname, blob, chunks=__chunks__, ibytes=__ibytes_dict__, 
     else:
         legends.append(host.legend(loc='upper left', bbox_to_anchor=(1.01, 1), frameon=False))
 
-    if blob:
-        host.set_title('Binary entropy (sampled over {chunksize} byte chunks): {fname}{title_gap}'.format(chunksize=chunksize, fname=fname, title_gap=title_gap))
-    else:
-        host.set_title('Binary entropy (sampled over {chunksize} byte chunks): {fname}{title_gap}'.format(chunksize=chunksize, fname=fname, title_gap=title_gap))
+    host.set_title('{title_gap}'.format(title_gap=title_gap))
 
     # # Return the plt, kwargs for the plt.savefig function, and additional information for json data
-    return plt, {'bbox_inches':'tight', 'bbox_extra_artists':tuple(legends)}, {}
+    json_data = {
+                    'title':fname,
+                    'info': {
+                        'Mean': statistics.mean(shannon_samples),
+                        'Standard deviation': statistics.stdev(shannon_samples)
+                    }
+                }
+
+    return plt, {'bbox_inches':'tight', 'bbox_extra_artists':tuple(legends)}, json_data
 
 
 # ### Helper functions
+
+# # Abstracts the bin properties away from specific library calls enabling lief and pefile usage
+class bin_proxy(object):
+    """Abstract for different binary parsers types in use"""
+    def __init__(self, abs_fpath, lib=None):
+        super(bin_proxy, self).__init__()
+        self.abs_fpath = abs_fpath
+
+        if lib:
+            self.lib = lib
+        else:
+
+            if 'lief' in sys.modules:
+                self.lib = 'lief'
+            elif 'pefile' in sys.modules:
+                self.lib = 'pefile'
+            else:
+                # # We dont have a parser
+                return None, None
+
+        self.bin, self.type = None, None
+        self.__parse_bin()
+
+    class __ParseError(Exception):
+
+        pass
+
+    def __parse_bin(self):
+
+        if self.lib == 'lief':
+            try:
+                self.bin = lief.parse(filepath=self.abs_fpath)
+                if type(self.bin) == lief.PE.Binary:
+                    self.type = 'PE'
+                    log.debug('Parsed with lief as: {}'.format(self.type))
+                else:
+                    log.debug('File is a currently unsupported format: {}'.format(self.type))
+
+            except lief.bad_file as e:
+                log.warning('Failed to parse with lief: {}'.format(e))
+
+        elif self.lib == 'pefile':
+            try:
+                self.bin = pefile.PE(self.abs_fpath)
+                self.type = 'PE'
+
+                log.debug('Parsed with pefile as: {}'.format(self.type))
+
+            except pefile.PEFormatError as e:
+                log.warning('Failed to parse with pefile: {}'.format(e))
+
+    def get_virtual_ep(self):
+
+        if self.lib == 'lief':
+            return self.bin.optional_header.addressof_entrypoint
+        elif self.lib == 'pefile':
+            return self.bin.OPTIONAL_HEADER.AddressOfEntryPoint
+
+    def get_physical_from_rva(self, rva):
+
+        if self.lib == 'lief':
+            return self.bin.rva_to_offset(rva)
+        elif self.lib == 'pefile':
+            return self.bin.get_physical_by_rva(rva)
+
+    def sections(self):
+
+        index = 0
+        sections = []
+
+        for lib_section in self.bin.sections:
+
+            section = section_proxy(self.lib, lib_section)
+
+            yield index, section
+            index += 1
+
+# # Part of bin_proxy - abstracts section calls
+class section_proxy(object):
+    """Abstract for different binary parsers types in use"""
+    def __init__(self, lib, lib_section):
+        super(section_proxy, self).__init__()
+        self.lib = lib
+        self.lib_section = lib_section
+
+        if self.lib == 'lief':
+            self.name = lib_section.name
+            self.offset = lib_section.offset
+        elif self.lib == 'pefile':
+            self.name = str(lib_section.Name.rstrip(b'\x00').decode("utf-8"))
+            self.offset = self.lib_section.PointerToRawData
+            self.size = self.lib_section.SizeOfRawData
 
 # # Read files as chunks
 def get_chunk(fh, chunksize=8192):

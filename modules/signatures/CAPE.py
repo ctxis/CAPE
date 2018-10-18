@@ -32,6 +32,48 @@ EXTRACTION_MIN_SIZE                 = 0x1001
 
 PLUGX_SIGNATURE		                = 0x5658
 
+def IsPEImage(buf, size):
+    dos_header = buf[:DOS_HEADER_LIMIT]
+    nt_headers = None
+
+    if size < PE_HEADER_LIMIT:
+        return False
+
+    # Check for sane value in e_lfanew
+    e_lfanew, = struct.unpack("<L", dos_header[60:64])
+    if not e_lfanew or e_lfanew > PE_HEADER_LIMIT:
+        offset = 0
+        while offset < PE_HEADER_LIMIT-86:
+            machine_probe = struct.unpack("<H", buf[offset:offset+2])[0]
+            if machine_probe == IMAGE_FILE_MACHINE_I386 or machine_probe == IMAGE_FILE_MACHINE_AMD64:
+                nt_headers = buf[offset-4:offset+252]
+                break
+            offset = offset + 2
+    else:
+        nt_headers = buf[e_lfanew:e_lfanew+256]
+
+    if nt_headers == None:
+        return False
+
+    #if ((pNtHeader->FileHeader.Machine == 0) || (pNtHeader->FileHeader.SizeOfOptionalHeader == 0 || pNtHeader->OptionalHeader.SizeOfHeaders == 0)) 
+    if struct.unpack("<H", nt_headers[4:6]) == 0 or struct.unpack("<H", nt_headers[20:22]) == 0 or struct.unpack("<H", nt_headers[84:86]) == 0:
+        return False
+
+    #if (!(pNtHeader->FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE))
+    if (struct.unpack("<H", nt_headers[22:24])[0] & IMAGE_FILE_EXECUTABLE_IMAGE) == 0:
+        return False
+
+    #if (pNtHeader->FileHeader.SizeOfOptionalHeader & (sizeof (ULONG_PTR) - 1))
+    if struct.unpack("<H", nt_headers[20:22])[0] & 3 != 0:
+        return False
+
+    #if ((pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC))
+    if struct.unpack("<H", nt_headers[24:26])[0] != OPTIONAL_HEADER_MAGIC_PE and struct.unpack("<H", nt_headers[24:26])[0] != OPTIONAL_HEADER_MAGIC_PE_PLUS:
+        return False
+
+    # To pass the above tests it should now be safe to assume it's a PE image
+    return True
+
 class CAPE_Compression(Signature):
     name = "Compression"
     description = "Behavioural detection: Decompression of executable module(s)."
@@ -51,49 +93,35 @@ class CAPE_Compression(Signature):
         if call["api"] == "RtlDecompressBuffer":
             buf = self.get_raw_argument(call, "UncompressedBuffer")
             size = int(self.get_raw_argument(call, "UncompressedBufferLength"), 0)
-            dos_header = buf[:DOS_HEADER_LIMIT]
-            nt_headers = None
+            self.compressed_binary = IsPEImage(buf, size)
 
-            if size < PE_HEADER_LIMIT:
-                return
-                
-            # Check for sane value in e_lfanew
-            e_lfanew, = struct.unpack("<L", dos_header[60:64])
-            if not e_lfanew or e_lfanew > PE_HEADER_LIMIT:
-                offset = 0
-                while offset < PE_HEADER_LIMIT-86:
-                    machine_probe = struct.unpack("<H", buf[offset:offset+2])[0]
-                    if machine_probe == IMAGE_FILE_MACHINE_I386 or machine_probe == IMAGE_FILE_MACHINE_AMD64:
-                        nt_headers = buf[offset-4:offset+252]
-                        break
-                    offset = offset + 2
-            else:
-                nt_headers = buf[e_lfanew:e_lfanew+256]
-
-            if nt_headers == None:
-                return
-
-            #if ((pNtHeader->FileHeader.Machine == 0) || (pNtHeader->FileHeader.SizeOfOptionalHeader == 0 || pNtHeader->OptionalHeader.SizeOfHeaders == 0)) 
-            if struct.unpack("<H", nt_headers[4:6]) == 0 or struct.unpack("<H", nt_headers[20:22]) == 0 or struct.unpack("<H", nt_headers[84:86]) == 0:
-                return
-
-            #if (!(pNtHeader->FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)) 
-            if (struct.unpack("<H", nt_headers[22:24])[0] & IMAGE_FILE_EXECUTABLE_IMAGE) == 0:
-                return
-
-            #if (pNtHeader->FileHeader.SizeOfOptionalHeader & (sizeof (ULONG_PTR) - 1)) 
-            if struct.unpack("<H", nt_headers[20:22])[0] & 3 != 0:
-                return
-
-            #if ((pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (pNtHeader->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC))
-            if struct.unpack("<H", nt_headers[24:26])[0] != OPTIONAL_HEADER_MAGIC_PE and struct.unpack("<H", nt_headers[24:26])[0] != OPTIONAL_HEADER_MAGIC_PE_PLUS:
-                return
-
-            # To pass the above tests it should now be safe to assume it's a PE image
-            self.compressed_binary = True            
-            
     def on_complete(self):
         if self.compressed_binary == True:
+            return True
+
+class CAPE_RegBinary(Signature):
+    name = "RegBinary"
+    description = "Behavioural detection: PE binary written to registry."
+    severity = 1
+    categories = ["malware"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    filter_apinames = set(["RegSetValueExA", "RegSetValueExW", "RegCreateKeyExA", "RegCreateKeyExW"])
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.reg_binary = False
+
+    def on_call(self, call, process):
+        if call["api"] == "RegSetValueExA" or call["api"] == "RegSetValueExW":
+            buf = self.get_raw_argument(call, "Buffer")
+            size = self.get_raw_argument(call, "BufferLength")
+            self.reg_binary = IsPEImage(buf, size)
+
+    def on_complete(self):
+        if self.reg_binary == True:
             return True
 
 class CAPE_Extraction(Signature):

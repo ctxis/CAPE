@@ -1400,21 +1400,17 @@ class Database(object):
             session = self.Session()
             try:
                 
-                sample = session.query(Sample).filter(query_filter == sample_hash).first()
-                if sample is not None:
-                    path = os.path.join(CUCKOO_ROOT, "storage", "binaries", sample.sha256)
+                db_sample = session.query(Sample).filter(query_filter == sample_hash).first()
+                if db_sample is not None:
+                    path = os.path.join(CUCKOO_ROOT, "storage", "binaries", db_sample.sha256)
                     if os.path.exists(path):
                       sample = [path]
-                
+
                 if sample is None:
                     # search in temp folder if not found in binaries
-                    samples = session.query(Task).filter(query_filter == sample_hash).filter(Sample.id == Task.sample_id).all()
-                    if samples is not None:
-                        sample = filter(None, [sample.to_dict().get("target", "") for sample in samples])
-                    else:
-                        sample = None
-                else:
-                    sample = None
+                    db_sample = session.query(Task).filter(query_filter == sample_hash).filter(Sample.id == Task.sample_id).all()
+                    if db_sample is not None:
+                        sample = filter(None, [sample.to_dict().get("target", "") for sample in db_sample])
             except AttributeError:
                 return None
             except SQLAlchemyError as e:
