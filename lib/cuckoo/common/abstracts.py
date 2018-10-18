@@ -740,6 +740,12 @@ class Signature(object):
         # in case if bsons too big
         if os.path.exists(logs):
             pids += [pidb.replace(".bson", "") for pidb in os.listdir(logs) if ".bson" in pidb]
+        # in case if injection not follows
+        if "procmemory" in self.results and self.results["procmemory"] is not None:
+            pids += [str(block["pid"]) for block in self.results["procmemory"]]
+        if "procdump" in self.results and self.results["procdump"] is not None:
+            pids += [str(block["pid"]) for block in self.results["procdump"]]
+
         #log.info(list(set(pids)))
         return ",".join(list(set(pids)))
 
@@ -752,17 +758,21 @@ class Signature(object):
 
         for keyword in ("procmemory", "extracted", "dropped", "CAPE"):
             for block in self.results.get(keyword, []):
-                if re.findall(name, block["yara"]["name"], re.I):
-                    if keyword in ("dropped", "extracted"):
-                        path = block["path"]
-                    elif keyword == "procmem":
-                        path = block["file"]
-                    elif keyword == "CAPE":
-                        path = block["raw"]
+                for sub_block in block["yara"]:
+                    if re.findall(name, sub_block["name"], re.I):
+                        if keyword in ("dropped", "extracted", "procmemory"):
+                            if block.get("file", False):
+                                path = block["file"]
+                            elif block.get("path", False):
+                                path = block["path"]
+                            else:
+                                path = ""
+                        elif keyword == "CAPE":
+                            path = block["raw"]
+                        else:
+                            path = ""
 
-                    return keyword, path, block["yara"]
-
-        return False
+                        return keyword, path, sub_block
 
     def advanced_url_parse(self, url):
         if HAVE_TLDEXTRACT:
