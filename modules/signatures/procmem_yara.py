@@ -33,12 +33,13 @@ class Procmem_Yara(Signature):
         ]
 
         for keyword in ("procdump" ,"procmemory", "extracted", "dropped", "CAPE"):
-            for process in self.results.get(keyword, []):
-                pid = process.get("pid", 0)
-                for sub_keyword in ("yara", "cape_yara"):
-                    for rule in process.get(sub_keyword, []):
-                        if (pid, rule["name"]) not in hits:
-                            hits.append((pid, rule["name"]))
+            if keyword in self.results and self.results[keyword] is not None:
+                for process in self.results.get(keyword, []):
+                    pid = process.get("pid", 0)
+                    for sub_keyword in ("yara", "cape_yara"):
+                        for rule in process.get(sub_keyword, []):
+                            if (pid, rule["name"]) not in hits:
+                                hits.append((pid, rule["name"]))
 
         if hits:
             for pid, rule in hits:

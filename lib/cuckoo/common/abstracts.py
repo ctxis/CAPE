@@ -730,23 +730,25 @@ class Signature(object):
                     return "sample", self.results["target"]["file"]["path"], block
 
         for keyword in ("procdump", "procmemory", "extracted", "dropped", "CAPE"):
-            for block in self.results.get(keyword, []):
-                for sub_keyword in ("yara", "cape_yara"):
-                    for sub_block in block.get(sub_keyword, []):
-                        if re.findall(name, sub_block["name"], re.I):
-                            if keyword in ("procdump", "dropped", "extracted", "procmemory"):
-                                if block.get("file", False):
-                                    path = block["file"]
-                                elif block.get("path", False):
-                                    path = block["path"]
+            if keyword in self.results and self.results[keyword] is not None:
+                for block in self.results.get(keyword, []):
+                    for sub_keyword in ("yara", "cape_yara"):
+                        for sub_block in block.get(sub_keyword, []):
+                            log.debug((keyword, sub_keyword, sub_block["name"]))
+                            if re.findall(name, sub_block["name"], re.I):
+                                if keyword in ("procdump", "dropped", "extracted", "procmemory"):
+                                    if block.get("file", False):
+                                        path = block["file"]
+                                    elif block.get("path", False):
+                                        path = block["path"]
+                                    else:
+                                        path = ""
+                                elif keyword == "CAPE":
+                                    path = block["raw"]
                                 else:
                                     path = ""
-                            elif keyword == "CAPE":
-                                path = block["raw"]
-                            else:
-                                path = ""
 
-                            return keyword, path, sub_block
+                                return keyword, path, sub_block
 
         return False, False, False
 
