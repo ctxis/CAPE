@@ -734,7 +734,7 @@ class Signature(object):
                 for sub_keyword in ("yara", "cape_yara"):
                     for sub_block in block.get(sub_keyword, []):
                         if re.findall(name, sub_block["name"], re.I):
-                            if keyword in ("dropped", "extracted", "procmemory"):
+                            if keyword in ("procdump", "dropped", "extracted", "procmemory"):
                                 if block.get("file", False):
                                     path = block["file"]
                                 elif block.get("path", False):
