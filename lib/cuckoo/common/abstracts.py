@@ -722,6 +722,34 @@ class Signature(object):
             # initialize only once
             Signature._alexadb = json.loads(open(os.path.join(CUCKOO_ROOT, "data", "alexa.json"), "rb").read())
 
+    def yara_detected(self, name):
+        target = self.results.get("target", {})
+        if target.get("category") == "file" and target.get("file"):
+            for block in self.results["target"]["file"]["yara"]:
+                if re.findall(name, block["name"], re.I):
+                    return "sample", self.results["target"]["file"]["path"], block
+
+        for keyword in ("procdump", "procmemory", "extracted", "dropped", "CAPE"):
+            for block in self.results.get(keyword, []):
+                for sub_keyword in ("yara", "cape_yara"):
+                    for sub_block in block.get(sub_keyword, []):
+                        if re.findall(name, sub_block["name"], re.I):
+                            if keyword in ("procdump", "dropped", "extracted", "procmemory"):
+                                if block.get("file", False):
+                                    path = block["file"]
+                                elif block.get("path", False):
+                                    path = block["path"]
+                                else:
+                                    path = ""
+                            elif keyword == "CAPE":
+                                path = block["raw"]
+                            else:
+                                path = ""
+
+                            return keyword, path, sub_block
+
+        return False, False, False
+
     def add_statistic(self, name, field, value):
         if name not in self.results["statistics"]["signatures"]:
             self.results["statistics"]["signatures"][name] = { }
@@ -747,32 +775,6 @@ class Signature(object):
         log.debug(list(set(pids)))
 
         return ",".join(list(set(pids)))
-
-
-    def yara_detected(self, name):
-        target = self.results.get("target", {})
-        if target.get("category") == "file" and target.get("file"):
-            for block in self.results["target"]["file"]["yara"]:
-                if re.findall(name, block["name"], re.I):
-                    return "sample", self.results["target"]["file"]["path"], block
-
-        for keyword in ("procmemory", "extracted", "dropped", "CAPE"):
-            for block in self.results.get(keyword, []):
-                for sub_block in block["yara"]:
-                    if re.findall(name, sub_block["name"], re.I):
-                        if keyword in ("dropped", "extracted", "procmemory"):
-                            if block.get("file", False):
-                                path = block["file"]
-                            elif block.get("path", False):
-                                path = block["path"]
-                            else:
-                                path = ""
-                        elif keyword == "CAPE":
-                            path = block["raw"]
-                        else:
-                            path = ""
-
-                        return keyword, path, sub_block
 
     def advanced_url_parse(self, url):
         if HAVE_TLDEXTRACT:

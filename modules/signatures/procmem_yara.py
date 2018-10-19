@@ -32,14 +32,13 @@ class Procmem_Yara(Signature):
             "kazybot_rat", "darkcometconfig",
         ]
 
-        for keyword in ("procmemory", "extracted", "dropped", "CAPE"):
-            if keyword in self.results and self.results[keyword]:
-                for process in self.results[keyword]:
-                    pid = process.get("pid", 0)
-                    if process["yara"]:
-                        for rule in process["yara"]:
-                            if (pid, rule["name"]) not in hits:
-                                hits.append((pid, rule["name"]))
+        for keyword in ("procdump" ,"procmemory", "extracted", "dropped", "CAPE"):
+            for process in self.results.get(keyword, []):
+                pid = process.get("pid", 0)
+                for sub_keyword in ("yara", "cape_yara"):
+                    for rule in process.get(sub_keyword, []):
+                        if (pid, rule["name"]) not in hits:
+                            hits.append((pid, rule["name"]))
 
         if hits:
             for pid, rule in hits:

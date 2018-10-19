@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 class VolatilityAPI(object):
     """ Volatility API interface."""
 
-    def __init__(self, memdump, osprofile=None):
+    def __init__(self, memdump, osprofile=None, kdbg=None):
         """@param memdump: the memdump file path
         @param osprofile: the profile (OS type)
         """
@@ -52,6 +52,7 @@ class VolatilityAPI(object):
         self.memdump = memdump
         self.osprofile = osprofile
         self.config = None
+        self.kdbg = kdbg
         self.addr_space = None
         self.__config()
 
@@ -60,7 +61,7 @@ class VolatilityAPI(object):
         ps = filescan.PSScan(self.config)
         for ep in ps.calculate():
             if str(ep.ImageFileName) == "System":
-                 self.config.update("dtb",ep.Pcb.DirectoryTableBase)
+                 self.config.update("dtb", ep.Pcb.DirectoryTableBase)
                  return True
         return False
 
@@ -99,6 +100,9 @@ class VolatilityAPI(object):
 
         if self.osprofile:
             base_conf["profile"] = self.osprofile
+
+        if self.kdbg:
+            base_conf["kdbg"] = int(self.kdbg, 16)
 
         for key, value in base_conf.items():
             self.config.update(key, value)
