@@ -766,10 +766,8 @@ class PortableExecutable(object):
                             sha1_fingerprint = cert.get_fingerprint('sha1').lower().rjust(40, '0')
                             md5_fingerprint = cert.get_fingerprint('md5').lower().rjust(32, '0')
                             subject_str = str(cert.get_subject())
-                            try:
-                                cn = subject_str[subject_str.index("/CN=")+len("/CN="):]
-                            except:
-                                continue
+                            cn = subject_str.split("/CN=", 1)[-1]
+                            cn = cn.decode("string_escape", errors="ignore").decode("utf-8", errors="ignore")
                             retlist.append({
                                 "sn": str(sn),
                                 "cn": cn,
