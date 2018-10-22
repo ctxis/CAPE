@@ -916,6 +916,8 @@ def file(request, category, task_id, dlfile):
             file_name += ".zip"
             path = os.path.join(TMPDIR, file_name)
             cd = "application/zip"
+    elif category == "rtf":
+        path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "rtf_objects", file_name)
     elif category == "pcap":
         file_name += ".pcap"
         # Forcefully grab dump.pcap, serve it as [sha256].pcap
