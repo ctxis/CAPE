@@ -88,6 +88,7 @@ except ImportError:
     print("Missed olefile dependency: pip install olefile")
 
 try:
+    from oletools import oleobj
     from oletools.oleid import OleID
     from oletools.olevba import detect_autoexec
     from oletools.olevba import detect_hex_strings
@@ -95,6 +96,7 @@ try:
     from oletools.olevba import detect_suspicious
     from oletools.olevba import filter_vba
     from oletools.olevba import VBA_Parser
+    from oletools.rtfobj import is_rtf, RtfObjParser
     HAVE_OLETOOLS = True
 except ImportError:
     print("Ensure oletools are installed")
@@ -764,10 +766,8 @@ class PortableExecutable(object):
                             sha1_fingerprint = cert.get_fingerprint('sha1').lower().rjust(40, '0')
                             md5_fingerprint = cert.get_fingerprint('md5').lower().rjust(32, '0')
                             subject_str = str(cert.get_subject())
-                            try:
-                                cn = subject_str[subject_str.index("/CN=")+len("/CN="):]
-                            except:
-                                continue
+                            cn = subject_str.split("/CN=", 1)[-1]
+                            cn = cn.decode("string_escape", errors="ignore").decode("utf-8", errors="ignore")
                             retlist.append({
                                 "sn": str(sn),
                                 "cn": cn,
@@ -1046,7 +1046,17 @@ class PDF(object):
         return results
 
 class Office(object):
-    """Office Document Static Analysis"""
+    """Office Document Static Analysis
+        Supported formats:
+        - Word 97-2003 (.doc, .dot), Word 2007+ (.docm, .dotm)
+        - Excel 97-2003 (.xls), Excel 2007+ (.xlsm, .xlsb)
+        - PowerPoint 97-2003 (.ppt), PowerPoint 2007+ (.pptm, .ppsm)
+        - Word/PowerPoint 2007+ XML (aka Flat OPC)
+        - Word 2003 XML (.xml)
+        - Word/Excel Single File Web Page / MHTML (.mht)
+        - Publisher (.pub)
+        - Rich Text Format (.rtf)
+    """
     def __init__(self, file_path, results):
         self.file_path = file_path
         self.results = results
@@ -1095,36 +1105,125 @@ class Office(object):
             ret["DocumentSummaryInformation"][prop] = convert_to_printable(str(value))
         return ret
 
+    def _parse_rtf(self, data):
+        results = dict()
+        rtfp = RtfObjParser(data)
+        rtfp.parse()
+        save_dir = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "rtf_objects")
+        if rtfp.objects and not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        for rtfobj in rtfp.objects:
+            results.setdefault(str(rtfobj.format_id), list())
+            temp_dict = dict()
+            temp_dict["class_name"] = ""
+            temp_dict["size"] = ""
+            temp_dict["filename"] = ""
+            temp_dict["type_embed"] = ""
+            temp_dict["CVE"] = ""
+            temp_dict["sha256"] = ""
+            temp_dict["index"] = ""
+            
+            if rtfobj.is_package:
+                log.debug('Saving file from OLE Package in object #%d:' % rtfobj.format_id)
+                log.debug('  Filename = %r' % rtfobj.filename)
+                log.debug('  Source path = %r' % rtfobj.src_path)
+                log.debug('  Temp path = %r' % rtfobj.temp_path)
+                sha256 = hashlib.sha256(rtfobj.olepkgdata).hexdigest()
+                if rtfobj.filename:
+                    fname = convert_to_printable(rtfobj.filename)
+                else:
+                    fname = sha256
+                log.debug('  saving to file %s' % sha256)
+                temp_dict["filename"] = fname
+                open(os.path.join(save_dir, sha256), 'wb').write(rtfobj.olepkgdata)
+                temp_dict["sha256"] = sha256
+                temp_dict["size"] = len(rtfobj.olepkgdata)
+                #temp_dict["source_path"] = convert_to_printable(rtfobj.src_path))
+            # When format_id=TYPE_LINKED, oledata_size=None
+            elif rtfobj.is_ole and rtfobj.oledata_size is not None:
+                #ole_column = 'format_id: %d ' % rtfobj.format_id
+                if rtfobj.format_id == oleobj.OleObject.TYPE_EMBEDDED:
+                    temp_dict["type_embed"] = "Embedded"
+                elif rtfobj.format_id == oleobj.OleObject.TYPE_LINKED:
+                    temp_dict["type_embed"] = "Linked"
+                else:
+                    temp_dict["type_embed"] = "Unknown"
+                if rtfobj.clsid is not None:
+                    #ole_column += '\nCLSID: %s' % rtfobj.clsid
+                    #ole_column += '\n%s' % rtfobj.clsid_desc
+                    if "CVE" in rtfobj.clsid_desc:
+                        temp_dict["CVE"] = rtfobj.clsid_desc
+                # Detect OLE2Link exploit
+                # http://www.kb.cert.org/vuls/id/921560
+                if rtfobj.class_name == b'OLE2Link':
+                    #ole_column += '\nPossibly an exploit for the OLE2Link vulnerability (VU#921560, CVE-2017-0199)'
+                    temp_dict["CVE"] = "Possibly an exploit for the OLE2Link vulnerability (VU#921560, CVE-2017-0199)"
+                log.debug('Saving file embedded in OLE object #%d:' % rtfobj.format_id)
+                log.debug('  format_id  = %d' % rtfobj.format_id)
+                log.debug('  class name = %r' % rtfobj.class_name)
+                log.debug('  data size  = %d' % rtfobj.oledata_size)
+                temp_dict["class_name"] = rtfobj.class_name
+                temp_dict["size"] = rtfobj.oledata_size
+                # set a file extension according to the class name:
+                class_name = rtfobj.class_name.lower()
+                if class_name.startswith(b'word'):
+                    ext = 'doc'
+                elif class_name.startswith(b'package'):
+                    ext = 'package'
+                else:
+                    ext = 'bin'
+                sha256 = hashlib.sha256(rtfobj.oledata).hexdigest()
+                temp_dict["filename"] = 'object_%08X.%s' % (rtfobj.start, ext)
+                save_path = os.path.join(save_dir, sha256)
+                log.debug('  saving to file %s' % sha256)
+                open(save_path, 'wb').write(rtfobj.oledata)
+                temp_dict["sha256"] = sha256
+            else:
+                log.debug('Saving raw data in object #%d:' % rtfobj.format_id)
+                temp_dict["filename"] = 'object_%08X.raw' % rtfobj.start
+                sha256 = hashlib.sha256(rtfobj.rawdata).hexdigest()
+                save_path = os.path.join(save_dir, sha256)
+                log.debug('  saving object to file %s' % sha256)
+                open(save_path, 'wb').write(rtfobj.rawdata)
+                temp_dict["sha256"] = sha256
+                temp_dict["size"] = len(rtfobj.rawdata)
+            temp_dict["index"] = "%08Xh" % rtfobj.start
+            if temp_dict:
+                results[str(rtfobj.format_id)].append(temp_dict)
+
+        log.debug(results)
+        return results
+
     def _parse(self, filepath):
         """Parses an office document for static information.
-        Supported formats:
-            - Word 97-2003 (.doc, .dot), Word 2007+ (.docm, .dotm)
-            - Excel 97-2003 (.xls), Excel 2007+ (.xlsm, .xlsb)
-            - PowerPoint 97-2003 (.ppt), PowerPoint 2007+ (.pptm, .ppsm)
-            - Word/PowerPoint 2007+ XML (aka Flat OPC)
-            - Word 2003 XML (.xml)
-            - Word/Excel Single File Web Page / MHTML (.mht)
-            - Publisher (.pub)
-
         @param filepath: Path to the file to be analyzed.
         @return: results dict or None
         """
 
         results = dict()
+        vba = False
         if HAVE_OLETOOLS:
-            try:
-                vba = VBA_Parser(filepath)
-            except:
-                return results
+            if is_rtf(filepath):
+                try:
+                    temp_results = self._parse_rtf(open(filepath, "rb").read())
+                    if temp_results:
+                        results["office_rtf"] = temp_results
+                except Exception as e:
+                    log.error(e)
+            else:
+                try:
+                    vba = VBA_Parser(filepath)
+                except:
+                    return results
         else:
             return results
 
-        officeresults = results["office"] = { }
+        officeresults = results["office"] = {}
 
         metares = officeresults["Metadata"] = dict()
         # The bulk of the metadata checks are in the OLE Structures
         # So don't check if we're dealing with XML.
-        if HAVE_OLEFILE and olefile.isOleFile(filepath):
+        if olefile.isOleFile(filepath):
             ole = olefile.OleFileIO(filepath)
             meta = ole.get_metadata()
             # must be left this way or we won't see the results
@@ -1136,7 +1235,7 @@ class Office(object):
             buf = self.convert_dt_string(metares["SummaryInformation"]["last_saved_time"])
             metares["SummaryInformation"]["last_saved_time"] = buf
             ole.close()
-        if vba.detect_vba_macros():
+        if vba and vba.detect_vba_macros():
             metares["HasMacros"] = "Yes"
             macrores = officeresults["Macro"] = dict()
             macrores["Code"] = dict()
@@ -1210,7 +1309,6 @@ class Office(object):
                 metares["DocumentType"] = indicator.name
             if indicator.name == "PowerPoint Presentation" and indicator.value == True:
                 metares["DocumentType"] = indicator.name
-
         return results
 
     def run(self):
@@ -1511,15 +1609,6 @@ class Static(Processing):
                 static = PortableExecutable(self.file_path, self.results).run()
                 if static and "Mono" in thetype:
                     static.update(DotNETExecutable(self.file_path, self.results).run())
-                if HAVE_BINGRAPH and processing_conf.binGraph.enabled:
-                    try:
-                        bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
-                        if not os.path.exists(bingraph_path):
-                            os.makedirs(bingraph_path)
-                        if not os.listdir(bingraph_path):
-                            bingraph_gen("", self.file_path, bingraph_path)
-                    except Exception as e:
-                        log.info(e)
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
                 static = PDF(self.file_path).run()
             elif HAVE_OLETOOLS and package in ("doc", "ppt", "xls", "pub"):
@@ -1539,6 +1628,16 @@ class Static(Processing):
                 static = WindowsScriptFile(self.file_path).run()
             elif package == "js" or package == "vbs":
                 static = EncodedScriptFile(self.file_path).run()
+
+            if HAVE_BINGRAPH and processing_conf.binGraph.enabled:
+                try:
+                    bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
+                    if not os.path.exists(bingraph_path):
+                        os.makedirs(bingraph_path)
+                    if not os.listdir(bingraph_path):
+                        bingraph_gen("", self.file_path, bingraph_path)
+                except Exception as e:
+                    log.info(e)
 
         elif self.task["category"] == "url":
             enabled_whois = self.options.get("whois", True)

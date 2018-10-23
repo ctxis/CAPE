@@ -67,7 +67,7 @@ def process(target=None, copy_path=None, task=None, report=False, auto=False):
             if analyses.count() > 0:
                 log.debug("Deleting analysis data for Task %s" % task_id)
                 for analysis in analyses:
-                    for process in analysis["behavior"]["processes"]:
+                    for process in analysis["behavior"].get("processes", []):
                         for call in process["calls"]:
                             mdata.calls.remove({"_id": ObjectId(call)})
                     mdata.analysis.remove({"_id": ObjectId(analysis["_id"])})

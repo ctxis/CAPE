@@ -33,6 +33,9 @@ EXTRACTION_MIN_SIZE                 = 0x1001
 PLUGX_SIGNATURE		                = 0x5658
 
 def IsPEImage(buf, size):
+    if size < DOS_HEADER_LIMIT:
+        return False
+
     dos_header = buf[:DOS_HEADER_LIMIT]
     nt_headers = None
 

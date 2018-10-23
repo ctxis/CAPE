@@ -10,6 +10,8 @@ import logging
 import dns.resolver
 from collections import OrderedDict
 from urlparse import urlunparse
+from hashlib import md5
+from json import loads
 
 try:
     import re2 as re
@@ -25,6 +27,7 @@ from lib.cuckoo.common.utils import convert_to_printable
 from lib.cuckoo.common.exceptions import CuckooProcessingError
 from dns.reversename import from_address
 from lib.cuckoo.common.constants import CUCKOO_ROOT
+from lib.cuckoo.common.ja3.ja3 import parse_variable_array, convert_to_ja3_segment, process_extensions
 
 try:
     import GeoIP
@@ -48,6 +51,8 @@ import heapq
 from itertools import islice
 from collections import namedtuple
 
+TLS_HANDSHAKE = 22
+
 Keyed = namedtuple("Keyed", ["key", "obj"])
 Packet = namedtuple("Packet", ["raw", "ts"])
 
@@ -59,11 +64,12 @@ whitelist_file = Config("processing").network.dnswhitelist_file
 class Pcap:
     """Reads network data from PCAP file."""
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, ja3_fprints):
         """Creates a new instance.
         @param filepath: path to PCAP file
         """
         self.filepath = filepath
+        self.ja3_fprints = ja3_fprints
 
         # List of all hosts.
         self.hosts = []
@@ -90,6 +96,8 @@ class Pcap:
         self.smtp_flow = {}
         # List containing all IRC requests.
         self.irc_requests = []
+        # List containing all JA3 hashes.
+        self.ja3_records = []
         # Dictionary containing all the results of this processing.
         self.results = {}
         # Config
@@ -240,6 +248,10 @@ class Pcap:
         # IRC.
         if conn["dport"] != 21 and self._check_irc(data):
             self._add_irc(conn, data)
+        # ja3
+        ja3hash = self._check_ja3(data)
+        if ja3hash != None:
+            self._add_ja3(conn, data, ja3hash)
 
     def _udp_dissect(self, conn, data):
         """Runs all UDP dissectors.
@@ -576,6 +588,81 @@ class Pcap:
 
         return True
 
+    def _check_ja3(self, tcpdata):
+        """Generate JA3 fingerprint for TLS HELLO
+        Based on and importing from https://github.com/salesforce/ja3
+        @param tcpdata: TCP data flow.
+        """
+
+        tls_handshake = bytearray(tcpdata)
+        if tls_handshake[0] != TLS_HANDSHAKE:
+            return
+
+        records = list()
+
+        try:
+            records, bytes_used = dpkt.ssl.tls_multi_factory(tcpdata)
+        except dpkt.ssl.SSL3Exception:
+            return
+        except dpkt.dpkt.NeedData:
+            return
+
+        if len(records) <= 0:
+            return
+
+        for record in records:
+            if record.type != TLS_HANDSHAKE:
+                return
+            if len(record.data) == 0:
+                return
+            client_hello = bytearray(record.data)
+            if client_hello[0] != 1:
+                # We only want client HELLO
+                return
+            try:
+                handshake = dpkt.ssl.TLSHandshake(record.data)
+            except dpkt.dpkt.NeedData:
+                # Looking for a handshake here
+                return
+            if not isinstance(handshake.data, dpkt.ssl.TLSClientHello):
+                # Still not the HELLO
+                return
+
+            client_handshake = handshake.data
+            buf, ptr = parse_variable_array(client_handshake.data, 1)
+            buf, ptr = parse_variable_array(client_handshake.data[ptr:], 2)
+            ja3 = [str(client_handshake.version)]
+
+            # Cipher Suites (16 bit values)
+            ja3.append(convert_to_ja3_segment(buf, 2))
+            ja3 += process_extensions(client_handshake)
+            ja3 = ",".join(ja3)
+
+            return md5(ja3.encode()).hexdigest()
+
+    def _add_ja3(self, conn, tcpdata, ja3hash):
+        """
+        Adds an JA3 digest.
+	    @param conn: TCP connection info.
+        @param tcpdata: TCP data in flow
+        """
+
+        if conn["src"] == self.config.resultserver.ip:
+            return
+
+        entry = {}
+        entry["src"] = conn["src"]
+        entry["sport"] = conn["sport"]
+        entry["dst"] = conn["dst"]
+        entry["dport"] = conn["dport"]
+        entry["ja3"] = ja3hash
+        entry["desc"] = "unknown"
+
+        if ja3hash in self.ja3_fprints:
+            entry["desc"] = self.ja3_fprints[ja3hash]
+
+        self.ja3_records.append(entry)
+
     def run(self):
         """Process PCAP.
         @return: dict with network analysis data.
@@ -706,9 +793,10 @@ class Pcap:
         self.results["dns"] = self.dns_requests.values()
         self.results["smtp"] = self.smtp_requests
         self.results["irc"] = self.irc_requests
+        self.results["ja3"] = self.ja3_records
 
         if enabled_whitelist:
-            
+
             for host in self.results["hosts"]:
                 for delip in self.ip_whitelist:
                     if delip == host["ip"]:
@@ -728,15 +816,36 @@ class Pcap:
                 for delip in self.ip_whitelist:
                     if delip == host["src"] or delip == host["dst"]:
                         self.results["icmp"].remove(host)
-            
+
         return self.results
 
 
 class NetworkAnalysis(Processing):
     """Network analysis."""
 
+    def _import_ja3_fprints(self):
+        """
+        open and read ja3 fingerprint json file from:
+        https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
+        :return: dictionary of ja3 fingerprint descreptions
+        """
+        ja3_fprints = {}
+
+        with open(self.ja3_file, 'r') as fpfile:
+            for line in fpfile:
+                try:
+                    ja3 = (loads(line))
+                    if "ja3_hash" in ja3 and 'desc' in ja3:
+                        ja3_fprints[ja3['ja3_hash']] = ja3['desc']
+                except Exception as e:
+                    pass
+
+        return ja3_fprints
+
+
     def run(self):
         self.key = "network"
+        self.ja3_file = self.options.get("ja3_file", os.path.join(CUCKOO_ROOT, "data", "ja3", "ja3fingerprint.json"))
 
         if not IS_DPKT:
             log.error("Python DPKT is not installed, aborting PCAP analysis.")
@@ -751,15 +860,17 @@ class NetworkAnalysis(Processing):
             log.error("The PCAP file at path \"%s\" is empty." % self.pcap_path)
             return {}
 
+        ja3_fprints = self._import_ja3_fprints()
+
         sorted_path = self.pcap_path.replace("dump.", "dump_sorted.")
         if Config().processing.sort_pcap:
             sort_pcap(self.pcap_path, sorted_path)
-            buf = Pcap(self.pcap_path).run()
-            results = Pcap(sorted_path).run()
+            buf = Pcap(self.pcap_path, ja3_fprints).run()
+            results = Pcap(sorted_path, ja3_fprints).run()
             results["http"] = buf["http"]
             results["dns"] = buf["dns"]
         else:
-            results = Pcap(self.pcap_path).run()
+            results = Pcap(self.pcap_path, ja3_fprints).run()
 
         # Save PCAP file hash.
         if os.path.exists(self.pcap_path):
@@ -791,7 +902,6 @@ def conn_from_flowtuple(ft):
     return {"src": sip, "sport": sport,
             "dst": dip, "dport": dport,
             "offset": offset, "time": relts}
-
 
 # input_iterator should be a class that also supports writing so we can use
 # it for the temp files
