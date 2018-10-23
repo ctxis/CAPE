@@ -102,7 +102,7 @@ class VolatilityAPI(object):
             base_conf["profile"] = self.osprofile
 
         if self.kdbg:
-            base_conf["kdbg"] = int(self.kdbg, 16)
+            base_conf["kdbg"] = long(self.kdbg, 16)
 
         for key, value in base_conf.items():
             self.config.update(key, value)

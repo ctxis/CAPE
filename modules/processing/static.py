@@ -1616,15 +1616,6 @@ class Static(Processing):
                 static = PortableExecutable(self.file_path, self.results).run()
                 if static and "Mono" in thetype:
                     static.update(DotNETExecutable(self.file_path, self.results).run())
-                if HAVE_BINGRAPH and processing_conf.binGraph.enabled:
-                    try:
-                        bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
-                        if not os.path.exists(bingraph_path):
-                            os.makedirs(bingraph_path)
-                        if not os.listdir(bingraph_path):
-                            bingraph_gen("", self.file_path, bingraph_path)
-                    except Exception as e:
-                        log.info(e)
             elif "PDF" in thetype or self.task["target"].endswith(".pdf"):
                 static = PDF(self.file_path).run()
             elif HAVE_OLETOOLS and package in ("doc", "ppt", "xls", "pub"):
@@ -1644,6 +1635,16 @@ class Static(Processing):
                 static = WindowsScriptFile(self.file_path).run()
             elif package == "js" or package == "vbs":
                 static = EncodedScriptFile(self.file_path).run()
+
+            if HAVE_BINGRAPH and processing_conf.binGraph.enabled:
+                try:
+                    bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
+                    if not os.path.exists(bingraph_path):
+                        os.makedirs(bingraph_path)
+                    if not os.listdir(bingraph_path):
+                        bingraph_gen("", self.file_path, bingraph_path)
+                except Exception as e:
+                    log.info(e)
 
         elif self.task["category"] == "url":
             enabled_whois = self.options.get("whois", True)

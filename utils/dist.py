@@ -240,6 +240,7 @@ def node_submit_task(task_id, node_id):
     db = session()
     node = db.query(Node).filter_by(id=node_id).first()
     task = db.query(Task).filter_by(id=task_id).first()
+    check = False
     try:
         if node.name == "master":
             return
@@ -298,26 +299,29 @@ def node_submit_task(task_id, node_id):
             else:
                 log.debug("Failed to submit task {} to node: {}".format(task_id, node.name))
             log.debug("Submitted task to slave: {} - {} - {}".format(task.task_id, task.main_task_id, r.json()))
+            check = True
         elif r.status_code == 500:
             log.debug((r.status_code, r.text))
-            return
+            check = False
         else:
             log.info("Node: {} - Task submit to slave failed: {} - {}".format(node.id, r.status_code, r.content))
-            return
+            check = False
 
-        task.node_id = node.id
+        if check:
+            task.node_id = node.id
 
-        # We have to refresh() the task object because otherwise we get
-        # the unmodified object back in further sql queries..
-        # TODO Commit once, refresh() all at once. This could potentially
-        # become a bottleneck.
-        db.commit()
-        db.refresh(task)
+            # We have to refresh() the task object because otherwise we get
+            # the unmodified object back in further sql queries..
+            # TODO Commit once, refresh() all at once. This could potentially
+            # become a bottleneck.
+            db.commit()
+            db.refresh(task)
     except Exception as e:
         log.critical("Error submitting task (task #%d, node %s): %s",
                         task.id, node.name, e)
 
     db.close()
+    return check
 
 class Retriever(threading.Thread):
 
@@ -607,14 +611,21 @@ class Retriever(threading.Thread):
 
 class StatusThread(threading.Thread):
 
-    def submit_tasks(self, node_id, pend_tasks_num, main_db_tasks):
+    def submit_tasks(self, node_id, pend_tasks_num):
 
-        if pend_tasks_num <= 0:
-            return
         db = session()
         node = db.query(Node).filter_by(id = node_id).first()
         if node.name != "master":
-
+            # don't do nothing if nothing in pending
+            # Get tasks from main_db submitted through web interface
+            main_db_tasks = main_db.list_tasks(status=TASK_PENDING, order_by=desc("priority"))
+            """
+            temp = main_db.list_tasks(status=TASK_RUNNING, order_by=desc("priority"))
+            for t in temp:
+                tasks = db.query(Task).filter_by(main_task_id=t.id, node_id=None).all()
+                if tasks:
+                    main_db_tasks.append(t)
+            """
             if main_db_tasks:
                 log.debug("going to upload {} tasks to node id {}".format(pend_tasks_num, node_id))
                 limit = 0
@@ -640,7 +651,6 @@ class StatusThread(threading.Thread):
                             db.rollback()
                             log.info(e)
                             continue
-                        main_db.set_status(t.id, TASK_RUNNING)
                         if reporting_conf.distributed.enable_tags:
                             # Get available node tags
                             machines = db.query(Machine).filter_by(node_id=node.id).all()
@@ -655,13 +665,13 @@ class StatusThread(threading.Thread):
 
                             # Create filter query from tasks in ta
                             tags = [ getattr(Task, "tags")=="" ]
-                            for t in ta:
-                                if len(t.split(',')) == 1:
+                            for tg in ta:
+                                if len(tg.split(',')) == 1:
                                     tags.append(getattr(Task, "tags")==(t+','))
                                 else:
-                                    t = t.split(',')
+                                    tg = tg.split(',')
                                     # ie. LIKE '%,%,%,'
-                                    t_combined = [ getattr(Task, "tags").like("%s" % ('%,'*len(t)) ) ]
+                                    t_combined = [ getattr(Task, "tags").like("%s" % ('%,'*len(tg)) ) ]
                                     for tag in t:
                                         t_combined.append(getattr(Task, "tags").like("%%%s%%" % (tag+',') ))
                                     tags.append( and_(*t_combined) )
@@ -669,7 +679,9 @@ class StatusThread(threading.Thread):
                             # Filter by available tags
                             q = q.filter(or_(*tags))
                         # Submit appropriate tasks to node
-                        node_submit_task(task.id, node.id)
+                        submitted = node_submit_task(task.id, node.id)
+                        if submitted:
+                            main_db.set_status(t.id, TASK_RUNNING)
                         limit += 1
                         if limit == pend_tasks_num:
                             db.close()
@@ -726,29 +738,16 @@ class StatusThread(threading.Thread):
                 log.info("Status.. %s -> %s", node.name, status)
                 statuses[node.name] = status
                 STATUSES = statuses
-                # don't do nothing if nothing in pending
-                main_db_tasks = list()
-                # Get tasks from main_db submitted through web interface
-                main_db_tasks = main_db.list_tasks(status=TASK_PENDING, order_by=desc("priority"))
-                temp = main_db.list_tasks(status=TASK_RUNNING, order_by=desc("priority"))
-                for t in temp:
-                    tasks = db.query(Task).filter_by(main_task_id=t.id, node_id=None).all()
-                    if tasks:
-                        main_db_tasks += tasks
-
-                if not main_db_tasks:
-                    time.sleep(INTERVAL)
-                    continue
                 #if node.name == "55" and statuses[node.name]["completed"] > 200:
                 #    continue
                 # If - master only used for storage, not check master queue
                 # elif -  master also analyze samples, check master queue
                 # send tasks to slaves if master queue has extra tasks(pending)
                 if master_storage_only:
-                    self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"], main_db_tasks)
+                    self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"])
                 elif statuses.get("master", {}).get("pending", 0) > MINIMUMQUEUE.get("master", 0) and \
                         status["pending"] < MINIMUMQUEUE[node.name]:
-                      self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"], main_db_tasks)
+                      self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"])
             db.close()
             time.sleep(INTERVAL)
 
