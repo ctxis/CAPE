@@ -156,27 +156,30 @@
                 <div id="si_metadata">
                     <h4>RTF document details</h4>
                     <table class="table table-striped table-bordered">
-                        {% for key, value in  analysis.static.office_rtf.items %}
-                        <tr>
-                            <th width=10%>Object ID:</th>
-                            <td>Size</td>
-                            <th>Index</th>
-                            <td>Class Name</td>
-                            <td>Type Embed</td>
-                            <th>CVE</th>
-                          </tr>
-                          <tr>
-                            {% if value.filename %}
-                                <td><a href={% url "file" "rtf" analysis.info.id value.filename %} class="btn btn-primary btn-small">{{key}} - Download</a></td>
-                            {% else %}
-                                <td>{{key}}</td>
-                            {% endif %}
-                            <td>{{value.size}}</td>
-                            <td>{{value.index}}</td>
-                            <td>{{value.class_name}}</td>
-                            <td>{{value.type_embed}}</td>
-                            <td>{{value.CVE}}</td>
-                          </tr>
+                        {% for key, value in analysis.static.office_rtf.items %}
+                            <h2>Object ID: {{key}}</h2>
+                            <tr>
+                                <th width=10%>Filename</th>
+                                <td>Size</td>
+                                <th>Index</th>
+                                <td>Class Name</td>
+                                <td>Type Embed</td>
+                                <th>CVE</th>
+                            </tr>
+                            {% for block in value %}
+                                <tr>
+                                    {% if block.sha256 %}
+                                        <td><a href={% url "file" "rtf" analysis.info.id block.sha256 %} class="btn btn-primary btn-small">{{block.filename}} - Download</a></td>
+                                    {% else %}
+                                        <td>{{block.filename}}</td>
+                                    {% endif %}
+                                    <td>{{block.size}}</td>
+                                    <td>{{block.index}}</td>
+                                    <td>{{block.class_name}}</td>
+                                    <td>{{block.type_embed}}</td>
+                                    <td>{{block.CVE}}</td>
+                                </tr>
+                            {% endfor %}
                         {% endfor %}
                     </table>
                 </div>

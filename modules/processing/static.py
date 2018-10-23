@@ -766,10 +766,8 @@ class PortableExecutable(object):
                             sha1_fingerprint = cert.get_fingerprint('sha1').lower().rjust(40, '0')
                             md5_fingerprint = cert.get_fingerprint('md5').lower().rjust(32, '0')
                             subject_str = str(cert.get_subject())
-                            try:
-                                cn = subject_str[subject_str.index("/CN=")+len("/CN="):]
-                            except:
-                                continue
+                            cn = subject_str.split("/CN=", 1)[-1]
+                            cn = cn.decode("string_escape", errors="ignore").decode("utf-8", errors="ignore")
                             retlist.append({
                                 "sn": str(sn),
                                 "cn": cn,
@@ -1115,51 +1113,57 @@ class Office(object):
         if rtfp.objects and not os.path.exists(save_dir):
             os.makedirs(save_dir)
         for rtfobj in rtfp.objects:
-            results.setdefault(str(rtfobj.format_id), dict())
-            results[str(rtfobj.format_id)]["class_name"] = ""
-            results[str(rtfobj.format_id)]["size"] = ""
-            results[str(rtfobj.format_id)]["filename"] = ""
-            results[str(rtfobj.format_id)]["type_embed"] = ""
-            results[str(rtfobj.format_id)]["CVE"] = ""
+            results.setdefault(str(rtfobj.format_id), list())
+            temp_dict = dict()
+            temp_dict["class_name"] = ""
+            temp_dict["size"] = ""
+            temp_dict["filename"] = ""
+            temp_dict["type_embed"] = ""
+            temp_dict["CVE"] = ""
+            temp_dict["sha256"] = ""
+            temp_dict["index"] = ""
+            
             if rtfobj.is_package:
                 log.debug('Saving file from OLE Package in object #%d:' % rtfobj.format_id)
                 log.debug('  Filename = %r' % rtfobj.filename)
                 log.debug('  Source path = %r' % rtfobj.src_path)
                 log.debug('  Temp path = %r' % rtfobj.temp_path)
+                sha256 = hashlib.sha256(rtfobj.olepkgdata).hexdigest()
                 if rtfobj.filename:
                     fname = convert_to_printable(rtfobj.filename)
                 else:
-                    fname = 'object_%08X.noname' % rtfobj.start
-                log.debug('  saving to file %s' % fname)
-                results[str(rtfobj.format_id)]["filename"] = fname
-                save_path = os.path.join(save_dir, fname)
-                open(save_path, 'wb').write(rtfobj.olepkgdata)
-                #results[str(rtfobj.format_id)].setdefault("source_path", convert_to_printable(rtfobj.src_path))
+                    fname = sha256
+                log.debug('  saving to file %s' % sha256)
+                temp_dict["filename"] = fname
+                open(os.path.join(save_dir, sha256), 'wb').write(rtfobj.olepkgdata)
+                temp_dict["sha256"] = sha256
+                temp_dict["size"] = len(rtfobj.olepkgdata)
+                #temp_dict["source_path"] = convert_to_printable(rtfobj.src_path))
             # When format_id=TYPE_LINKED, oledata_size=None
             elif rtfobj.is_ole and rtfobj.oledata_size is not None:
                 #ole_column = 'format_id: %d ' % rtfobj.format_id
                 if rtfobj.format_id == oleobj.OleObject.TYPE_EMBEDDED:
-                    results[str(rtfobj.format_id)]["type_embed"] = "Embedded"
+                    temp_dict["type_embed"] = "Embedded"
                 elif rtfobj.format_id == oleobj.OleObject.TYPE_LINKED:
-                    results[str(rtfobj.format_id)]["type_embed"] = "Linked"
+                    temp_dict["type_embed"] = "Linked"
                 else:
-                    results[str(rtfobj.format_id)]["type_embed"] = "Unknown"
+                    temp_dict["type_embed"] = "Unknown"
                 if rtfobj.clsid is not None:
                     #ole_column += '\nCLSID: %s' % rtfobj.clsid
                     #ole_column += '\n%s' % rtfobj.clsid_desc
                     if "CVE" in rtfobj.clsid_desc:
-                        results[str(rtfobj.format_id)]["CVE"] = rtfobj.clsid_desc
+                        temp_dict["CVE"] = rtfobj.clsid_desc
                 # Detect OLE2Link exploit
                 # http://www.kb.cert.org/vuls/id/921560
                 if rtfobj.class_name == b'OLE2Link':
                     #ole_column += '\nPossibly an exploit for the OLE2Link vulnerability (VU#921560, CVE-2017-0199)'
-                    results[str(rtfobj.format_id)].setdefault("CVE", "Possibly an exploit for the OLE2Link vulnerability (VU#921560, CVE-2017-0199)")
+                    temp_dict["CVE"] = "Possibly an exploit for the OLE2Link vulnerability (VU#921560, CVE-2017-0199)"
                 log.debug('Saving file embedded in OLE object #%d:' % rtfobj.format_id)
                 log.debug('  format_id  = %d' % rtfobj.format_id)
                 log.debug('  class name = %r' % rtfobj.class_name)
                 log.debug('  data size  = %d' % rtfobj.oledata_size)
-                results[str(rtfobj.format_id)]["class_name"] = rtfobj.class_name
-                results[str(rtfobj.format_id)]["size"] = rtfobj.oledata_size
+                temp_dict["class_name"] = rtfobj.class_name
+                temp_dict["size"] = rtfobj.oledata_size
                 # set a file extension according to the class name:
                 class_name = rtfobj.class_name.lower()
                 if class_name.startswith(b'word'):
@@ -1168,21 +1172,26 @@ class Office(object):
                     ext = 'package'
                 else:
                     ext = 'bin'
-                fname = 'object_%08X.%s' % (rtfobj.start, ext)
-                results[str(rtfobj.format_id)]["filename"] = fname
-                save_path = os.path.join(save_dir, fname)
-                log.debug('  saving to file %s' % fname)
+                sha256 = hashlib.sha256(rtfobj.oledata).hexdigest()
+                temp_dict["filename"] = 'object_%08X.%s' % (rtfobj.start, ext)
+                save_path = os.path.join(save_dir, sha256)
+                log.debug('  saving to file %s' % sha256)
                 open(save_path, 'wb').write(rtfobj.oledata)
-                results[str(rtfobj.format_id)]["filename"] = fname
+                temp_dict["sha256"] = sha256
             else:
                 log.debug('Saving raw data in object #%d:' % rtfobj.format_id)
-                fname = 'object_%08X.raw' % rtfobj.start
-                results[str(rtfobj.format_id)]["filename"] = fname
-                save_path = os.path.join(save_dir, fname)
-                log.debug('  saving object to file %s' % fname)
+                temp_dict["filename"] = 'object_%08X.raw' % rtfobj.start
+                sha256 = hashlib.sha256(rtfobj.rawdata).hexdigest()
+                save_path = os.path.join(save_dir, sha256)
+                log.debug('  saving object to file %s' % sha256)
                 open(save_path, 'wb').write(rtfobj.rawdata)
-            results[str(rtfobj.format_id)]["index"] = "%08Xh" % rtfobj.start
-        log.info(results)
+                temp_dict["sha256"] = sha256
+                temp_dict["size"] = len(rtfobj.rawdata)
+            temp_dict["index"] = "%08Xh" % rtfobj.start
+            if temp_dict:
+                results[str(rtfobj.format_id)].append(temp_dict)
+
+        log.debug(results)
         return results
 
     def _parse(self, filepath):
