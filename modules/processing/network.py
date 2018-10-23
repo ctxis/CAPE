@@ -865,14 +865,11 @@ class NetworkAnalysis(Processing):
         sorted_path = self.pcap_path.replace("dump.", "dump_sorted.")
         if Config().processing.sort_pcap:
             sort_pcap(self.pcap_path, sorted_path)
-            buf = Pcap(self.pcap_path).run()
-            results = Pcap(sorted_path).run()
             buf = Pcap(self.pcap_path, ja3_fprints).run()
             results = Pcap(sorted_path, ja3_fprints).run()
             results["http"] = buf["http"]
             results["dns"] = buf["dns"]
         else:
-            results = Pcap(self.pcap_path).run()
             results = Pcap(self.pcap_path, ja3_fprints).run()
 
         # Save PCAP file hash.
