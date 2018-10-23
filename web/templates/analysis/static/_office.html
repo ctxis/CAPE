@@ -190,7 +190,22 @@
             </div>
             <hr />
         {% endif %}
+        {% if analysis.static.office_dde %}
+        <div id="si_metadata">
+        <table class="table table-striped table-bordered">
+            <colgroup>
+                <col width="200" />
+                <col width="*" />
+            </colgroup>
+            <tr>
+                <td><h4>DDE Detected</h4></td>
+                <td>{{analysis.static.office_dde}}</td>
+            </tr>
+        </table>
+        </div>
+        {% endif %}
     {% else %}
         Nothing to display.
     {% endif %}
 </section>
+
