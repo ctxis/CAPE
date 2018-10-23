@@ -11,6 +11,7 @@
                         <th>Destination</th>
                         <th>Destination Port</th>
                         <th>JA3 Hash</th>
+                        <th>JA3 Description</th>
                     </tr>
                     {% for p in analysis.network.ja3 %}
                         <tr class="connrow" data="{{p.src}},{{p.sport}},{{p.dst}},{{p.dport}},tcp">
@@ -19,6 +20,7 @@
                             <td>{{p.dst}} {{ iplookups|get_item:p.dst }}</td>
                             <td>{{p.dport}}</td>
                             <td>{{p.ja3}}</td>
+                            <td>{{p.desc}}</td>
                         </tr>
                     {% endfor %}
                 </table>

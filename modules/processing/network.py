@@ -11,6 +11,7 @@ import dns.resolver
 from collections import OrderedDict
 from urlparse import urlunparse
 from hashlib import md5
+from json import loads
 
 try:
     import re2 as re
@@ -63,11 +64,12 @@ whitelist_file = Config("processing").network.dnswhitelist_file
 class Pcap:
     """Reads network data from PCAP file."""
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, ja3_fprints):
         """Creates a new instance.
         @param filepath: path to PCAP file
         """
         self.filepath = filepath
+        self.ja3_fprints = ja3_fprints
 
         # List of all hosts.
         self.hosts = []
@@ -591,7 +593,7 @@ class Pcap:
         Based on and importing from https://github.com/salesforce/ja3
         @param tcpdata: TCP data flow.
         """
-        
+
         tls_handshake = bytearray(tcpdata)
         if tls_handshake[0] != TLS_HANDSHAKE:
             return
@@ -654,6 +656,11 @@ class Pcap:
         entry["dst"] = conn["dst"]
         entry["dport"] = conn["dport"]
         entry["ja3"] = ja3hash
+        entry["desc"] = "unknown"
+
+        if ja3hash in self.ja3_fprints:
+            entry["desc"] = self.ja3_fprints[ja3hash]
+
         self.ja3_records.append(entry)
 
     def run(self):
@@ -789,7 +796,7 @@ class Pcap:
         self.results["ja3"] = self.ja3_records
 
         if enabled_whitelist:
-            
+
             for host in self.results["hosts"]:
                 for delip in self.ip_whitelist:
                     if delip == host["ip"]:
@@ -809,15 +816,36 @@ class Pcap:
                 for delip in self.ip_whitelist:
                     if delip == host["src"] or delip == host["dst"]:
                         self.results["icmp"].remove(host)
-            
+
         return self.results
 
 
 class NetworkAnalysis(Processing):
     """Network analysis."""
 
+    def _import_ja3_fprints(self):
+        """
+        open and read ja3 fingerprint json file from:
+        https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json
+        :return: dictionary of ja3 fingerprint descreptions
+        """
+        ja3_fprints = {}
+
+        with open(self.ja3_file, 'r') as fpfile:
+            for line in fpfile:
+                try:
+                    ja3 = (loads(line))
+                    if "ja3_hash" in ja3 and 'desc' in ja3:
+                        ja3_fprints[ja3['ja3_hash']] = ja3['desc']
+                except Exception as e:
+                    pass
+
+        return ja3_fprints
+
+
     def run(self):
         self.key = "network"
+        self.ja3_file = self.options.get("ja3_file", os.path.join(CUCKOO_ROOT, "data", "ja3", "ja3fingerprint.json"))
 
         if not IS_DPKT:
             log.error("Python DPKT is not installed, aborting PCAP analysis.")
@@ -832,15 +860,20 @@ class NetworkAnalysis(Processing):
             log.error("The PCAP file at path \"%s\" is empty." % self.pcap_path)
             return {}
 
+        ja3_fprints = self._import_ja3_fprints()
+
         sorted_path = self.pcap_path.replace("dump.", "dump_sorted.")
         if Config().processing.sort_pcap:
             sort_pcap(self.pcap_path, sorted_path)
             buf = Pcap(self.pcap_path).run()
             results = Pcap(sorted_path).run()
+            buf = Pcap(self.pcap_path, ja3_fprints).run()
+            results = Pcap(sorted_path, ja3_fprints).run()
             results["http"] = buf["http"]
             results["dns"] = buf["dns"]
         else:
             results = Pcap(self.pcap_path).run()
+            results = Pcap(self.pcap_path, ja3_fprints).run()
 
         # Save PCAP file hash.
         if os.path.exists(self.pcap_path):
