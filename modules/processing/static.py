@@ -1222,7 +1222,6 @@ class Office(object):
         officeresults = results["office"] = {}
 
         # extract DDE
-        results["office_dde"] = 
         dde = extract_dde(filepath)
         if dde:
             results["office_dde"] = convert_to_printable(dde)
