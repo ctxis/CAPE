@@ -33,7 +33,7 @@ class RTFExploitStatic(Signature):
                     if "CVE" in block:
                         index = block["index"]
                         cve = block["CVE"]
-                        if len(cve) > 0:
+                        if cve:
                             self.data.append({"cve" : "Object %s index %s contains %s" % (key,index,cve)})
                             ret = True
                     
