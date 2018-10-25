@@ -101,3 +101,24 @@ class OfficeAnamalousFeature(Signature):
             ret = True
 
         return ret
+    
+class OfficeDDECommand(Signature):
+    name = "office_dde_command"
+    description = "The Office file contains an embedded Dynamic Data Exchange (DDE) command"
+    severity = 3
+    confidence = 100
+    categories = ["office"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    references = ["sensepost.com/blog/2017/macro-less-code-exec-in-msword/"]
+
+    def run(self):
+        ret = False
+        strings = []
+        if "static" in self.results and "office_dde" in self.results["static"]:
+            dde = self.results["static"]["office_dde"]
+            self.data.append({"command" : dde})
+            ret = True
+
+        return ret
