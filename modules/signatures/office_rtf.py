@@ -58,7 +58,7 @@ class RTFEmbeddedOfficeFile(Signature):
                     if "class_name" in block:
                         if "Word.Document." in block["class_name"]:
                             index = block["index"]
-                            self.data.append({"cve" : "Object %s index %s contains an embedded office document" % (key,index)})
+                            self.data.append({"office file" : "Object %s index %s contains an embedded office document" % (key,index)})
                             ret = True
                     
         return ret
