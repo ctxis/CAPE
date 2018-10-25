@@ -38,3 +38,41 @@ class RTFExploitStatic(Signature):
                             ret = True
                     
         return ret
+
+class RTFAnomalyCharacterSet(Signature):
+    name = "rtf_anomaly_characterset"
+    description = "The RTF file has an unknown character set"
+    severity = 2
+    confidence = 100
+    categories = ["office", "rtf", "static"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        if "file" in self.results["target"]:
+            filetype = self.results["target"]["file"]["type"]
+            if "Rich Text Format" in filetype and "unknown character set" in filetype:
+                ret = True
+
+        return ret
+
+class RTFAnomalyVersion(Signature):
+    name = "rtf_anomaly_version"
+    description = "The RTF file has an unknown version"
+    severity = 2
+    confidence = 100
+    categories = ["office", "rtf", "static"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        if "file" in self.results["target"]:
+            filetype = self.results["target"]["file"]["type"]
+            if "Rich Text Format" in filetype and "unknown version" in filetype:
+                ret = True
+
+        return ret
