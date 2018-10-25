@@ -39,6 +39,30 @@ class RTFExploitStatic(Signature):
                     
         return ret
 
+
+class RTFEmbeddedOfficeFile(Signature):
+    name = "rtf_embedded_office_file"
+    description = "The RTF file contains an embedded  Office file potentially to display as a decoy document during malicious activities"
+    severity = 2
+    confidence = 100
+    categories = ["rtf", "static"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        if "office_rtf" in self.results["static"]:
+            for key in self.results["static"]["office_rtf"]:
+                for block in self.results["static"]["office_rtf"][key]:
+                    if "class_name" in block:
+                        if "Word.Document." in block["class_name"]:
+                            index = block["index"]
+                            self.data.append({"cve" : "Object %s index %s contains an embedded office document" % (key,index)})
+                            ret = True
+                    
+        return ret
+
 class RTFAnomalyCharacterSet(Signature):
     name = "rtf_anomaly_characterset"
     description = "The RTF file has an unknown character set"
