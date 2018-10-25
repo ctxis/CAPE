@@ -4,7 +4,7 @@
 
 from lib.cuckoo.common.abstracts import Signature
 
-class Internet_Dropper(Signature):
+class HTTP_Request(Signature):
     name = "http_request"
     description = "Performs HTTP requests potentially not found in PCAP."
     severity = 2
