@@ -1149,11 +1149,14 @@ class Office(object):
                     temp_dict["type_embed"] = "Linked"
                 else:
                     temp_dict["type_embed"] = "Unknown"
-                if rtfobj.clsid is not None:
-                    #ole_column += '\nCLSID: %s' % rtfobj.clsid
-                    #ole_column += '\n%s' % rtfobj.clsid_desc
-                    if "CVE" in rtfobj.clsid_desc:
-                        temp_dict["CVE"] = rtfobj.clsid_desc
+                try:
+                    if rtfobj.clsid is not None:
+                        # ole_column += '\nCLSID: %s' % rtfobj.clsid
+                        # ole_column += '\n%s' % rtfobj.clsid_desc
+                        if "CVE" in rtfobj.clsid_desc:
+                            temp_dict["CVE"] = rtfobj.clsid_desc
+                except AttributeError:
+                    pass
                 # Detect OLE2Link exploit
                 # http://www.kb.cert.org/vuls/id/921560
                 if rtfobj.class_name == b'OLE2Link':
