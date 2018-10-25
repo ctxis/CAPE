@@ -381,7 +381,12 @@ class Curtain(Processing):
         ]
 
         # Determine oldest Curtain log and remove the rest
-        curtLog = os.listdir("%s/curtain/" % self.analysis_path)
+        try:
+            # If OSError, then no curtain results
+            curtLog = os.listdir("%s/curtain/" % self.analysis_path)
+        except OSError as e:
+            return
+
         curtLog.sort()
 
         root = False
