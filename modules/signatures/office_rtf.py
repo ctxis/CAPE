@@ -68,7 +68,7 @@ class RTFEmbeddedOfficeFile(Signature):
     name = "rtf_embedded_office_file"
     description = "The RTF file contains an embedded  Office file potentially to display as a decoy document during malicious activities"
     severity = 2
-    confidence = 80
+    confidence = 100
     categories = ["rtf", "static"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
