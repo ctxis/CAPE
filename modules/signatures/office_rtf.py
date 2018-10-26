@@ -15,6 +15,30 @@
 
 from lib.cuckoo.common.abstracts import Signature
 
+class RTFEmbeddedContent(Signature):
+    name = "rtf_embedded_content"
+    description = "The RTF file contains embedded content"
+    severity = 1
+    confidence = 100
+    categories = ["rtf", "static"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        if "office_rtf" in self.results["static"]:
+            for key in self.results["static"]["office_rtf"]:
+                for block in self.results["static"]["office_rtf"][key]:
+                    if "type_embed" in block:
+                        index = block["index"]
+                        classname = block["class_name"]
+                        size = block["size"]
+                        self.data.append({"embedded content" : "Object %s index %s contains embedded object %s with size %s bytes" % (key,index,classname,size)})
+                        ret = True
+                    
+        return ret
+
 class RTFExploitStatic(Signature):
     name = "rtf_exploit_static"
     description = "The RTF file contains an object with potential exploit code"
@@ -59,6 +83,36 @@ class RTFEmbeddedOfficeFile(Signature):
                             index = block["index"]
                             self.data.append({"office file" : "Object %s index %s contains an embedded office document" % (key,index)})
                             ret = True
+                    
+        return ret
+
+class RTFASLRBypass(Signature):
+    name = "rtf_aslr_bypass"
+    description = "The RTF file contains a potential ASLR bypass"
+    severity = 3
+    confidence = 50
+    categories = ["rtf", "static", "exploit"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        aslrbypass = [
+            "otkloadr.wrassembly.1",
+            "otkloadr.wrloader.1",
+        ]
+   
+        ret = False
+        if "office_rtf" in self.results["static"]:
+            for key in self.results["static"]["office_rtf"]:
+                for block in self.results["static"]["office_rtf"][key]:
+                    if "class_name" in block:
+                        for bypass in aslrbypass:
+                            classname = block["class_name"]
+                            index = block["index"]
+                            if bypass in classname.lower():
+                                self.data.append({"aslr bypass" : "Object %s index %s contains possible ASLR bypass %s" % (key,index,classname)})
+                                ret = True
                     
         return ret
 
