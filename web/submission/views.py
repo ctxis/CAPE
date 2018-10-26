@@ -228,7 +228,7 @@ def index(request, resubmit_hash=False):
                 tasks = results_db.analysis.find({"dropped.sha256": resubmission_hash})
                 if tasks:
                     for task in tasks:
-                        # grab task id and replace in path aka distributed cuckoo hack
+                        # grab task id and replace in path aka distributed cuckoo hack
                         path = os.path.join(settings.CUCKOO_PATH, "storage", "analyses", str(task["info"]["id"]), "files", resubmission_hash)
                         if os.path.exists(path):
                             paths = [path]
