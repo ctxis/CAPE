@@ -34,7 +34,7 @@ class RTFEmbeddedContent(Signature):
                         index = block["index"]
                         classname = block["class_name"]
                         size = block["size"]
-                        self.data.append({"embedded content" : "Object %s index %s contains embedded object %s with size %s" % (key,index,classname,size)})
+                        self.data.append({"embedded content" : "Object %s index %s contains embedded object %s with size %s bytes" % (key,index,classname,size)})
                         ret = True
                     
         return ret
