@@ -433,7 +433,7 @@ class Pcap:
         filters = [
             ".*\\.windows\\.com$",
             ".*\\.in\\-addr\\.arpa$",
-	    ".*\\.ip6\\.arpa$",
+            ".*\\.ip6\\.arpa$",
         ]
 
         regexps = [re.compile(filter) for filter in filters]
