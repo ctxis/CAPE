@@ -15,13 +15,15 @@ CUCKOO_PATH = os.path.join(os.getcwd(), "..")
 sys.path.append(CUCKOO_PATH)
 from lib.cuckoo.common.config import Config
 
-# In case we have VPNs enabled we need to initialize through the following
-# two methods as they verify the interaction with VPNs as well as gather
-# which VPNs are available (for representation upon File/URL submission).
-from lib.cuckoo.core.startup import init_rooter, init_routing
-
-init_rooter()
-init_routing()
+# Build a list of VPN endpoints for display in the submission page
+vpn = Config("vpn")
+if vpn.vpn.enabled:
+    for name in vpn.vpn.vpns.split(","):
+        name = name.strip()
+        if not name:
+            continue
+        entry = vpn.get(name)
+        vpns[entry.name] = entry
 
 cfg = Config("reporting")
 
