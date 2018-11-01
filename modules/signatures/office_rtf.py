@@ -27,7 +27,7 @@ class RTFEmbeddedContent(Signature):
 
     def run(self):
         ret = False
-        if "office_rtf" in self.results["static"]:
+        if "static" in self.results and self."office_rtf" in self.results["static"]:
             for key in self.results["static"]["office_rtf"]:
                 for block in self.results["static"]["office_rtf"][key]:
                     if "type_embed" in block:
@@ -51,7 +51,7 @@ class RTFExploitStatic(Signature):
 
     def run(self):
         ret = False
-        if "office_rtf" in self.results["static"]:
+        if "static" in self.results and "office_rtf" in self.results["static"]:
             for key in self.results["static"]["office_rtf"]:
                 for block in self.results["static"]["office_rtf"][key]:
                     if "CVE" in block:
@@ -75,7 +75,7 @@ class RTFEmbeddedOfficeFile(Signature):
 
     def run(self):
         ret = False
-        if "office_rtf" in self.results["static"]:
+        if "static" in self.results and "office_rtf" in self.results["static"]:
             for key in self.results["static"]["office_rtf"]:
                 for block in self.results["static"]["office_rtf"][key]:
                     if "class_name" in block:
@@ -103,7 +103,7 @@ class RTFASLRBypass(Signature):
         ]
    
         ret = False
-        if "office_rtf" in self.results["static"]:
+        if "static" in self.results and "office_rtf" in self.results["static"]:
             for key in self.results["static"]["office_rtf"]:
                 for block in self.results["static"]["office_rtf"][key]:
                     if "class_name" in block:
