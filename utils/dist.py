@@ -290,11 +290,18 @@ def node_submit_task(task_id, node_id):
             log.debug("Target category is: {}".format(task.category))
             return
 
+        # encoding problem
+        if r.status_code == 500 and task.category == "file":
+            r = requests.post(url,
+                            data=data, files={"file": ("file", open(task.path, "rb").read())},
+                            auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
+                            verify = False)
+
         # Zip files preprocessed, so only one id
         if r and r.status_code == 200:
             if "task_ids" in r.json() and len(r.json()["task_ids"]) > 0:
                 task.task_id = r.json()["task_ids"][0]
-            elif "task_id" in r.json() and len(r.json()["task_id"]) > 0:
+            elif "task_id" in r.json() and r.json()["task_id"] > 0 and r.json()["task_id"] is not None:
                 task.task_id = r.json()["task_id"]
             else:
                 log.debug("Failed to submit task {} to node: {}".format(task_id, node.name))
@@ -317,6 +324,7 @@ def node_submit_task(task_id, node_id):
             db.commit()
             db.refresh(task)
     except Exception as e:
+        log.exception(e)
         log.critical("Error submitting task (task #%d, node %s): %s",
                         task.id, node.name, e)
 
@@ -532,7 +540,7 @@ class Retriever(threading.Thread):
                 t.finished = True
                 t.retrieved = True
                 db.commit()
-                
+
 
                 # Fetch each requested report.
                 node = db.query(Node).filter_by(id = node_id).first()
@@ -619,13 +627,6 @@ class StatusThread(threading.Thread):
             # don't do nothing if nothing in pending
             # Get tasks from main_db submitted through web interface
             main_db_tasks = main_db.list_tasks(status=TASK_PENDING, order_by=desc("priority"))
-            """
-            temp = main_db.list_tasks(status=TASK_RUNNING, order_by=desc("priority"))
-            for t in temp:
-                tasks = db.query(Task).filter_by(main_task_id=t.id, node_id=None).all()
-                if tasks:
-                    main_db_tasks.append(t)
-            """
             if main_db_tasks:
                 log.debug("going to upload {} tasks to node id {}".format(pend_tasks_num, node_id))
                 limit = 0
@@ -738,16 +739,16 @@ class StatusThread(threading.Thread):
                 log.info("Status.. %s -> %s", node.name, status)
                 statuses[node.name] = status
                 STATUSES = statuses
-                #if node.name == "55" and statuses[node.name]["completed"] > 200:
-                #    continue
+                pend_tasks_num = MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"]
+                if pend_tasks_num <= 0:
+                    continue
                 # If - master only used for storage, not check master queue
                 # elif -  master also analyze samples, check master queue
                 # send tasks to slaves if master queue has extra tasks(pending)
                 if master_storage_only:
-                    self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"])
-                elif statuses.get("master", {}).get("pending", 0) > MINIMUMQUEUE.get("master", 0) and \
-                        status["pending"] < MINIMUMQUEUE[node.name]:
-                      self.submit_tasks(node.id, MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"])
+                    self.submit_tasks(node.id, pend_tasks_num)
+                elif statuses.get("master", {}).get("pending", 0) > MINIMUMQUEUE.get("master", 0) and status["pending"] < MINIMUMQUEUE[node.name]:
+                    self.submit_tasks(node.id, pend_tasks_num)
             db.close()
             time.sleep(INTERVAL)
 
