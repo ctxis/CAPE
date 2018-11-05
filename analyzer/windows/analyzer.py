@@ -599,12 +599,6 @@ class PipeHandler(Thread):
                         if event_handle:
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
-                            # CAPE replaces this with its own process dumps,
-                            # with 'procmemory' processing module off, and
-                            # 'procdump' enabled instead.
-                            if self.options.get("procmemdump"):
-                                p = Process(pid=process_id)
-                                p.dump_memory()
                             dump_files()
                     PROCESS_LOCK.release()
                 # Handle case of malware terminating a process -- notify the target
@@ -621,10 +615,6 @@ class PipeHandler(Thread):
                             log.warning("Unable to open termination event for pid %u.", process_id)
                         else:
                             log.info("Notified of termination of process with pid %u.", process_id)
-                            # dump the memory of exiting processes
-                            if self.options.get("procmemdump"):
-                                p = Process(pid=process_id)
-                                p.dump_memory()
                             # make sure process is aware of the termination
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
@@ -1260,6 +1250,20 @@ class Analyzer:
         # for a second to ensure they see it before they're terminated
         KERNEL32.Sleep(1000)
 
+        # Tell all processes to flush their logs and exit
+        if not kernel_analysis:
+            for pid in PROCESS_LIST:
+                proc = Process(pid=pid)
+                if proc.is_alive():
+                    log.info("Setting terminate event for process %d.", proc.pid)
+                    try:
+                        proc.set_terminate_event()
+                    except:
+                        continue
+                while proc.is_alive():
+                    log.info("Waiting for process %d to exit.", proc.pid)
+                    KERNEL32.Sleep(1000)
+
         log.info("Shutting down package.")
         try:
             # Before shutting down the analysis, the package can perform some
@@ -1279,19 +1283,6 @@ class Analyzer:
             except Exception as e:
                 log.warning("Cannot terminate auxiliary module %s: %s",
                             aux.__class__.__name__, e)
-
-        # Tell all processes to flush their logs regardless of terminate_processes setting
-        if not kernel_analysis:
-            for pid in PROCESS_LIST:
-                proc = Process(pid=pid)
-                if proc.is_alive():
-                    try:
-                        proc.set_terminate_event()
-                        # Cape needs time to dump and fix
-                        # each process on terminate
-                        KERNEL32.Sleep(5000)
-                    except:
-                        continue
 
         if self.config.terminate_processes:
             # Try to terminate remaining active processes. We do this to make sure

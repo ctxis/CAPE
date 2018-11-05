@@ -187,14 +187,13 @@ class Package(object):
     
     def finish(self):
         """Finish run.
-        If specified to do so, this method dumps the memory of
+        If configured, upload memory dumps of
         all running processes.
         """
-        # Process dumping is now handled in-process (CAPE)
         if self.options.get("procmemdump"):
             for pid in self.pids:
                 p = Process(pid=pid)
-                p.dump_memory()
+                p.upload_memdump()
         
         return True
 

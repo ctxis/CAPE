@@ -533,6 +533,8 @@ class Process:
 
             if "procdump" in self.options:
                 config.write("procdump={0}\n".format(self.options["procdump"]))
+            if "procmemdump" in self.options:
+                config.write("procmemdump={0}\n".format(self.options["procmemdump"]))
             if "import_reconstruction" in self.options:
                 config.write("import_reconstruction={0}\n".format(self.options["import_reconstruction"]))
             if "CAPE_var1" in self.options:
@@ -695,42 +697,17 @@ class Process:
         else:
             return True
 
-    def dump_memory(self):
-        """Dump process memory.
+    def upload_memdump(self):
+        """Upload process memory dump.
         @return: operation status.
         """
         if not self.pid:
-            log.warning("No valid pid specified, memory dump aborted")
-            return False
-
-        if not self.is_alive():
-            log.warning("The process with pid %d is not alive, memory "
-                        "dump aborted", self.pid)
+            log.warning("No valid pid specified, memory dump cannot be uploaded")
             return False
 
         bin_name = ""
         bit_str = ""
         file_path = os.path.join(PATHS["memory"], "{0}.dmp".format(self.pid))
-
-        if self.is_64bit():
-            orig_bin_name = LOADER64_NAME
-            bit_str = "64-bit"
-        else:
-            orig_bin_name = LOADER32_NAME
-            bit_str = "32-bit"
-
-        bin_name = os.path.join(os.getcwd(), orig_bin_name)
-
-        if os.path.exists(bin_name):
-            ret = subprocess.call([bin_name, "dump", str(self.pid), file_path])
-            if ret == 1:
-                log.info("Dumped %s process with pid %d", bit_str, self.pid)
-            else:
-                log.error("Unable to dump %s process with pid %d, error: %d", bit_str, self.pid, ret)
-                return False
-        else:
-            log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to analyze %s binaries.", os.path.basename(bin_name), bit_str)
-            return False
 
         nf = NetlogFile(os.path.join("memory", "{0}.dmp".format(self.pid)))
         infd = open(file_path, "rb")
@@ -742,12 +719,12 @@ class Process:
         except:
             infd.close()
             nf.close()
-            log.warning("Memory dump of process with pid %d failed", self.pid)
+            log.warning("Upload of memory dump for process %d failed", self.pid)
             return False
 
         infd.close()
         nf.close()
 
-        log.info("Memory dump of process with pid %d completed", self.pid)
+        log.info("Memory dump of process %d uploaded", self.pid)
 
         return True

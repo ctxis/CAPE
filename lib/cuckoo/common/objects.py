@@ -482,20 +482,26 @@ class ProcDump(object):
         return self.protmap[prot]
 
     def pretty_print(self):
-        new_addr_space = copy.deepcopy(self.address_space)
-        for map in new_addr_space:
-            map["start"] = "0x%.08x" % map["start"]
-            map["end"] = "0x%.08x" % map["end"]
-            map["size"] = "0x%.08x" % map["size"]
-            if map["prot"] is None:
-                map["prot"] = "Mixed"
-            else:
-                map["prot"] = self._prot_to_str(map["prot"])
-            for chunk in map["chunks"]:
-                chunk["start"] = "0x%.08x" % chunk["start"]
-                chunk["end"] = "0x%.08x" % chunk["end"]
-                chunk["size"] = "0x%.08x" % chunk["size"]
-                chunk["prot"] = self._prot_to_str(chunk["prot"])
+        last_map = 0
+        try:
+            new_addr_space = copy.deepcopy(self.address_space)
+            for map in new_addr_space:
+                last_map = map["start"]
+                map["start"] = "0x%.08x" % map["start"]
+                map["end"] = "0x%.08x" % map["end"]
+                map["size"] = "0x%.08x" % map["size"]
+                if map["prot"] is None:
+                    map["prot"] = "Mixed"
+                else:
+                    map["prot"] = self._prot_to_str(map["prot"])
+                for chunk in map["chunks"]:
+                    chunk["start"] = "0x%.08x" % chunk["start"]
+                    chunk["end"] = "0x%.08x" % chunk["end"]
+                    chunk["size"] = "0x%.08x" % chunk["size"]
+                    chunk["prot"] = self._prot_to_str(chunk["prot"])
+        except:
+            log.warning("Exception parsing memory dump, last map = 0x%x", last_map)
+            return
         return new_addr_space
 
     def _coalesce_chunks(self, chunklist):
