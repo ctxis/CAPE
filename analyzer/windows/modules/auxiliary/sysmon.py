@@ -2,9 +2,10 @@ import logging
 import os
 import time
 import threading
-
+import subprocess
 from lib.common.abstracts import Auxiliary
 from lib.common.results import upload_to_host
+from lib.core.config import Config
 
 log = logging.getLogger(__name__)
 
@@ -16,20 +17,22 @@ class Sysmon(threading.Thread, Auxiliary):
     def __init__(self, options={}, analyzer=None):
         threading.Thread.__init__(self)
         Auxiliary.__init__(self, options, analyzer)
-        self.do_run = options.get("sysmon", {}).get("enabled", False)
-        self.enabled = options.get("sysmon", {}).get("enabled", False)
+        self.config = Config(cfg="analysis.conf")
+        self.enabled = self.config.sysmon
+        self.do_run = self.enabled
+        self.startupinfo = subprocess.STARTUPINFO()
+        self.startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
     def clear_log(self):
         try:
-            os.system("C:\\Windows\\System32\\wevtutil.exe clear-log microsoft-windows-sysmon/operational")
+           subprocess.call(["C:\\Windows\\System32\\wevtutil.exe", "clear-log", "microsoft-windows-sysmon/operational"], startupinfo=self.startupinfo)
         except Exception as e:
             log.error("Error clearing Sysmon events - %s" % e)
 
 
     def collect_logs(self):
         try:
-            os.system("C:\\Windows\\System32\\wevtutil.exe query-events "\
-                      "microsoft-windows-sysmon/operational /format:xml /e:Events > C:\\sysmon.xml")
+                      subprocess.call(["C:\\Windows\\System32\\wevtutil.exe", "query-events", "microsoft-windows-sysmon/operational", "/rd:true", "/e:root", "/format:xml", "/uni:true"], startupinfo=self.startupinfo,  stdout=open("C:\\sysmon.log", "w"))
         except Exception as e:
             log.error("Could not create sysmon log file - %s" % e)
 
