@@ -1203,6 +1203,8 @@ class Analyzer:
                     if not kernel_analysis:
                         for pid in PROCESS_LIST:
                             if not Process(pid=pid).is_alive():
+                                if self.options.get("procmemdump"):
+                                    Process(pid=pid).upload_memdump()
                                 log.info("Process with pid %s has terminated", pid)
                                 PROCESS_LIST.remove(pid)
 
