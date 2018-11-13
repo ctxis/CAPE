@@ -945,6 +945,7 @@ class Analyzer:
         svcpid = self.pids_from_process_name_list(["services.exe"])
         if svcpid:
             SERVICES_PID = svcpid[0]
+            self.config.services_pid = svcpid[0]
 
         protected_procname_list = [
             "vmwareuser.exe",
@@ -1262,9 +1263,17 @@ class Analyzer:
                         proc.set_terminate_event()
                     except:
                         continue
+                proc_counter = 0
                 while proc.is_alive():
+                    if proc_counter > 5:
+                        try:
+                            if not proc.is_critical():
+                                proc.terminate()
+                        except:
+                            continue                    
                     log.info("Waiting for process %d to exit.", proc.pid)
                     KERNEL32.Sleep(1000)
+                    proc_counter += 1
 
         log.info("Shutting down package.")
         try:
