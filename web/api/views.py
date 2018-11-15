@@ -11,7 +11,7 @@ import requests
 from django.conf import settings
 from wsgiref.util import FileWrapper
 from django.http import HttpResponse, StreamingHttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_safe
@@ -1859,13 +1859,24 @@ def tasks_fullmemory(request, task_id):
     if check["error"]:
         return jsonize(check, response=True)
 
+    filename = ""
     file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "memory.dmp")
     if os.path.exists(file_path):
         filename = os.path.basename(file_path)
-    else:
+    elif os.path.exists(file_path+".zip"):
         file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "memory.dmp.zip")
         if os.path.exists(file_path):
             filename = os.path.basename(file_path)
+    elif repconf.distributed.enabled:
+        # check for memdump on slave
+        try:
+            res = requests.get("http://127.0.0.1:9003/task/{task_id}".format(task_id=task_id), verify=False, timeout=30)
+            if res and res.ok and res.json()["status"] == 1:
+                url = res.json()["url"]
+                dist_task_id = res.json()["task_id"]
+                return redirect(url.replace(":8090", ":8000")+"api/tasks/get/fullmemory/"+str(dist_task_id)+"/", permanent=True)
+        except Exception as e:
+            log.error(e)
     if filename:
         content_type = "application/octet-stream"
         chunk_size = 8192
