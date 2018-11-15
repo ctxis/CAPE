@@ -864,6 +864,16 @@ class TaskBaseApi(RestResource):
         self._parser.add_argument("clock", type=int)
         self._parser.add_argument("enforce_timeout", type=bool, default=False)
 
+class TaskInfo(RestResource):
+    def get(self, main_task_id):
+        response = dict(status=0)
+        db = session()
+        task_db = db.query(Task).filter_by(main_task_id=main_task_id).first()
+        if task_db:
+            node = db.query(Node).filter_by(id=task_db.node_id).first()
+            response = dict(status=1, task_id=task_db.task_id, url=node.url)
+        db.close()
+        return response
 
 class StatusRootApi(RestResource):
     def get(self):
@@ -907,7 +917,6 @@ def update_machine_table(node_name):
 
     log.info("Updated the machine table for node: %s" % node_name)
 
-
 def delete_vm_on_node(node_name, vm_name):
     db = session()
     node = db.query(Node).filter_by(name=node_name).first()
@@ -924,7 +933,6 @@ def delete_vm_on_node(node_name, vm_name):
         vm = db.query(Machine).filter_by(name=vm_name, node_id=node.id).delete()
         db.commit()
     db.close()
-
 
 def node_enabled(node_name, status):
     db = session()
@@ -983,6 +991,7 @@ def create_app(database_connection):
     restapi.add_resource(NodeRootApi, "/node")
     restapi.add_resource(NodeApi, "/node/<string:name>")
     restapi.add_resource(StatusRootApi, "/status")
+    restapi.add_resource(TaskInfo, "/task/<int:main_task_id>")
 
     return app
 
