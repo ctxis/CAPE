@@ -1257,7 +1257,7 @@ class Analyzer:
         if not kernel_analysis:
             for pid in PROCESS_LIST:
                 proc = Process(pid=pid)
-                if proc.is_alive():
+                if proc.is_alive() and not proc.is_critical():
                     log.info("Setting terminate event for process %d.", proc.pid)
                     try:
                         proc.set_terminate_event()
