@@ -491,6 +491,7 @@ class Process:
             config.write("file-of-interest={0}\n".format(interest))
             config.write("shutdown-mutex={0}\n".format(SHUTDOWN_MUTEX))
             config.write("terminate-event={0}{1}\n".format(TERMINATE_EVENT, self.pid))
+            config.write("terminate-processes={0}\n".format("1" if self.config.terminate_processes else "0"))
 
             if nosleepskip or ("force-sleepskip" not in self.options and len(interest) > 2 and interest[1] != ':' and interest[0] != '\\' and Process.process_num <= 2):
                 config.write("force-sleepskip=0\n")

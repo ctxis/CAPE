@@ -440,6 +440,7 @@ class PipeHandler(Thread):
                         MONITORED_DCOM = True
                         dcom_pid = pid_from_service_name("DcomLaunch")
                         if dcom_pid:
+                            log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                             servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
@@ -456,15 +457,15 @@ class PipeHandler(Thread):
                         si.dwFlags = 1
                         # SW_HIDE
                         si.wShowWindow = 0
-                        log.info("Stopping WMI Service")
                         subprocess.call(['net', 'stop', 'winmgmt', '/y'], startupinfo=si)
-                        log.info("Stopped WMI Service")
                         subprocess.call("sc config winmgmt type= own", startupinfo=si)
+                        log.info("Stopped WMI Service")
 
                         if not MONITORED_DCOM:
                             MONITORED_DCOM = True
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
+                                log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                                 servproc.set_critical()
                                 filepath = servproc.get_filepath()
@@ -473,12 +474,12 @@ class PipeHandler(Thread):
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
 
-                        log.info("Starting WMI Service")
                         subprocess.call("net start winmgmt", startupinfo=si)
                         log.info("Started WMI Service")
 
                         wmi_pid = pid_from_service_name("winmgmt")
                         if wmi_pid:
+                            log.info("Attaching to WMI service (pid %d)", wmi_pid)
                             servproc = Process(options=self.options,config=self.config,pid=wmi_pid,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
@@ -491,16 +492,12 @@ class PipeHandler(Thread):
                     if not MONITORED_TASKSCHED:
                         MONITORED_TASKSCHED = True
                         si = subprocess.STARTUPINFO()
-                        # STARTF_USESHOWWINDOW
-                        si.dwFlags = 1
-                        # SW_HIDE
-                        si.wShowWindow = 0
-                        log.info("Stopping Task Scheduler Service")
+                        si.dwFlags = 1      # STARTF_USESHOWWINDOW
+                        si.wShowWindow = 0  # SW_HIDE
                         subprocess.call(['net', 'stop', 'schedule', '/y'], startupinfo=si)
-                        log.info("Stopped Task Scheduler Service")
                         subprocess.call("sc config schedule type= own", startupinfo=si)
+                        log.info("Stopped Task Scheduler Service")
 
-                        log.info("Starting Task Scheduler Service")
                         subprocess.call("net start schedule", startupinfo=si)
                         log.info("Started Task Scheduler Service")
 
@@ -522,7 +519,6 @@ class PipeHandler(Thread):
                         si.dwFlags = 1
                         # SW_HIDE
                         si.wShowWindow = 0
-                        log.info("Stopping BITS Service")
                         subprocess.call(['net', 'stop', 'BITS', '/y'], startupinfo=si)
                         log.info("Stopped BITS Service")
                         subprocess.call("sc config BITS type= own", startupinfo=si)
@@ -531,6 +527,7 @@ class PipeHandler(Thread):
                             MONITORED_DCOM = True
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
+                                log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
                                 servproc.set_critical()
                                 filepath = servproc.get_filepath()
@@ -571,6 +568,7 @@ class PipeHandler(Thread):
                         # if tasklist previously failed to get the services.exe PID we'll be
                         # unable to inject
                         if SERVICES_PID:
+                            log.info("Attaching to Service Control Manager (services.exe - pid %d)", SERVICES_PID)
                             servproc = Process(options=self.options,config=self.config,pid=SERVICES_PID,suspended=False)
                             servproc.set_critical()
                             filepath = servproc.get_filepath()
@@ -1267,16 +1265,21 @@ class Analyzer:
                         proc.set_terminate_event()
                     except:
                         continue
-                    proc_counter = 0
-                    while proc.is_alive():
-                        if proc_counter > 3:
-                            try:
-                                proc.terminate()
-                            except:
-                                continue
-                        log.info("Waiting for process %d to exit.", proc.pid)
-                        KERNEL32.Sleep(1000)
-                        proc_counter += 1
+                if self.config.terminate_processes:
+                    # Try to terminate remaining active processes.
+                    # (This setting may render full system memory dumps less useful.)
+                    log.info("Terminating process %d before shutdown.", proc.pid)
+                    if not kernel_analysis and not proc.is_critical():
+                        proc_counter = 0
+                        while proc.is_alive():
+                            if proc_counter > 3:
+                                try:
+                                    proc.terminate()
+                                except:
+                                    continue
+                            log.info("Waiting for process %d to exit.", proc.pid)
+                            KERNEL32.Sleep(1000)
+                            proc_counter += 1
 
         log.info("Shutting down package.")
         try:
@@ -1297,23 +1300,6 @@ class Analyzer:
             except Exception as e:
                 log.warning("Cannot terminate auxiliary module %s: %s",
                             aux.__class__.__name__, e)
-
-        if self.config.terminate_processes:
-            # Try to terminate remaining active processes. We do this to make sure
-            # that we clean up remaining open handles (sockets, files, etc.).
-            log.info("Terminating remaining processes before shutdown.")
-
-            if not kernel_analysis:
-                for pid in PROCESS_LIST:
-                    proc = Process(pid=pid)
-                    if proc.is_alive():
-                        try:
-                            if not proc.is_critical():
-                                proc.terminate()
-                            else:
-                                log.info("Not terminating critical process with pid %d.", proc.pid)
-                        except:
-                            continue
 
         log.info("Finishing auxiliary modules.")
         # Run the finish callback of every available Auxiliary module.
