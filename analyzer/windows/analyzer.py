@@ -680,6 +680,8 @@ class PipeHandler(Thread):
 
                                 is_64bit = proc.is_64bit()
                                 filename = os.path.basename(filepath)
+                                if SERVICES_PID and process_id == SERVICES_PID:
+                                    proc.set_critical()
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
@@ -730,6 +732,8 @@ class PipeHandler(Thread):
                                 interest = proc.get_filepath()
                                 is_64bit = proc.is_64bit()
                                 filename = os.path.basename(interest)
+                                if SERVICES_PID and process_id == SERVICES_PID:
+                                    proc.set_critical()
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
@@ -1263,17 +1267,16 @@ class Analyzer:
                         proc.set_terminate_event()
                     except:
                         continue
-                proc_counter = 0
-                while proc.is_alive():
-                    if proc_counter > 5:
-                        try:
-                            if not proc.is_critical():
+                    proc_counter = 0
+                    while proc.is_alive():
+                        if proc_counter > 3:
+                            try:
                                 proc.terminate()
-                        except:
-                            continue                    
-                    log.info("Waiting for process %d to exit.", proc.pid)
-                    KERNEL32.Sleep(1000)
-                    proc_counter += 1
+                            except:
+                                continue
+                        log.info("Waiting for process %d to exit.", proc.pid)
+                        KERNEL32.Sleep(1000)
+                        proc_counter += 1
 
         log.info("Shutting down package.")
         try:
