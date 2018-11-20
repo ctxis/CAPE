@@ -30,11 +30,9 @@ class HTTP_Request(Signature):
         if call["api"].startswith("InternetConnect"):
             host = self.get_argument(call, "ServerName")
             port = self.get_argument(call, "ServerPort")
-
+            self.lasthost = host
             if host in self.host_whitelist:
                 return None
-
-            self.lasthost = host
             if host not in self.request:
                 self.request[host] = dict()
                 self.request[host]["uris"] = list()
@@ -43,6 +41,8 @@ class HTTP_Request(Signature):
         elif call["api"].startswith("HttpOpenRequest"):
             handle = str(self.get_argument(call, "InternetHandle"))
             # Sanity check
+            if self.lasthost in self.host_whitelist:
+                return None
             if handle == self.request[self.lasthost]["curhandle"]:
                 uri = self.get_argument(call, "Path")
                 if uri != "/" and uri != "":
