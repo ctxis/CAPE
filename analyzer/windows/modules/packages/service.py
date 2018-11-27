@@ -90,7 +90,6 @@ class Service(Package):
             log.info("Created service (handle: 0x%x)", service_handle)
 
             servproc = Process(options=self.options,config=self.config,pid=self.config.services_pid,suspended=False)
-            servproc.set_critical()
             filepath = servproc.get_filepath()
             is_64bit = servproc.is_64bit()
             if is_64bit:

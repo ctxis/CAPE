@@ -52,6 +52,7 @@ CAPE_DUMPED_LIST = []
 PROC_DUMPED_LIST = []
 UPLOADPATH_LIST = []
 PROCESS_LIST = []
+CRITICAL_PROCESS_LIST = []
 PROTECTED_PATH_LIST = []
 AUX_ENABLED = []
 PROCESS_LOCK = Lock()
@@ -68,6 +69,7 @@ MONITORED_BITS = False
 MONITORED_TASKSCHED = False
 LASTINJECT_TIME = None
 NUM_INJECTED = 0
+ANALYSIS_TIMED_OUT = False
 
 PID = os.getpid()
 PPID = Process(pid=PID).get_parent_pid()
@@ -375,7 +377,7 @@ class PipeHandler(Thread):
 
                 break
 
-            if data:
+            if data and ANALYSIS_TIMED_OUT == False:
                 command = data.strip()
 
                 # Debug, Regular, Warning, or Critical information from CuckooMon.
@@ -442,7 +444,7 @@ class PipeHandler(Thread):
                         if dcom_pid:
                             log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                             servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(dcom_pid))
                             filepath = servproc.get_filepath()
                             servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
@@ -467,7 +469,7 @@ class PipeHandler(Thread):
                             if dcom_pid:
                                 log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
-                                servproc.set_critical()
+                                CRITICAL_PROCESS_LIST.append(int(dcom_pid))
                                 filepath = servproc.get_filepath()
                                 servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
@@ -481,7 +483,7 @@ class PipeHandler(Thread):
                         if wmi_pid:
                             log.info("Attaching to WMI service (pid %d)", wmi_pid)
                             servproc = Process(options=self.options,config=self.config,pid=wmi_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(wmi_pid))
                             filepath = servproc.get_filepath()
                             servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
@@ -504,7 +506,7 @@ class PipeHandler(Thread):
                         sched_pid = pid_from_service_name("schedule")
                         if sched_pid:
                             servproc = Process(options=self.options,config=self.config,pid=sched_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(sched_pid))
                             filepath = servproc.get_filepath()
                             servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
@@ -529,7 +531,7 @@ class PipeHandler(Thread):
                             if dcom_pid:
                                 log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
-                                servproc.set_critical()
+                                CRITICAL_PROCESS_LIST.append(int(dcom_pid))
                                 filepath = servproc.get_filepath()
                                 servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
@@ -543,7 +545,7 @@ class PipeHandler(Thread):
                         bits_pid = pid_from_service_name("BITS")
                         if bits_pid:
                             servproc = Process(options=self.options,config=self.config,pid=bits_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(bits_pid))
                             filepath = servproc.get_filepath()
                             servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
@@ -570,7 +572,7 @@ class PipeHandler(Thread):
                         if SERVICES_PID:
                             log.info("Attaching to Service Control Manager (services.exe - pid %d)", SERVICES_PID)
                             servproc = Process(options=self.options,config=self.config,pid=SERVICES_PID,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
                             filepath = servproc.get_filepath()
                             servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
@@ -679,7 +681,7 @@ class PipeHandler(Thread):
                                 is_64bit = proc.is_64bit()
                                 filename = os.path.basename(filepath)
                                 if SERVICES_PID and process_id == SERVICES_PID:
-                                    proc.set_critical()
+                                    CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
@@ -731,7 +733,7 @@ class PipeHandler(Thread):
                                 is_64bit = proc.is_64bit()
                                 filename = os.path.basename(interest)
                                 if SERVICES_PID and process_id == SERVICES_PID:
-                                    proc.set_critical()
+                                    CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
@@ -948,6 +950,7 @@ class Analyzer:
         if svcpid:
             SERVICES_PID = svcpid[0]
             self.config.services_pid = svcpid[0]
+            CRITICAL_PROCESS_LIST.append(int(svcpid[0]))
 
         protected_procname_list = [
             "vmwareuser.exe",
@@ -1190,6 +1193,7 @@ class Analyzer:
             time_counter += 1
             if time_counter == int(self.config.timeout):
                 log.info("Analysis timeout hit, terminating analysis.")
+                ANALYSIS_TIMED_OUT = True
                 break
 
             # If the process lock is locked, it means that something is
@@ -1259,7 +1263,7 @@ class Analyzer:
         if not kernel_analysis:
             for pid in PROCESS_LIST:
                 proc = Process(pid=pid)
-                if proc.is_alive() and not proc.is_critical():
+                if proc.is_alive() and not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
                     log.info("Setting terminate event for process %d.", proc.pid)
                     try:
                         proc.set_terminate_event()
@@ -1268,8 +1272,8 @@ class Analyzer:
                 if self.config.terminate_processes:
                     # Try to terminate remaining active processes.
                     # (This setting may render full system memory dumps less useful.)
-                    log.info("Terminating process %d before shutdown.", proc.pid)
-                    if not kernel_analysis and not proc.is_critical():
+                    if not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
+                        log.info("Terminating process %d before shutdown.", proc.pid)
                         proc_counter = 0
                         while proc.is_alive():
                             if proc_counter > 3:
