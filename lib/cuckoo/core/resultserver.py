@@ -68,7 +68,7 @@ class ResultServer(SocketServer.ThreadingTCPServer, object):
                         # EADDRINUSE 48 (Address already in use)
                         log.warning("Cannot bind ResultServer on port %s, "
                                         "trying another port.", self.port)
-                            self.port += 1
+                        self.port += 1
                 elif e.errno == errno.EADDRNOTAVAIL:
                     raise CuckooCriticalError(
                         "Unable to bind ResultServer on %s:%s %s. This "
