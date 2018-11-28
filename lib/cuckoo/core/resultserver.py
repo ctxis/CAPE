@@ -56,18 +56,33 @@ class ResultServer(SocketServer.ThreadingTCPServer, object):
                                                          *args,
                                                          **kwargs)
             except Exception as e:
-                # In Linux /usr/include/asm-generic/errno-base.h.
-                # EADDRINUSE  98 (Address already in use)
-                # In Mac OS X or FreeBSD:
-                # EADDRINUSE 48 (Address already in use)
-                if e.errno == 98 or e.errno == 48:
-                    log.warning("Cannot bind ResultServer on port {0}, "
-                                "trying another port.".format(self.port))
-                    self.port += 1
+                if e.errno == errno.EADDRINUSE:
+                    if self.cfg.resultserver.force_port is True:
+                        raise CuckooCriticalError("Cannot bind ResultServer on port %d, "
+                            "bailing." % self.port
+                        )
+                    else:
+                        # In Linux /usr/include/asm-generic/errno-base.h.
+                        # EADDRINUSE  98 (Address already in use)
+                        # In Mac OS X or FreeBSD:
+                        # EADDRINUSE 48 (Address already in use)
+                        log.warning("Cannot bind ResultServer on port %s, "
+                                        "trying another port.", self.port)
+                        self.port += 1
+                elif e.errno == errno.EADDRNOTAVAIL:
+                    raise CuckooCriticalError(
+                        "Unable to bind ResultServer on %s:%s %s. This "
+                        "usually happens when you start Cuckoo without "
+                        "bringing up the virtual interface associated with "
+                        "the ResultServer IP address. Please refer to "
+                        "https://cuckoo.sh/docs/faq/#troubles-problem"
+                        " for more information." % (ip, self.port, e)
+                    )
                 else:
-                    raise CuckooCriticalError("Unable to bind ResultServer on "
-                                              "{0}:{1}: {2}".format(
-                                                  ip, self.port, str(e)))
+                    raise CuckooCriticalError(
+                        "Unable to bind ResultServer on %s:%s: %s" %
+                        (ip, self.port, e)
+                    )
             else:
                 log.debug("ResultServer running on {0}:{1}.".format(ip, self.port))
                 self.servethread = Thread(target=self.serve_forever)
