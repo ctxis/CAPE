@@ -121,7 +121,7 @@ class Static_Java(Signature):
                 exploit += 1
 
             if exploit > 0:
-                self.description += " and contains possible exploit code."
+                self.description += " and possible exploit code."
                 self.severity = 3
                 self.weight += 1
 
