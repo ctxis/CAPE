@@ -63,6 +63,14 @@ class Static_Java(Signature):
                 self.data.append({"serialized_object" : "Contains use of a Java serialized object" })
                 self.weight += 1
 
+            # Check individual string length for possible ofbuscation
+            for string in decompiled.split():
+                if len(string) > 150:
+                    self.data.append({"string_length" : "Contains very large strings indicative of obfuscation" })
+                    self.severity = 3
+                    self.weight += 1
+                    break
+
             # Specific Exploit Detections
             # http://stopmalvertising.com/malware-reports/watering-hole-attack-cve-2012-4792-and-cve-2012-0507.html
             if "AtomicReferenceArray" in decompiled:
