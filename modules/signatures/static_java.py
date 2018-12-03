@@ -63,7 +63,7 @@ class Static_Java(Signature):
                 self.data.append({"serialized_object" : "Contains use of a Java serialized object" })
                 self.weight += 1
 
-            # Check individual string length for possible ofbuscation
+            # Check individual string length for possible obfuscation
             for string in decompiled.split():
                 if len(string) > 150:
                     self.data.append({"string_length" : "Contains very large strings indicative of obfuscation" })
