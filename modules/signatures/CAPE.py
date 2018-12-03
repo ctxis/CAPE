@@ -540,7 +540,7 @@ class CAPEDetectedThreat(Signature):
 
         if "cape" in self.results:
             detection = self.results["cape"]
-            self.description = "CAPE detected %s malware" % detection
+            self.description = "CAPE detected the %s malware family" % detection
             return True
 
         return False
