@@ -528,7 +528,7 @@ class CAPE_TransactedHollowing(Signature):
             return True
 
 class CAPEDetectedThreat(Signature):
-    name = "CAPE detected a specific threat"
+    name = "cape_detected_threat"
     description = "CAPE detected a specific malware threat"
     severity = 3
     categories = ["malware"]
