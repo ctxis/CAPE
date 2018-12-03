@@ -280,10 +280,11 @@ class PowershellRenamedCommandLine(Signature):
     def run(self):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
-        if "powershell" in cmdline.lower() and not cmdline.lower().startswith("powershell"):
-            if re.findall('=\W+powershell', cmdline.lower()):
-                ret = True
-                self.data.append({"command" : cmdline})
+        for cmdline in cmdlines:
+            if "powershell" in cmdline.lower() and not cmdline.lower().startswith("powershell"):
+                if re.findall('=\W+powershell', cmdline.lower()):
+                    ret = True
+                    self.data.append({"command" : cmdline})
 
         return ret
 
@@ -312,7 +313,7 @@ class CommandLineLongString(Signature):
             for utility in utilities:
                 if utility in cmdline.lower():
                     for string in cmdline.split():
-                        if len(string) > 100:
+                        if len(string) > 100 and "http://" not in string and "https://" not in string:
                             ret = True
                             self.data.append({"command" : cmdline})
 
