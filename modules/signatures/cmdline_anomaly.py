@@ -311,7 +311,7 @@ class CommandLineLongString(Signature):
         for cmdline in cmdlines:
             for utility in utilities:
                 if utility in cmdline.lower():
-                    for strings in cmdline.split():
+                    for string in cmdline.split():
                         if len(string) > 100:
                             ret = True
                             self.data.append({"command" : cmdline})
