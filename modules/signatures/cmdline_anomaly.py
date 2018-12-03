@@ -205,7 +205,7 @@ class LongCommandline(Signature):
 
         return ret
 
-    class CommandLineHTTPLink(Signature):
+class CommandLineHTTPLink(Signature):
     name = "cmdline_http_link"
     description = "A HTTP/S link was seen in a script or command line"
     severity = 2
@@ -237,7 +237,7 @@ class LongCommandline(Signature):
         return ret
 
     
-    class CommandLineReversedHTTPLink(Signature):
+class CommandLineReversedHTTPLink(Signature):
     name = "cmdline_reversed_http_link"
     description = "A reversed HTTP/S link was seen in a script or command line"
     severity = 3
@@ -280,10 +280,40 @@ class PowershellRenamedCommandLine(Signature):
     def run(self):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        if "powershell" in cmdline.lower() and not cmdline.lower().startswith("powershell"):
+            if re.findall('=\W+powershell', cmdline.lower()):
+                ret = True
+                self.data.append({"command" : cmdline})
+
+        return ret
+
+class CommandLineLongString(Signature):
+    name = "commandline_long_string"
+    description = "A script or command line contains a long continuous string indicative of obfuscation"
+    severity = 3
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        utilities = [
+            "cmd ",
+            "cmd.exe",
+            "cscript",
+            "hta ",
+            "hta.exe",
+            "powershell",
+            "wscript",
+        ]
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
         for cmdline in cmdlines:
-            if "powershell" in cmdline.lower() and not cmdline.lower().startswith("powershell"):
-                if re.findall('=\W+powershell', cmdline.lower()):
-                    ret = True
-                    self.data.append({"command" : cmdline})
+            for utility in utilities:
+                if utility in cmdline.lower():
+                    for strings in cmdline.split():
+                        if len(string) > 100:
+                            ret = True
+                            self.data.append({"command" : cmdline})
 
         return ret
