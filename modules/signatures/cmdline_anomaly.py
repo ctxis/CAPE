@@ -204,3 +204,86 @@ class LongCommandline(Signature):
                     self.data.append({"command" : cmdline})
 
         return ret
+
+    class CommandLineHTTPLink(Signature):
+    name = "cmdline_http_link"
+    description = "A HTTP/S link was seen in a script or command line"
+    severity = 2
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        utilities = [
+            "cmd ",
+            "cmd.exe",
+            "cscript",
+            "hta ",
+            "hta.exe",
+            "powershell",
+            "wscript",
+        ]
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            for utility in utilities:
+                if utility in lower:
+                    if "http://" in lower or "https://" in lower:
+                        ret = True
+                        self.data.append({"command" : cmdline})
+
+        return ret
+
+    
+    class CommandLineReversedHTTPLink(Signature):
+    name = "cmdline_reversed_http_link"
+    description = "A reversed HTTP/S link was seen in a script or command line"
+    severity = 3
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        utilities = [
+            "cmd ",
+            "cmd.exe",
+            "cscript",
+            "hta ",
+            "hta.exe",
+            "powershell",
+            "wscript",
+        ]
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            for utility in utilities:
+                if utility in lower:
+                    if "//:ptth" in lower or "//:sptth" in lower:
+                        ret = True
+                        self.data.append({"command" : cmdline})
+
+        return ret
+
+class PowershellRenamedCommandLine(Signature):
+    name = "powershell_renamed_commandline"
+    description = "PowerShell has likely been renamed in a command line"
+    severity = 3
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            if "powershell" in cmdline.lower() and not cmdline.lower().startswith("powershell"):
+                if re.findall('=\W+powershell', cmdline.lower()):
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
