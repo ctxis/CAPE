@@ -316,5 +316,6 @@ class CommandLineLongString(Signature):
                         if len(string) > 100 and "http://" not in string and "https://" not in string:
                             ret = True
                             self.data.append({"command" : cmdline})
+                            break
 
         return ret
