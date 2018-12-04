@@ -78,7 +78,7 @@ class PowershellCommandSuspicious(Signature):
 
                 # Decode base64 strings for reporting; will adjust this later to add detection matches against decoded content. We don't take into account here when a variable is used i.e. "$encoded = BASE64_CONTENT -enc $encoded" and so evasion from decoding the content is possible. Alternatively we could just try to hunt for base64 content in powershell command lines but this will need to be tested
                 if "-e " in lower or "/e " in lower or "-en " in lower or "/en " in lower or "-enc" in lower or "/enc" in lower:
-                    b64strings = re.findall(r'[-\/][eE][nNcCoOdDeE]{0,6}\ (\S+)', cmdline)
+                    b64strings = re.findall(r'[-\/][eE][nNcCoOdDeEmMaA]{0,13}\ (\S+)', cmdline)
                     for b64string in b64strings:
                         encoded = str(b64string)
                         decoded = base64.b64decode(encoded)
