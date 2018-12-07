@@ -16,7 +16,6 @@
 from lib.cuckoo.common.abstracts import Signature
 
 import base64
-import binascii
 
 try:
     import re2 as re
