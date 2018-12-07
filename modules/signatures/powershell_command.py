@@ -16,7 +16,6 @@
 from lib.cuckoo.common.abstracts import Signature
 
 import base64
-
 try:
     import re2 as re
 except ImportError:
