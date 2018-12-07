@@ -16,6 +16,8 @@
 from lib.cuckoo.common.abstracts import Signature
 
 import base64
+import binascii
+
 try:
     import re2 as re
 except ImportError:
@@ -81,13 +83,16 @@ class PowershellCommandSuspicious(Signature):
                     b64strings = re.findall(r'[-\/][eE][nNcCoOdDeEmMaA]{0,13}\ (\S+)', cmdline)
                     for b64string in b64strings:
                         encoded = str(b64string)
-                        decoded = base64.b64decode(encoded)
-                        self.data.append({"decoded_base64_string" : decoded})
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
+
                 if "frombase64string(" in lower:
                     b64strings = re.findall(r'[fF][rR][oO][mM][bB][aA][sS][eE]64[sS][tT][rR][iI][nN][gG]\([\"\'](\S+)[\"\']\)', cmdline)
                     for b64string in b64strings:
                         encoded = str(b64string)
-                        decoded = base64.b64decode(encoded)
-                        self.data.append({"decoded_base64_string" : decoded})
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
 
         return ret
