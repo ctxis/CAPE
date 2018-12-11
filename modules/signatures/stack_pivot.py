@@ -18,8 +18,8 @@ from lib.cuckoo.common.abstracts import Signature
 class StackPivot(Signature):
     name = "stack_pivot"
     description = "Stack pivoting was detected when using a critical API"
-    weight = 3
     severity = 3
+    confidence = 100
     categories = ["exploit"]
     authors = ["Optiv"]
     minimum = "1.3"
@@ -29,25 +29,35 @@ class StackPivot(Signature):
         Signature.__init__(self, *args, **kwargs)
         self.ignore_it = True
         self.procs = set()
-        if self.results["target"]["category"] != "file" or self.results["info"]["package"] not in ["exe", "rar", "zip", "dll", "regsvr"]:
-            self.ignore_it = False
+        self.processes = [
+            "acrobat.exe",
+            "acrord32.exe",
+            "chrome.exe",
+            "eqnedt32.exe",
+            "excel.exe",
+            "firefox.exe",
+            "hwp.exe",
+            "iexplore.exe",
+            "outlook.exe",
+            "powerpnt.exe",
+            "winword.exe",
+        ]
 
     filter_apinames = set(["NtCreateFile", "NtAllocateVirtualMemory", "NtProtectVirtualMemory", "VirtualProtectEx", "NtWriteVirtualMemory", "NtWow64WriteVirtualMemory64", "WriteProcessMemory", "NtMapViewOfSection", "CreateProcessInternalW", "URLDownloadToFileW"])
 
     def on_call(self, call, process):
-        if self.ignore_it:
-            return False
-
-        pivot = self.get_argument(call, "StackPivoted")
-        if pivot == None:
-            return
-        if pivot == "yes":
-            self.procs.add(process["process_name"] + ":" + str(process["process_id"]))
+        if process["process_name"].lower() in self.processes:
+            pivot = self.get_argument(call, "StackPivoted")
+            if pivot == None:
+                return
+            if pivot == "yes":
+                self.procs.add(process["process_name"] + ":" + str(process["process_id"]))
 
     def on_complete(self):
         for proc in self.procs:
             self.data.append({"process" : proc})
 
-        if self.procs:
+        if self.data:
             return True
-        return False
+        else:
+            return False
