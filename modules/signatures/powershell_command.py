@@ -16,6 +16,8 @@
 from lib.cuckoo.common.abstracts import Signature
 
 import base64
+import binascii
+
 try:
     import re2 as re
 except ImportError:
@@ -26,7 +28,7 @@ class PowershellCommandSuspicious(Signature):
     description = "Attempts to execute a suspicious powershell command"
     severity = 3
     confidence = 70
-    categories = ["generic"]
+    categories = ["commands"]
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
@@ -56,10 +58,15 @@ class PowershellCommandSuspicious(Signature):
             "ZG93bmxvYWRmaWxlK",
             "Rvd25sb2FkZmlsZS",
             "kb3dubG9hZGZpbGUo",
-            "system.net.webrequest",
+            "net.webrequest",
             "start-bitstransfer",
             "invoke-item",
             "frombase64string(",
+            "convertto-securestring",
+            "securestringtoglobalallocunicode",
+            "downloadstring(",
+            "shellexecute(",
+            "downloaddata",
         ]
 
         ret = False
