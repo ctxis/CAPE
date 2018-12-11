@@ -66,7 +66,7 @@ class PowershellCommandSuspicious(Signature):
             "securestringtoglobalallocunicode",
             "downloadstring(",
             "shellexecute(",
-            "downloaddata",
+            "downloaddata(",
         ]
 
         ret = False
