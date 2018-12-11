@@ -27,7 +27,6 @@ class StackPivot(Signature):
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
-        self.ignore_it = True
         self.procs = set()
         self.processes = [
             "acrobat.exe",
