@@ -23,6 +23,8 @@ class NetworkCountryDistribution(Signature):
     categories = ["network", "cnc"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
+    
+    filter_analysistypes = set(["file"])
 
     def run(self):
         countries = []
@@ -49,6 +51,8 @@ class NetworkMultipleDirectIPConnections(Signature):
     categories = ["network", "cnc"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
+
+    filter_analysistypes = set(["file"])
 
     def run(self):
         count = 0
