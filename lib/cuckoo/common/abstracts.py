@@ -744,7 +744,7 @@ class Signature(object):
                                     else:
                                         path = ""
                                 elif keyword == "CAPE":
-                                    path = block["raw"]
+                                    path = block["path"]
                                 else:
                                     path = ""
 
