@@ -6,6 +6,7 @@ import os
 import socket
 import select
 import logging
+import errno
 import datetime
 import SocketServer
 from threading import Event, Thread
