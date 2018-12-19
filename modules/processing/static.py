@@ -1272,10 +1272,10 @@ class Office(object):
                     hex_strs = detect_hex_strings(vba_code)
                     if autoexec:
                         for keyword, description in autoexec:
-                            macrores["Analysis"]["AutoExec"].append((keyword, description))
+                            macrores["Analysis"]["AutoExec"].append((keyword.replace('.', '_'), description))
                     if suspicious:
                         for keyword, description in suspicious:
-                            macrores["Analysis"]["Suspicious"].append((keyword, description))
+                            macrores["Analysis"]["Suspicious"].append((keyword.replace('.', '_'), description))
                     if iocs:
                         for pattern, match in iocs:
                             macrores["Analysis"]["IOCs"].append((pattern, match))
