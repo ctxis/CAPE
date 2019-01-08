@@ -14,6 +14,7 @@ import inspect
 import threading
 import multiprocessing
 import operator
+import random
 from datetime import datetime
 from collections import defaultdict
 
@@ -1711,6 +1712,11 @@ def sanitize_filename(x):
             out += c
         else:
             out += "_"
+
+    """Prevent long filenames such as files named by hash
+    as some malware checks for this."""
+    if len(out) >= 32:
+        out = ''.join(random.choice(string.ascii_uppercase+string.ascii_lowercase+string.digits) for i in range(random.randint(5,15)))
 
     return out
 
