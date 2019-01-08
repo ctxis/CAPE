@@ -939,7 +939,7 @@ class Analyzer:
         thedate = clock.strftime("%m-%d-%y")
         thetime = clock.strftime("%H:%M:%S")
 
-        log.info("Date set to: {0}, time set to: {1}".format(thedate, thetime))
+        log.info("Date set to: {0}, time set to: {1}, timeout set to: {2}".format(thedate, thetime, self.config.timeout))
 
         # Set the DLL to be used by the PipeHandler.
         MONITOR_DLL = self.config.get_options().get("dll")
@@ -1191,8 +1191,8 @@ class Analyzer:
 
         while True:
             time_counter += 1
-            if time_counter == int(self.config.timeout):
-                log.info("Analysis timeout hit, terminating analysis.")
+            if time_counter >= int(self.config.timeout):
+                log.info("Analysis timeout hit (%d seconds), terminating analysis.", self.config.timeout)
                 ANALYSIS_TIMED_OUT = True
                 break
 
