@@ -1221,11 +1221,14 @@ class Office(object):
 
         officeresults = results["office"] = {}
 
-        # extract DDE
-        dde = extract_dde(filepath)
-        if dde:
-            results["office_dde"] = convert_to_printable(dde)
-
+        try:
+            # extract DDE
+            dde = extract_dde(filepath)
+            if dde:
+                results["office_dde"] = convert_to_printable(dde)
+        except Exception as e:
+            log.error(e)
+        
         metares = officeresults["Metadata"] = dict()
         # The bulk of the metadata checks are in the OLE Structures
         # So don't check if we're dealing with XML.
