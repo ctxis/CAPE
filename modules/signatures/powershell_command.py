@@ -25,7 +25,7 @@ except ImportError:
 
 class PowershellCommandSuspicious(Signature):
     name = "powershell_command_suspicious"
-    description = "Attempts to execute a suspicious powershell command"
+    description = "Attempts to execute suspicious powershell command arguments"
     severity = 3
     confidence = 70
     categories = ["commands"]
@@ -177,5 +177,88 @@ class PowershellRenamed(Signature):
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
                             self.data.append({"decoded_base64_string" : decoded})
+
+        return ret
+
+class PowershellReversed(Signature):
+    name = "powershell_reversed"
+    description = "Possible reversed powershell command arguments detected"
+    severity = 3
+    confidence = 70
+    categories = ["commands"]
+    authors = ["Kevin Ross", "Optiv"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        commands = [
+            "bypass",
+            "unrestricted",
+            "YnlwYXNz",
+            "J5cGFzc",
+            "ieXBhc3",
+            "dW5yZXN0cmljdGVk",
+            "VucmVzdHJpY3RlZ",
+            "1bnJlc3RyaWN0ZW",
+            "-nop",
+            "/nop",
+            "-e ",
+            "/e ",
+            "-en ",
+            "/en ",
+            "-enc",
+            "/enc",
+            "-noni",
+            "/noni",
+            "start-process",
+            "downloadfile(",
+            "ZG93bmxvYWRmaWxlK",
+            "Rvd25sb2FkZmlsZS",
+            "kb3dubG9hZGZpbGUo",
+            "net.webrequest",
+            "start-bitstransfer",
+            "invoke-item",
+            "frombase64string(",
+            "convertto-securestring",
+            "securestringtoglobalallocunicode",
+            "downloadstring(",
+            "shellexecute(",
+            "downloaddata(",
+        ]
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            for command in commands:
+                if command[::-1] in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
+                    break
+            if ("-w"[::-1] in lower or "/w"[::-1] in lower) and "hidden"[::-1] in lower:
+                ret = True
+                self.data.append({"command" : cmdline})
+
+        return ret
+
+class PowershellVariableObfuscation(Signature):
+    name = "powershell_variable_obfuscation"
+    description = "A powershell command using multiple variables was executed possibly indicative of obfuscation"
+    severity = 3
+    confidence = 50
+    categories = ["commands", "obuscation"]
+    authors = ["Kevin Ross", "Optiv"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "powershell" in lower:
+                if re.search('\$[^env=]*=.*\$[^env=]*=', lower):
+                    ret = True
+                    self.data.append({"command" : cmdline})  
 
         return ret
