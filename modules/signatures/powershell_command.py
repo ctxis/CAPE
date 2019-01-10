@@ -101,3 +101,81 @@ class PowershellCommandSuspicious(Signature):
                             self.data.append({"decoded_base64_string" : decoded})
 
         return ret
+
+class PowershellRenamed(Signature):
+    name = "powershell_renamed"
+    description = "Powershell arguments were seen on a command line but powershell.exe was not called. Likely indictive of renamed/obfuscated powershell.exe or defining arguments in variables for later use"
+    severity = 3
+    confidence = 70
+    categories = ["commands"]
+    authors = ["Kevin Ross", "Optiv"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        commands = [
+            "YnlwYXNz",
+            "J5cGFzc",
+            "ieXBhc3",
+            "dW5yZXN0cmljdGVk",
+            "VucmVzdHJpY3RlZ",
+            "1bnJlc3RyaWN0ZW",
+            "-nop",
+            "/nop",
+            "-noni",
+            "/noni",
+            "start-process",
+            "downloadfile(",
+            "ZG93bmxvYWRmaWxlK",
+            "Rvd25sb2FkZmlsZS",
+            "kb3dubG9hZGZpbGUo",
+            "net.webrequest",
+            "start-bitstransfer",
+            "invoke-item",
+            "frombase64string(",
+            "convertto-securestring",
+            "securestringtoglobalallocunicode",
+            "downloadstring(",
+            "shellexecute(",
+            "downloaddata(",
+        ]
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "powershell" not in lower:
+                for command in commands:
+                    if command in lower:
+                        ret = True
+                        self.data.append({"command" : cmdline})
+                        break
+                if ("-w" in lower or "/w" in lower) and "hidden" in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
+                if ("-ex" in lower or "/ex" in lower) and ("bypass" in lower or "unrestricted" in lower):
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+                # Decode base64 strings for reporting; will adjust this later to add detection matches against decoded content. We don't take into account here when a variable is used i.e. "$encoded = BASE64_CONTENT -enc $encoded" and so evasion from decoding the content is possible. Alternatively we could just try to hunt for base64 content in powershell command lines but this will need to be tested
+                if "-e " in lower or "/e " in lower or "-en " in lower or "/en " in lower or "-enc" in lower or "/enc" in lower:
+                    b64strings = re.findall(r'[-\/][eE][nNcCoOdDeEmMaA]{0,13}\ (\S+)', cmdline)
+                    for b64string in b64strings:
+                        encoded = str(b64string)
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            ret = True
+                            self.data.append({"command" : cmdline})
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
+
+                if "frombase64string(" in lower:
+                    b64strings = re.findall(r'[fF][rR][oO][mM][bB][aA][sS][eE]64[sS][tT][rR][iI][nN][gG]\([\"\'](\S+)[\"\']\)', cmdline)
+                    for b64string in b64strings:
+                        encoded = str(b64string)
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            ret = True
+                            self.data.append({"command" : cmdline})
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
+
+        return ret
