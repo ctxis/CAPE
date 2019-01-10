@@ -93,7 +93,9 @@
     {% else %}
     <h2 style="text-align:center; margin: 0px;"><span class="label label-success">{{analysis.malscore}}</span></h2>
     {% endif %}
-    {% if analysis.malfamily %}
+    {% if analysis.cape %}
+    <h5 style="text-align:center; margin: 15px 0px 2px 0px;">{{analysis.cape}}</h5>
+    {% elif analysis.malfamily %}
     <h5 style="text-align:center; margin: 15px 0px 2px 0px;">{{analysis.malfamily}}</h5>
     {% elif analysis.malscore > 6.0 %}
     <h5 style="text-align:center; margin: 15px 0px 2px 0px;">Malicious</h5>
