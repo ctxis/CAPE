@@ -12,6 +12,7 @@ class RAMFSCLEAN(Report):
     "Remove/save memdump"
     order = 10001
 
+    def run(self, results):
         action = "delete"
         id = results["info"]["id"]
         if reporting_conf.ramfsclean.key in results:
