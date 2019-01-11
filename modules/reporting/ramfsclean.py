@@ -1,4 +1,5 @@
 import os
+import shutil
 import logging
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.abstracts import Report
@@ -27,4 +28,5 @@ class RAMFSCLEAN(Report):
         else:
             dest = get_memdump_path(results["info"]["id"], analysis_folder=True)
             log.debug("Storing memdump: {}".format(dest))
-            os.rename(src, dest)
+            if os.path.exists(src):
+                shutil.move(src, dest)
