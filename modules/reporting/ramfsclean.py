@@ -14,21 +14,17 @@ class RAMFSCLEAN(Report):
 
     def run(self, results):
         action = "delete"
-        id = results["info"]["id"]
+        src = get_memdump_path(results["info"]["id"])
+
         if reporting_conf.ramfsclean.key in results:
-            for block in results[reporting_conf.ramfsclean.key]:
-                if "checkme" in block:
-                    action = "store"
-                    break
+            if any(["checkme" in block for block in results[reporting_conf.ramfsclean.key]]):
+                action = "store"
 
-            if action == "delete":
-                src = get_memdump_path(id)
-                log.debug("Deleting memdump: {}".format(src))
-
-                if os.path.exists(src):
-                    os.remove(src)
-            else:
-                src = get_memdump_path(id)
-                dest = get_memdump_path(id, analysis_folder=True)
-                log.debug("Storing memdump: {}".format(dest))
-                os.rename(src, dest)
+        if action == "delete":
+            log.debug("Deleting memdump: {}".format(src))
+            if os.path.exists(src):
+                os.remove(src)
+        else:
+            dest = get_memdump_path(results["info"]["id"], analysis_folder=True)
+            log.debug("Storing memdump: {}".format(dest))
+            os.rename(src, dest)
