@@ -1,11 +1,17 @@
-{% if children|length > 0 %}
+{% if analysis.cape or children|length > 0 %}
     <section id="cape">
     <div class="panel panel-primary">
         <div class="panel-heading">
             <h4 class="panel-title">CAPE</h4>
         </div>
     <div class="panel-body" style="padding: 0px 0px 0px 20px; height: 80%;">
-    {% if children|length > 0 %}
+    {% if analysis.cape != None %}
+        <h4>Detections</h4>
+        <th>
+        <h3 style="margin: 0px;"><span class="label label-danger">{{analysis.cape}}</span></h3>
+        </th>
+    {% endif %}
+    {% if analysis.cape and children|length > 0 %}
         <hr/>
     {% endif %}
     {% if children|length > 0 %}
@@ -145,4 +151,3 @@
             </div
     </section>
 {% endif %}
-
