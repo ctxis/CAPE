@@ -1221,11 +1221,14 @@ class Office(object):
 
         officeresults = results["office"] = {}
 
-        # extract DDE
-        dde = extract_dde(filepath)
-        if dde:
-            results["office_dde"] = convert_to_printable(dde)
-
+        try:
+            # extract DDE
+            dde = extract_dde(filepath)
+            if dde:
+                results["office_dde"] = convert_to_printable(dde)
+        except Exception as e:
+            log.error(e)
+        
         metares = officeresults["Metadata"] = dict()
         # The bulk of the metadata checks are in the OLE Structures
         # So don't check if we're dealing with XML.
@@ -1272,10 +1275,10 @@ class Office(object):
                     hex_strs = detect_hex_strings(vba_code)
                     if autoexec:
                         for keyword, description in autoexec:
-                            macrores["Analysis"]["AutoExec"].append((keyword, description))
+                            macrores["Analysis"]["AutoExec"].append((keyword.replace('.', '_'), description))
                     if suspicious:
                         for keyword, description in suspicious:
-                            macrores["Analysis"]["Suspicious"].append((keyword, description))
+                            macrores["Analysis"]["Suspicious"].append((keyword.replace('.', '_'), description))
                     if iocs:
                         for pattern, match in iocs:
                             macrores["Analysis"]["IOCs"].append((pattern, match))
