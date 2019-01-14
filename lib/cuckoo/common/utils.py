@@ -7,6 +7,7 @@ import time
 import shutil
 import ntpath
 import string
+import random
 import tempfile
 import xmlrpclib
 import errno
@@ -14,12 +15,12 @@ import inspect
 import threading
 import multiprocessing
 import operator
-import random
 from datetime import datetime
 from collections import defaultdict
 
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.config import Config
+from lib.cuckoo.common.constants import CUCKOO_ROOT
 
 try:
     import re2 as re
@@ -31,6 +32,27 @@ try:
     HAVE_CHARDET = True
 except ImportError:
     HAVE_CHARDET = False
+
+config = Config()
+if hasattr(config, "ramfs"):
+    ramfs = Config().ramfs
+    HAVE_RAMFS = True
+else:
+    HAVE_RAMFS = False
+
+def get_memdump_path(id, analysis_folder=False):
+    """
+    Get the path of memdump to store
+    analysis_folder: force to return default analysis folder
+    """
+    id = str(id)
+    if HAVE_RAMFS and ramfs.enabled and analysis_folder is False:
+        memdump_path = os.path.join(ramfs.path, id + ".dmp")
+    else:
+        memdump_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", id, "memory.dmp")
+
+    return memdump_path
+
 
 def validate_referrer(url):
     if not url:
