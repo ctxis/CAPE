@@ -304,7 +304,7 @@ class RunProcessing(object):
             words = re.findall(r"[A-Za-z0-9]+", self.results["target"]["file"]["clamav"])
             family = words[2]
 
-        if self.results.get("cape", False)
+        if self.results.get("cape", False):
             self.results["malfamily"] = self.results["cape"]
         else:
             self.results["malfamily"] = family
