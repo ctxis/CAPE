@@ -17,6 +17,9 @@ import struct, socket
 import pefile
 import yara
 import os.path
+import re
+from Crypto.Util import asn1
+from Crypto.PublicKey import RSA
 
 rule_source = '''
 rule Emotet
@@ -51,6 +54,13 @@ def yara_scan(raw_data, rule_name):
                     addresses[item[1]] = item[0]
                     return addresses
 
+def extract_emotet_rsakey(filedata):
+    pub_matches = re.findall('''\x30[\x00-\xff]{100}\x02\x03\x01\x00\x01\x00\x00''', filedata)
+    pub_key = pub_matches[0][0:106]
+    seq = asn1.DerSequence()
+    seq.decode(pub_key)
+    return RSA.construct((seq[0], seq[1]))
+
 class Emotet(Parser):
     def __init__(self, reporter=None):
         Parser.__init__(self, description='Emotet configuration parser.', author='kevoreilly', reporter=reporter)
@@ -59,21 +69,24 @@ class Emotet(Parser):
         filebuf = self.reporter.data
         pe = pefile.PE(data=self.reporter.data, fast_load=False)
         image_base = pe.OPTIONAL_HEADER.ImageBase
-        
+
+        pem_key = extract_emotet_rsakey(filebuf)
+        if pem_key:
+            self.reporter.add_metadata('other', {'RSA public key': pem_key.exportKey()})
+
         c2list = yara_scan(filebuf, '$c2list')
-        
         if c2list:
             ips_offset = int(c2list['$c2list'])
-                
+
             ip = struct.unpack('I', filebuf[ips_offset:ips_offset+4])[0]
-            
+
             while ip:
                 c2_address = socket.inet_ntoa(struct.pack('!L', ip))
                 port = str(struct.unpack('h', filebuf[ips_offset+4:ips_offset+6])[0])
 
                 if c2_address and port:
                     self.reporter.add_metadata('address', c2_address+':'+port)
-                
+
                 ips_offset += 8
                 ip = struct.unpack('I', filebuf[ips_offset:ips_offset+4])[0]
             return
@@ -84,7 +97,7 @@ class Emotet(Parser):
 
             c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0] - image_base
             c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
-            
+
             while 1:
                 ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
                 if ip == 0:
@@ -104,7 +117,7 @@ class Emotet(Parser):
 
                 c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+8:c2list_va_offset+12])[0] - image_base
                 c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
-                
+
                 while 1:
                     ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
                     if ip == 0:
