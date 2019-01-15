@@ -11,8 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-from mwcp.malwareconfigparser import malwareconfigparser
+
+from mwcp.parser import Parser
 import struct, socket
 import pefile
 import yara
@@ -51,9 +51,9 @@ def yara_scan(raw_data, rule_name):
                     addresses[item[1]] = item[0]
                     return addresses
 
-class Emotet(malwareconfigparser):
+class Emotet(Parser):
     def __init__(self, reporter=None):
-        malwareconfigparser.__init__(self, description='Emotet configuration parser.', author='kevoreilly', reporter=reporter)
+        Parser.__init__(self, description='Emotet configuration parser.', author='kevoreilly', reporter=reporter)
 
     def run(self):
         filebuf = self.reporter.data

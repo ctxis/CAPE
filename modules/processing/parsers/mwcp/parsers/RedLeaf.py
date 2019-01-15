@@ -11,8 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-from mwcp.malwareconfigparser import malwareconfigparser
+
+from mwcp.parser import Parser
 import struct
 import pefile
 import yara
@@ -66,9 +66,9 @@ def unicode_string_from_offset(buffer, offset):
     string = buffer[offset:offset+MAX_STRING_SIZE].split("\x00\x00")[0]
     return string
     
-class redleaf(malwareconfigparser):
+class redleaf(Parser):
     def __init__(self, reporter=None):
-        malwareconfigparser.__init__(self, description='RedLeaf configuration parser.', author='kev', reporter=reporter)
+        Parser.__init__(self, description='RedLeaf configuration parser.', author='kev', reporter=reporter)
 
     def run(self):
         filebuf = self.reporter.data

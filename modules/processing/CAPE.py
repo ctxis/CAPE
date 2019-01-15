@@ -52,7 +52,7 @@ if parser_path not in sys.path:
     sys.path.append(parser_path)
 from malwareconfig import JavaDropper
 from plugxconfig import plugx
-from mwcp import malwareconfigreporter
+from mwcp import reporter
 
 BUFSIZE = 10485760
 
@@ -616,7 +616,8 @@ class CAPE(Processing):
             mwcp_loaded = False
             if cape_name:
                 try:
-                    mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
+                    mwcp_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "mwcp", "parsers")
+                    mwcp = reporter.Reporter(parserdir=mwcp_parsers)
                     kwargs = {}
                     mwcp.run_parser(cape_name, data=file_data, **kwargs)
                     if mwcp.errors == []:

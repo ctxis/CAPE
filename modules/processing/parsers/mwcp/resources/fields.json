@@ -6,7 +6,28 @@
             "10.11.10.13"
         ], 
         "type": "listofstrings"
-    }, 
+    },
+    "base16_alphabet": {
+        "description": "Base16 alphabet used for encoding/decoding",
+        "examples": [
+            "0123456789ABCDEF"
+        ],
+        "type": "listofstrings"
+    },
+    "base32_alphabet": {
+        "description": "Base32 alphabet used for encoding/decoding",
+        "examples": [
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567="
+        ],
+        "type": "listofstrings"
+    },
+    "base64_alphabet": {
+        "description": "Base64 alphabet used for encoding/decoding",
+        "examples": [
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+        ],
+        "type": "listofstrings"
+    },
     "c2_address": {
         "description": "special case of address, when the address is used for command and control", 
         "examples": [
@@ -68,7 +89,21 @@
             "%APPDATA%\\foo"
         ], 
         "type": "listofstrings"
-    }, 
+    },
+    "email_address": {
+        "description": "Email address",
+        "examples": [
+            "user@bad.com"
+        ],
+        "type": "listofstrings"
+    },
+    "event": {
+        "description": "Name of an event object",
+        "examples": [
+            "MicrosoftExit"
+        ],
+        "type": "listofstrings"
+    },
     "filename": {
         "description": "filename (basename) used by malware", 
         "examples": [
@@ -84,7 +119,25 @@
             "%APPDATA%\\foo\\bar.exe"
         ], 
         "type": "listofstrings"
-    }, 
+    },
+    "ftp": {
+        "description": "FTP credentials (username and password), and full URL with scheme, address, optional port, and optional path",
+        "examples": [
+            [
+                "admin",
+                "pass",
+                "ftp://badhost.com:21"
+            ]
+        ],
+        "type": "listofstringtuples"
+    },
+    "guid": {
+        "description": "A 128-bit number used to identify information, also referred to as a UUID",
+        "examples": [
+            "{654e5cff-817c-4e3d-8b01-47a6f45ae09a}"
+        ],
+        "type": "listofstrings"
+    },
     "injectionprocess": {
         "description": "process into which malware is injected. Usually this is a process name but it may take other forms such as a filename of the executable.", 
         "examples": [
@@ -174,7 +227,14 @@
             "123456"
         ], 
         "type": "listofstrings"
-    }, 
+    },
+    "pipe": {
+        "description": "Named, one-way or duplex pipe for communication between the pipe server and one or more pipe clients",
+        "examples": [
+            "\\.\\pipe\\namedpipe"
+        ],
+        "type": "listofstrings"
+    },
     "port": {
         "description": "TCP or UDP port. A tuple of a port number and protocol. This generally refers to outbound connections where the malware is the client. Other network layer protocols, such as ICMP can be represented here. Application layer protocols, such as HTTP, should be indicated in a URL.", 
         "examples": [
@@ -188,7 +248,39 @@
             ]
         ], 
         "type": "listofstringtuples"
-    }, 
+    },
+    "proxy": {
+        "description": "Proxy credentials (username and password), address, port, and protocol combination used together",
+        "examples": [
+            [
+                "admin",
+                "pass",
+                "192.168.1.1",
+                "80",
+                "tcp"
+            ]
+        ],
+        "type": "listofstringtuples"
+    },
+    "proxy_socketaddress": {
+        "description": "Proxy address, port, and proto combination used together",
+        "examples": [
+            [
+                "192.168.1.1",
+                "80",
+                "tcp"
+            ]
+        ],
+        "type": "listofstringtuples"
+    },
+    "proxy_address": {
+        "description": "Proxy IP address or domain name",
+        "examples": [
+            "bad.com",
+            "10.11.10.13"
+        ],
+        "type": "listofstrings"
+    },
     "registrydata": {
         "description": "registry value data item", 
         "examples": [
@@ -196,7 +288,7 @@
             "3"
         ], 
         "type": "listofstrings"
-    }, 
+    },
     "registrypath": {
         "description": "a registry key, value name, combination of the two", 
         "examples": [
@@ -204,9 +296,9 @@
             "HKLM\\System\\CurrentControlSet\\Services\\pnpsvc\\start"
         ], 
         "type": "listofstrings"
-    }, 
+    },
     "registrypathdata": {
-        "description": "a tuple of registrypath and registrydata", 
+        "description": "a tuple of registrypath and registrydata",
         "examples": [
             [
                 "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater", 
@@ -218,7 +310,33 @@
             ]
         ], 
         "type": "listofstringtuples"
-    }, 
+    },
+    "rsa_private_key": {
+        "description": "RSA private key tuple containing: public_exponent, modulus, private_exponent (d), p, q, d mod (p-1), d mod (q-1), q inv mod p",
+        "examples": [
+            [
+                "0x07",
+                "0xbb",
+                "0x17",
+                "0x11",
+                "0x0b",
+                "0x07",
+                "0x03",
+                "0x0e"
+            ]
+        ],
+        "type": "listofstringtuples"
+    },
+    "rsa_public_key": {
+        "description": "RSA public key tuple containing: public_exponent, modulus",
+        "examples": [
+            [
+                "0x07",
+                "0xbb"
+            ]
+        ],
+        "type": "listofstringtuples"
+    },
     "service": {
         "description": "A tuple of servicename, servicedisplayname, servicedescription, serviceimage and servicedll", 
         "examples": [
@@ -294,7 +412,14 @@
             ]
         ], 
         "type": "listofstringtuples"
-    }, 
+    },
+    "ssl_cert_sha1": {
+        "description": "SSL Certificate SHA-1 Hash",
+        "examples": [
+            "c29d79df9b5416fd416c31e57cd525dfc23a8f66"
+        ],
+        "type": "listofstrings"
+    },
     "url": {
         "description": "full URL with scheme, address, optional port, and optional path", 
         "examples": [
