@@ -11,7 +11,7 @@ reporting_conf = Config("reporting")
 
 class RAMFSCLEAN(Report):
     "Remove/save memdump"
-    order = 10001
+    order = 9998
 
     def run(self, results):
         action = "delete"
