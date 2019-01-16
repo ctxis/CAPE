@@ -100,7 +100,12 @@ def process(target=None, copy_path=None, task=None, report=False, auto=False):
                         id=esid,
                     )
 
-        RunReporting(task=task.to_dict(), results=results, reprocess=report).run()
+        if auto:
+            reprocess = False
+        else:
+            reprocess = report
+
+        RunReporting(task=task.to_dict(), results=results, reprocess=reprocess).run()
         Database().set_status(task_id, TASK_REPORTED)
 
         if auto:
