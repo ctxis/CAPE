@@ -751,7 +751,7 @@ def report(request, task_id):
                                   {"error": "The specified analysis does not exist"})
 
     children = 0
-    # If compressed, decompress CAPE data    
+    # If compressed, decompress CAPE data
     if "CAPE" in report:
         try:
             report["CAPE"] = json.loads(zlib.decompress(report["CAPE"]))
@@ -767,7 +767,7 @@ def report(request, task_id):
             report["procdump"] = json.loads(zlib.decompress(report["procdump"]))
         except:
             pass
-    
+
     if "enhanced" in report["behavior"]:
         try:
             report["behavior"]["enhanced"] = json.loads(zlib.decompress(report["behavior"]["enhanced"]))
@@ -847,7 +847,7 @@ def report(request, task_id):
     if os.path.exists(vba2graph_svg_path):
         vba2graph_svg_content = open(vba2graph_svg_path, "rb").read()
         vba2graph = True
-    
+
     bingraph = False
     bingraph_svg_content = ""
     bingraph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "bingraph", "ent.svg")
@@ -955,7 +955,7 @@ def file(request, category, task_id, dlfile):
             #file_name = dfile + ".bin"
         else:
             path = buf
-            #file_name += ".bin"            
+            #file_name += ".bin"
     elif category == "procdump":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "procdump", file_name)
@@ -1072,6 +1072,7 @@ def filereport(request, task_id, category):
         "htmlsummary": "summary-report.html",
         "pdf": "report.pdf",
         "maec": "report.maec-4.1.xml",
+        "maec5": "report.maec-5.0.json",
         "metadata": "report.metadata.xml",
         "misp": "misp.json"
     }
