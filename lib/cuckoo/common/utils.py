@@ -8,6 +8,7 @@ import shutil
 import ntpath
 import string
 import random
+import logging
 import tempfile
 import xmlrpclib
 import errno
@@ -39,6 +40,8 @@ if hasattr(config, "ramfs"):
     HAVE_RAMFS = True
 else:
     HAVE_RAMFS = False
+
+log = logging.getLogger(__name__)
 
 def free_space_monitor():
     # TODO: Windows support
