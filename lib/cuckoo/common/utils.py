@@ -40,6 +40,21 @@ if hasattr(config, "ramfs"):
 else:
     HAVE_RAMFS = False
 
+def free_space_monitor():
+    # TODO: Windows support
+    if hasattr(os, "statvfs"):
+        while True:
+            dir_stats = os.statvfs(ramfs.path)
+            # Calculate the free disk space in megabytes.
+            space_available = dir_stats.f_bavail * dir_stats.f_frsize
+            space_available /= 1024 * 1024
+            if space_available < ramfs.freespace:
+                log.error("Not enough free disk space! (Only %d MB!)",
+                            space_available)
+                time.sleep(5)
+            else:
+                break
+
 def get_memdump_path(id, analysis_folder=False):
     """
     Get the path of memdump to store
