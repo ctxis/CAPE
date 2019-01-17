@@ -1,4 +1,4 @@
-# Copyright (C) 2017 Kevin O'Reilly (kevin.oreilly@contextis.co.uk)
+# Copyright (C) 2017-2019 Kevin O'Reilly (kevin.oreilly@contextis.co.uk)
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -54,6 +54,9 @@ def yara_scan(raw_data, rule_name):
                     addresses[item[1]] = item[0]
                     return addresses
 
+# This function is originally by Jason Reaves (@sysopfb),
+# suggested as an addition by @pollo290987.
+# A big thank you to both.
 def extract_emotet_rsakey(filedata):
     pub_matches = re.findall('''\x30[\x00-\xff]{100}\x02\x03\x01\x00\x01\x00\x00''', filedata)
     pub_key = pub_matches[0][0:106]
