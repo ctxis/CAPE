@@ -8,6 +8,7 @@ import shutil
 import ntpath
 import string
 import random
+import logging
 import tempfile
 import xmlrpclib
 import errno
@@ -39,6 +40,23 @@ if hasattr(config, "ramfs"):
     HAVE_RAMFS = True
 else:
     HAVE_RAMFS = False
+
+log = logging.getLogger(__name__)
+
+def free_space_monitor():
+    # TODO: Windows support
+    if hasattr(os, "statvfs"):
+        while True:
+            dir_stats = os.statvfs(ramfs.path)
+            # Calculate the free disk space in megabytes.
+            space_available = dir_stats.f_bavail * dir_stats.f_frsize
+            space_available /= 1024 * 1024
+            if space_available < ramfs.freespace:
+                log.error("Not enough free disk space! (Only %d MB!)",
+                            space_available)
+                time.sleep(5)
+            else:
+                break
 
 def get_memdump_path(id, analysis_folder=False):
     """
