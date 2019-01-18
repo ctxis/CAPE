@@ -23,7 +23,7 @@ if vpn.vpn.enabled:
         if not name:
             continue
         entry = vpn.get(name)
-        vpns[entry.name] = entry
+        vpn.vpn[entry.name] = entry
 
 cfg = Config("reporting")
 
@@ -107,7 +107,7 @@ USE_L10N = True
 # Disabling time zone support and using local time for web interface and storage.
 # See: https://docs.djangoproject.com/en/1.5/ref/settings/#time-zone
 USE_TZ = False
-TIME_ZONE = None
+TIME_ZONE = "UTC"
 
 # Unique secret key generator.
 # Secret key will be placed in secret_key.py file.
