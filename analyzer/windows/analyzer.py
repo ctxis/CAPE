@@ -1132,11 +1132,11 @@ class Analyzer:
         if MONITOR_DLL != None:
             copy(os.path.join("dll", MONITOR_DLL), CAPEMON32_NAME)
         else:
-            copy("dll\\CAPE.dll", CAPEMON32_NAME)
+            copy("dll\\capemon.dll", CAPEMON32_NAME)
         if MONITOR_DLL_64 != None:
             copy(os.path.join("dll", MONITOR_DLL_64), CAPEMON64_NAME)
         else:
-            copy("dll\\CAPE_x64.dll", CAPEMON64_NAME)
+            copy("dll\\capemon_x64.dll", CAPEMON64_NAME)
         if LOADER32 != None:
             copy(os.path.join("bin", LOADER32), LOADER32_NAME)
         else:
