@@ -153,9 +153,17 @@ class SubmitCAPE(Report):
                         self.task_options_stack.remove(item)
                 self.task_options_stack.append("bp0={0}".format(anti_sandbox))
                 detections.add('QakBot')
-            decrypt_config = cape_yara["addresses"].get("decrypt_config")
+            decrypt_config = cape_yara["addresses"].get("decrypt_config1")
             if decrypt_config:
                 decrypt_config = decrypt_config + 16 # Offset of "CALL" (decrypt)
+                for item in self.task_options_stack:
+                    if 'bp1' in item:
+                        self.task_options_stack.remove(item)
+                self.task_options_stack.append("bp1={0}".format(decrypt_config))
+                detections.add('QakBot')
+            decrypt_config = cape_yara["addresses"].get("decrypt_config2")
+            if decrypt_config:
+                decrypt_config = decrypt_config + 30 # Offset of "CALL" (decrypt)
                 for item in self.task_options_stack:
                     if 'bp1' in item:
                         self.task_options_stack.remove(item)
