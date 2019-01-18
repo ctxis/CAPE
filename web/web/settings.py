@@ -23,7 +23,7 @@ if vpn.vpn.enabled:
         if not name:
             continue
         entry = vpn.get(name)
-        vpns[entry.name] = entry
+        vpn.vpn[entry.name] = entry
 
 cfg = Config("reporting")
 
