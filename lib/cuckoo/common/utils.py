@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 
 def free_space_monitor():
     # TODO: Windows support
-    if hasattr(os, "statvfs"):
+    if hasattr(os, "statvfs") and HAVE_RAMFS and ramfs.enabled:
         while True:
             dir_stats = os.statvfs(ramfs.path)
             # Calculate the free disk space in megabytes.
