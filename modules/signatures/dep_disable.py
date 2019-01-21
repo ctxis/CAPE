@@ -32,8 +32,10 @@ class DEPDisable(Signature):
     filter_apinames = set(["NtSetInformationProcess"])
 
     def on_call(self, call, process):
-        infoclass = int(self.get_argument(call, "ProcessInformationClass"))
+        infoclass = self.get_argument(call, "ProcessInformationClass")
 
+        if infoclass is not None:
+            infoclass = int(infoclass)
         # ProcessDEPPolicy
         if call["return"] == 0 and infoclass == ProcessExecuteFlags:
             processinfo = self.get_raw_argument(call, "ProcessInformation")
