@@ -519,6 +519,15 @@ class Process:
                 "bp3",
                 "depth",
                 "count",
+                "action0",
+                "action1",
+                "action2",
+                "action3",
+                "instruction0",
+                "instruction1",
+                "instruction2",
+                "instruction3",
+                "break-on-return"
                 ]
             
             for optname in simple_optnames:
@@ -528,6 +537,8 @@ class Process:
 
             if "procdump" in self.options:
                 config.write("procdump={0}\n".format(self.options["procdump"]))
+            else:
+                config.write("procdump=1\n")    # Default will be overridden by some packages
             if "procmemdump" in self.options:
                 config.write("procmemdump={0}\n".format(self.options["procmemdump"]))
             if "import_reconstruction" in self.options:
