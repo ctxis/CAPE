@@ -4,23 +4,25 @@
         <div class="panel-heading">
             <h4 class="panel-title">CAPE</h4>
         </div>
-    <div class="panel-body" style="padding: 0px 0px 0px 20px; height: 80%;">
+    <div class="panel-body" style="padding: 0px 0px 0px 20px; height: 50px;">
+    <h4>
     {% if analysis.cape != None %}
-        <h4>Detections</h4>
-        <th>
-        <h3 style="margin: 0px;"><span class="label label-danger">{{analysis.cape}}</span></h3>
-        </th>
-    {% endif %}
-    {% if analysis.cape and children|length > 0 %}
-        <hr/>
-    {% endif %}
-    {% if children|length > 0 %}
-        <h4>Triggered CAPE Tasks:</h4>
+        {% if children|length > 0 %}
+            Detections: <span style="border-color:#d9534f;background-color:#d9534f;margin-right:10px" class="btn btn-primary btn-small">{{analysis.cape}}</span>
+            Triggered CAPE Tasks: 
+            {% for child in children %}
+                <a href="/submit/status/{{ child.0 }}/" class="btn btn-primary btn-small">Task #{{ child.0 }}: {{ child.1 }}</a>
+            {% endfor %}
+        {% else %}
+            Detections: <span style="border-color:#d9534f;background-color:#d9534f" class="btn btn-primary btn-small">{{analysis.cape}}</span>
+        {% endif %}
+    {% else %}
+        Triggered CAPE Tasks:
         {% for child in children %}
             <a href="/submit/status/{{ child.0 }}/" class="btn btn-primary btn-small">Task #{{ child.0 }}: {{ child.1 }}</a>
         {% endfor %}
-        <br/>
     {% endif %}
+    </h4>
     </br>
     </div>
     </section>
