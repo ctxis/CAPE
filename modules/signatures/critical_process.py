@@ -36,10 +36,10 @@ class CriticalProcess(Signature):
         
         if infoclass is not None:
             infoclass = int(infoclass)
-            if call["return"] == 0 and infoclass == ProcessBreakOnTermination:
-                processinfo = self.get_raw_argument(call, "ProcessInformation")
-                if processinfo == 1:
-                    self.data.append({"process" : process["process_name"] + ":" + str(process["process_id"])})
+        if call["return"] == 0 and infoclass == ProcessBreakOnTermination:
+            processinfo = self.get_raw_argument(call, "ProcessInformation")
+            if processinfo == 1:
+                self.data.append({"process" : process["process_name"] + ":" + str(process["process_id"])})
 
     def on_complete(self):
          if self.data:
