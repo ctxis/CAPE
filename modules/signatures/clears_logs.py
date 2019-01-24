@@ -41,6 +41,9 @@ class ClearsLogs(Signature):
             if "wevtutil" in cmdline.lower() and "cl" in cmdline.lower():
                 self.data.append({"command" : cmdline})
                 ret = True
+            if "fsutil" in cmdline.lower() and "deletejournal" in cmdline.lower():
+                self.data.append({"command" : cmdline})
+                ret = True
 
         for indicator in file_indicators:
             match_file = self.check_delete_file(pattern=indicator, regex=True, all=True)
