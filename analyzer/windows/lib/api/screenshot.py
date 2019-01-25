@@ -14,7 +14,10 @@ except:
         from PIL import ImageChops
         from PIL import ImageGrab
         from PIL import ImageDraw
+        from PIL import PILLOW_VERSION
         HAVE_PIL = True
+        if int(PILLOW_VERSION[0]) < 5:
+            log.info("Please upgrade Pillow to >= 5.4.1")
     except:
         HAVE_PIL = False
 
