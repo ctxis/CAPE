@@ -2,7 +2,7 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
-def choose_package(file_type, file_name, exports):
+def choose_package(file_type, file_name, exports, file_path):
     """Choose analysis package due to file type and file extension.
     @param file_type: file type.
     @param file_name: file name.
