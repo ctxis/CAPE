@@ -12,6 +12,7 @@ def choose_package(file_type, file_name, exports, file_path):
         return None
 
     file_name = file_name.lower()
+    file_content = open(file_path, "rb").read()
 
     if "DLL" in file_type:
         if file_name.endswith(".cpl"):
@@ -33,7 +34,8 @@ def choose_package(file_type, file_name, exports, file_path):
             "Microsoft Office Word" in file_type or \
             "Microsoft OOXML" in file_type or \
             "MIME entity" in file_type or \
-            file_name.endswith((".doc", ".dot", ".docx", ".dotx", ".docm", ".dotm", ".docb", ".rtf", ".mht", ".mso")):
+            file_name.endswith((".doc", ".dot", ".docx", ".dotx", ".docm", ".dotm", ".docb", ".rtf", ".mht", ".mso")) or \
+            ('mso-application' in file_content and 'Word.Document' in file_content):
         return "doc"
     elif "Microsoft Office Excel" in file_type or \
             "Microsoft Excel" in file_type or \
