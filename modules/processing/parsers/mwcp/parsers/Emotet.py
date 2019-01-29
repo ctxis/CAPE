@@ -99,7 +99,10 @@ class Emotet(Parser):
             c2list_va_offset = int(refc2list['$snippet3'])
 
             c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0] - image_base
-            c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+            try:
+                c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+            except PEFormatError as err:
+                pass
 
             while 1:
                 ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
@@ -119,7 +122,10 @@ class Emotet(Parser):
                 c2list_va_offset = int(refc2list['$snippet4'])
 
                 c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+8:c2list_va_offset+12])[0] - image_base
-                c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+                try:
+                    c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+                except PEFormatError as err:
+                    pass
 
                 while 1:
                     ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
