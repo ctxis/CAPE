@@ -85,7 +85,7 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
         elif r.status_code == 403:
             return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
     
-    if len(content) == 0:
+    if content and len(content) == 0:
         return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
 
     try:
