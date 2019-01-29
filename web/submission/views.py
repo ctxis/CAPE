@@ -424,7 +424,11 @@ def index(request, resubmit_hash=False):
         if status == "error":
             # is render msg
             return task_ids
-        tasks_count = len(task_ids)
+        if isinstance(task_ids, list):
+            tasks_count = len(task_ids)
+        else:
+            # ToDo improve error msg
+            tasks_count = 0
         if tasks_count > 0:
             return render(request, "submission/complete.html",
                           {"tasks": task_ids,
