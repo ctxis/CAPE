@@ -83,7 +83,7 @@ def demux_office(filename, password):
             raise CuckooDemuxError("MS Office decryptor: unsupported document type")
         elif result == 3:
             raise CuckooDemuxError("MS Office decryptor: bad password")
-    else:
+    elif HAS_SFLOCK:
         ofile = OfficeFile(sfFile.from_path(filename))
         d = ofile.decrypt(password)
         with open(decrypted_name, "w") as outs:
@@ -91,6 +91,8 @@ def demux_office(filename, password):
         # TODO add decryption verification checks
         if "Encrypted" not in d.magic:
             retlist.append(decrypted_name)
+    else:
+        raise CuckooDemuxError("MS Office decryptor not available")
 
     if not retlist:
         retlist.append(filename)
