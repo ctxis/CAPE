@@ -1,11 +1,7 @@
 import sys
 import getopt
+import re
 import string
-
-try:
-    import re2 as re
-except ImportError:
-    import re
 
 #
 # Originally written by Einar Lielmanis et al.,
@@ -143,7 +139,7 @@ Rarely needed options:
 
  -h,  --help, --usage              prints this help statement.
 
-""")
+""");
 
 
 
@@ -279,13 +275,13 @@ class Beautifier:
 
     def append_newline(self, ignore_repeated = True):
 
-        self.flags.eat_next_space = False
+        self.flags.eat_next_space = False;
 
         if self.opts.keep_array_indentation and self.is_array(self.flags.mode):
             return
 
-        self.flags.if_line = False
-        self.trim_output()
+        self.flags.if_line = False;
+        self.trim_output();
 
         if len(self.output) == 0:
             # no newline on start of file
@@ -361,7 +357,7 @@ class Beautifier:
         if parser_pos >= len(self.input):
             return '', 'TK_EOF'
 
-        self.wanted_newline = False
+        self.wanted_newline = False;
         c = self.input[parser_pos]
         parser_pos += 1
 
@@ -806,7 +802,7 @@ class Beautifier:
             if self.last_text == 'else':
                 # eat newlines between ...else *** some_op...
                 # won't preserve extra newlines in this place (if any), but don't care that much
-                self.trim_output(True)
+                self.trim_output(True);
             prefix = 'SPACE'
         elif self.last_type == 'TK_START_BLOCK':
             prefix = 'NEWLINE'

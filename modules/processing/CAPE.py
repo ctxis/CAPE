@@ -27,14 +27,24 @@ import tempfile
 import hashlib
 import random
 import imp
+import datetime
 
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
+from lib.cuckoo.common.exceptions import CuckooProcessingError
 from struct import unpack_from, calcsize
 from socket import inet_ntoa
 import collections
+
+try:
+    import pydeep
+    HAVE_PYDEEP = True
+except ImportError:
+    HAVE_PYDEEP = False
+
+ssdeep_threshold = 90
 
 parser_path = os.path.dirname(__file__)
 parser_path += "/parsers"
@@ -42,7 +52,7 @@ if parser_path not in sys.path:
     sys.path.append(parser_path)
 from malwareconfig import JavaDropper
 from plugxconfig import plugx
-from mwcp import malwareconfigreporter
+from mwcp import reporter
 
 BUFSIZE = 10485760
 
@@ -67,6 +77,8 @@ CERBER_CONFIG           = 0x30
 CERBER_PAYLOAD          = 0x31
 HANCITOR_CONFIG         = 0x34
 HANCITOR_PAYLOAD        = 0x35
+QAKBOT_CONFIG           = 0x38
+QAKBOT_PAYLOAD          = 0x39
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -428,6 +440,126 @@ class CAPE(Processing):
                     ConfigItem = "Gate URL " + str(index+1)
                     cape_config["cape_config"].update({ConfigItem: [value]})
                 append_file = False
+            # QakBot
+            if file_info["cape_type_code"] == QAKBOT_CONFIG:
+                file_info["cape_type"] = "QakBot Config"
+                cape_config["cape_type"] = "QakBot Config"
+                cape_name = "QakBot"
+                if not "cape_config" in cape_config:
+                    cape_config["cape_config"] = {}
+                for line in file_data.splitlines():
+                    if '=' in line:
+                        index = line.split('=')[0]
+                        data = line.split('=')[1]
+                    if index == '10':
+                        ConfigItem = "Botnet name"
+                        ConfigData = data
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '11':
+                        ConfigItem = "Number of C2 servers"
+                        ConfigData = data
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '47':
+                        ConfigItem = "Bot ID"
+                        ConfigData = data
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '3':
+                        ConfigItem = "Config timestamp"
+                        ConfigData = datetime.datetime.fromtimestamp(int(data)).strftime('%H:%M:%S %d-%m-%Y')
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '22':
+                        values = data.split(':')
+                        ConfigItem = "Password #1"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #1"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #1"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '23':
+                        values = data.split(':')
+                        ConfigItem = "Password #2"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #2"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #2"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '24':
+                        values = data.split(':')
+                        ConfigItem = "Password #3"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #3"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #3"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '25':
+                        values = data.split(':')
+                        ConfigItem = "Password #4"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #4"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #4"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    if index == '26':
+                        values = data.split(':')
+                        ConfigItem = "Password #5"
+                        ConfigData = values[2]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "Username #5"
+                        ConfigData = values[1]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        ConfigItem = "C2 #5"
+                        ConfigData = values[0]
+                        if ConfigData:
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                append_file = False
+            if file_info["cape_type_code"] == QAKBOT_PAYLOAD:
+                file_info["cape_type"] = "QakBot Payload"
+                cape_config["cape_type"] = "QakBot Payload"
+                cape_name = "QakBot"
+                type_strings = file_info["type"].split()
+                if type_strings[0] == ("PE32+"):
+                    file_info["cape_type"] += ": 64-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                if type_strings[0] == ("PE32"):
+                    file_info["cape_type"] += ": 32-bit "
+                    if type_strings[2] == ("(DLL)"):
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                append_file = True
             # UPX package output
             if file_info["cape_type_code"] == UPX:
                 file_info["cape_type"] = "Unpacked PE Image"
@@ -474,7 +606,7 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"  
                         
-            suppress_parsing_list = ["Cerber", "Ursnif"];
+            suppress_parsing_list = ["Cerber", "Ursnif", "QakBot"];
 
             if hit["name"] in suppress_parsing_list:
                 continue
@@ -484,7 +616,8 @@ class CAPE(Processing):
             mwcp_loaded = False
             if cape_name:
                 try:
-                    mwcp = malwareconfigreporter.malwareconfigreporter(analysis_path=self.analysis_path)
+                    mwcp_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "mwcp", "parsers")
+                    mwcp = reporter.Reporter(parserdir=mwcp_parsers)
                     kwargs = {}
                     mwcp.run_parser(cape_name, data=file_data, **kwargs)
                     if mwcp.errors == []:
@@ -545,6 +678,17 @@ class CAPE(Processing):
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name
 
+        # Remove duplicate payloads from web ui
+        for cape_file in CAPE_output:
+            if file_info["size"] == cape_file["size"]:
+                if HAVE_PYDEEP:
+                    ssdeep_grade = pydeep.compare(file_info["ssdeep"], cape_file["ssdeep"])
+                    if ssdeep_grade >= ssdeep_threshold:
+                        append_file = False
+                if file_info["entrypoint"] and file_info["entrypoint"] == cape_file["entrypoint"] \
+                    and file_info["ep_bytes"] == cape_file["ep_bytes"]:
+                    append_file = False
+
         if append_file == True:
             CAPE_output.append(file_info)
         return file_info
@@ -557,24 +701,26 @@ class CAPE(Processing):
         cape_config = {}
         self.key = "CAPE"
         CAPE_output = []
-        
-        # Process dynamically dumped CAPE files
-        for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
-            for file_name in file_names:
-                file_path = os.path.join(dir_name, file_name)
-        # We want to exclude duplicate files from display in ui
-                if len(file_name) <= 64:
-                    self.process_file(file_path, CAPE_output, True)
-                else:
-                    self.process_file(file_path, CAPE_output, False)
+
+        if hasattr(self, "CAPE_path"):
+            # Process dynamically dumped CAPE files
+            for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
+                for file_name in file_names:
+                    file_path = os.path.join(dir_name, file_name)
+            # We want to exclude duplicate files from display in ui
+                    if len(file_name) <= 64:
+                        self.process_file(file_path, CAPE_output, True)
+                    else:
+                        self.process_file(file_path, CAPE_output, False)
         # We want to process procdumps too just in case they might
         # be detected as payloads and trigger config parsing
-        for dir_name, dir_names, file_names in os.walk(self.procdump_path):
-            for file_name in file_names:
-                file_path = os.path.join(dir_name, file_name)
-        # We set append_file to False as we don't wan't to include
-        # the files by default in the CAPE tab
-                self.process_file(file_path, CAPE_output, False)
+        if hasattr(self, "procdump_path"):
+            for dir_name, dir_names, file_names in os.walk(self.procdump_path):
+                for file_name in file_names:
+                    file_path = os.path.join(dir_name, file_name)
+            # We set append_file to False as we don't wan't to include
+            # the files by default in the CAPE tab
+                    self.process_file(file_path, CAPE_output, False)
         # We want to process dropped files too 
         for dir_name, dir_names, file_names in os.walk(self.dropped_path):
             for file_name in file_names:

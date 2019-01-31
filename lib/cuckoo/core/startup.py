@@ -86,7 +86,7 @@ def check_signatures():
         bad = True
 
     if bad:
-        raise CuckooStartupError("Signature modules are not installed.  Please run: utils/community.py --force --rewrite --all")
+        log.info("Signature modules are not installed.  Please run: utils/community.py --force --rewrite --all")
 
 def create_structure():
     """Creates Cuckoo directories."""
@@ -135,7 +135,12 @@ def init_logging():
     """Initializes logging."""
     formatter = logging.Formatter("%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 
-    fh = logging.handlers.WatchedFileHandler(os.path.join(CUCKOO_ROOT, "log", "cuckoo.log"))
+    cfg = Config()
+    if cfg.logging.enabled:
+        days = cfg.logging.backupCount
+        fh = logging.handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "cuckoo.log"), when="midnight", backupCount=days)
+    else:
+        fh = logging.handlers.WatchedFileHandler(os.path.join(CUCKOO_ROOT, "log", "cuckoo.log"))
     fh.setFormatter(formatter)
     log.addHandler(fh)
 
@@ -146,7 +151,7 @@ def init_logging():
     dh = DatabaseHandler()
     dh.setLevel(logging.ERROR)
     log.addHandler(dh)
-
+    
     log.setLevel(logging.INFO)
 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -739,7 +744,7 @@ def init_routing():
                 rooter("init_rttable", entry.rt_table, entry.interface)
 
     # Check whether the default VPN exists if specified.
-    if cuckoo.routing.route not in ("none", "internet"):
+    if cuckoo.routing.route not in ("none", "internet", "tor", "inetsim"):
         if not vpn.vpn.enabled:
             raise CuckooStartupError(
                 "A VPN has been configured as default routing interface for "

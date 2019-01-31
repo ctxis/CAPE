@@ -3,11 +3,13 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import os
+import logging
 import imagehash
 from PIL import Image
 import six
 
 from lib.cuckoo.common.abstracts import Processing
+log = logging.getLogger()
 
 class Deduplicate(Processing):
     """Deduplicate screenshots."""
@@ -51,22 +53,25 @@ class Deduplicate(Processing):
         self.key = "deduplicated_shots"
         shots = []
 
-        hashmethod = "whash-db4"
-        if hashmethod == 'ahash':
-            hashfunc = imagehash.average_hash
-        elif hashmethod == 'phash':
-            hashfunc = imagehash.phash
-        elif hashmethod == 'dhash':
-            hashfunc = imagehash.dhash
-        elif hashmethod == 'whash-haar':
-            hashfunc = imagehash.whash
-        elif hashmethod == 'whash-db4':
-            hashfunc = lambda img: imagehash.whash(img, mode='db4')
+        try:
+            hashmethod = "whash-db4"
+            if hashmethod == 'ahash':
+                hashfunc = imagehash.average_hash
+            elif hashmethod == 'phash':
+                hashfunc = imagehash.phash
+            elif hashmethod == 'dhash':
+                hashfunc = imagehash.dhash
+            elif hashmethod == 'whash-haar':
+                hashfunc = imagehash.whash
+            elif hashmethod == 'whash-db4':
+                hashfunc = lambda img: imagehash.whash(img, mode='db4')
 
-        shots_path = os.path.join(self.analysis_path, "shots")
-        if os.path.exists(shots_path):
-            screenshots = self.deduplicate_images(userpath=shots_path, hashfunc=hashfunc)
-            for screenshot in screenshots:
-                shots.append(screenshot.replace(".jpg",""))
+            shots_path = os.path.join(self.analysis_path, "shots")
+            if os.path.exists(shots_path):
+                screenshots = self.deduplicate_images(userpath=shots_path, hashfunc=hashfunc)
+                for screenshot in screenshots:
+                    shots.append(screenshot.replace(".jpg",""))
+        except Exception as e:
+            log.error(e)
 
         return shots

@@ -39,6 +39,7 @@ TASK_REPORTED = "reported"
 TASK_FAILED_ANALYSIS = "failed_analysis"
 TASK_FAILED_PROCESSING = "failed_processing"
 TASK_FAILED_REPORTING = "failed_reporting"
+TASK_DISTRIBUTED_COMPLETED = "distributed_completed"
 
 # Secondary table used in association Machine - Tag.
 machines_tags = Table(
@@ -589,11 +590,12 @@ class Database(object):
             if not row:
                 return
 
-            row.status = status
+            if status != TASK_DISTRIBUTED_COMPLETED:
+                row.status = status
 
             if status == TASK_RUNNING:
                 row.started_on = datetime.now()
-            elif status == TASK_COMPLETED:
+            elif status == TASK_COMPLETED or status == TASK_DISTRIBUTED_COMPLETED:
                 row.completed_on = datetime.now()
 
             session.commit()
@@ -1377,6 +1379,47 @@ class Database(object):
                 session.expunge(sample)
         finally:
             session.close()
+        return sample
+
+    @classlock
+    def sample_path_by_hash(self, sample_hash):
+        """Retrieve information on a sample location by given hash.
+        @param hash: md5/sha1/sha256/sha256.
+        @return: samples path(s) as list.
+        """
+        sizes = {
+            32: Sample.md5,
+            40: Sample.sha1,
+            64: Sample.sha256,
+            128: Sample.sha512,
+        }
+        query_filter = sizes.get(len(sample_hash), "")
+        sample = None
+        # check storage/binaries 
+        if query_filter:
+            session = self.Session()
+            try:
+                
+                db_sample = session.query(Sample).filter(query_filter == sample_hash).first()
+                if db_sample is not None:
+                    path = os.path.join(CUCKOO_ROOT, "storage", "binaries", db_sample.sha256)
+                    if os.path.exists(path):
+                      sample = [path]
+
+                if sample is None:
+                    # search in temp folder if not found in binaries
+                    db_sample = session.query(Task).filter(query_filter == sample_hash).filter(Sample.id == Task.sample_id).all()
+                    if db_sample is not None:
+                        sample = filter(None, [sample.to_dict().get("target", "") for sample in db_sample])
+            except AttributeError:
+                return None
+            except SQLAlchemyError as e:
+                log.debug("Database error viewing task: {0}".format(e))
+                return None
+            finally:
+                session.close()
+        else:
+            return None
         return sample
 
     @classlock

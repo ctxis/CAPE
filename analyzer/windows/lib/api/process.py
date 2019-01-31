@@ -14,7 +14,7 @@ from ctypes import byref, c_ulong, create_string_buffer, c_int, sizeof
 from shutil import copy
 
 from lib.common.constants import PIPE, PATHS, SHUTDOWN_MUTEX, TERMINATE_EVENT, LOGSERVER_PREFIX
-from lib.common.constants import CUCKOOMON32_NAME, CUCKOOMON64_NAME, LOADER32_NAME, LOADER64_NAME
+from lib.common.constants import CAPEMON32_NAME, CAPEMON64_NAME, LOADER32_NAME, LOADER64_NAME
 from lib.common.defines import ULONG_PTR
 from lib.common.defines import KERNEL32, NTDLL, SYSTEM_INFO, STILL_ACTIVE
 from lib.common.defines import THREAD_ALL_ACCESS, PROCESS_ALL_ACCESS, TH32CS_SNAPPROCESS
@@ -185,18 +185,12 @@ class Process:
         """
         return self.exit_code() == STILL_ACTIVE
 
-    def set_critical(self):
-        self.critical = True
-
     def is_critical(self):
         """Determines if process is 'critical' or not, so we can prevent
            terminating it
         """
         if not self.h_process:
             self.open()
-
-        if self.critical:
-            return True
 
         NT_SUCCESS = lambda val: val >= 0
 
@@ -452,63 +446,6 @@ class Process:
 
         return False
 
-    def old_inject(self, dll, apc):
-        arg = KERNEL32.VirtualAllocEx(self.h_process,
-                                      None,
-                                      len(dll) + 1,
-                                      MEM_RESERVE | MEM_COMMIT,
-                                      PAGE_READWRITE)
-
-        if not arg:
-            log.error("VirtualAllocEx failed when injecting process with "
-                      "pid %d, injection aborted (Error: %s)",
-                      self.pid, get_error_string(KERNEL32.GetLastError()))
-            return False
-
-        bytes_written = c_int(0)
-        if not KERNEL32.WriteProcessMemory(self.h_process,
-                                           arg,
-                                           dll + "\x00",
-                                           len(dll) + 1,
-                                           byref(bytes_written)):
-            log.error("WriteProcessMemory failed when injecting process with "
-                      "pid %d, injection aborted (Error: %s)",
-                      self.pid, get_error_string(KERNEL32.GetLastError()))
-            return False
-
-        kernel32_handle = KERNEL32.GetModuleHandleA("kernel32.dll")
-        load_library = KERNEL32.GetProcAddress(kernel32_handle, "LoadLibraryA")
-
-        if apc or self.suspended:
-            if not self.h_thread:
-                log.info("No valid thread handle specified for injecting "
-                         "process with pid %d, injection aborted.", self.pid)
-                return False
-
-            if not KERNEL32.QueueUserAPC(load_library, self.h_thread, arg):
-                log.error("QueueUserAPC failed when injecting process with "
-                          "pid %d (Error: %s)",
-                          self.pid, get_error_string(KERNEL32.GetLastError()))
-                return False
-        else:
-            new_thread_id = c_ulong(0)
-            thread_handle = KERNEL32.CreateRemoteThread(self.h_process,
-                                                        None,
-                                                        0,
-                                                        load_library,
-                                                        arg,
-                                                        0,
-                                                        byref(new_thread_id))
-            if not thread_handle:
-                log.error("CreateRemoteThread failed when injecting process "
-                          "with pid %d (Error: %s)",
-                          self.pid, get_error_string(KERNEL32.GetLastError()))
-                return False
-            else:
-                KERNEL32.CloseHandle(thread_handle)
-
-        return True
-
     def check_inject(self):
         if not self.pid:
             return False
@@ -548,6 +485,7 @@ class Process:
             config.write("file-of-interest={0}\n".format(interest))
             config.write("shutdown-mutex={0}\n".format(SHUTDOWN_MUTEX))
             config.write("terminate-event={0}{1}\n".format(TERMINATE_EVENT, self.pid))
+            config.write("terminate-processes={0}\n".format("1" if self.config.terminate_processes else "0"))
 
             if nosleepskip or ("force-sleepskip" not in self.options and len(interest) > 2 and interest[1] != ':' and interest[0] != '\\' and Process.process_num <= 2):
                 config.write("force-sleepskip=0\n")
@@ -579,6 +517,17 @@ class Process:
                 "bp1",
                 "bp2",
                 "bp3",
+                "depth",
+                "count",
+                "action0",
+                "action1",
+                "action2",
+                "action3",
+                "instruction0",
+                "instruction1",
+                "instruction2",
+                "instruction3",
+                "break-on-return"
                 ]
             
             for optname in simple_optnames:
@@ -588,6 +537,10 @@ class Process:
 
             if "procdump" in self.options:
                 config.write("procdump={0}\n".format(self.options["procdump"]))
+            else:
+                config.write("procdump=1\n")    # Default will be overridden by some packages
+            if "procmemdump" in self.options:
+                config.write("procmemdump={0}\n".format(self.options["procmemdump"]))
             if "import_reconstruction" in self.options:
                 config.write("import_reconstruction={0}\n".format(self.options["import_reconstruction"]))
             if "CAPE_var1" in self.options:
@@ -599,7 +552,7 @@ class Process:
             if "CAPE_var4" in self.options:
                 config.write("CAPE_var4={0}\n".format(self.options["CAPE_var4"]))
 
-    def inject(self, dll=None, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
+    def inject(self, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
         """Cuckoo DLL injection.
         @param dll: Cuckoo DLL path.
         @param interest: path to file of interest, handed to cuckoomon config
@@ -620,18 +573,22 @@ class Process:
             return False
 
         is_64bit = self.is_64bit()
-        if is_64bit:
-            dll = CUCKOOMON64_NAME
-        else:
-            dll = CUCKOOMON32_NAME
 
-        log.info("DLL to inject is %s", dll)
+        if is_64bit:
+            dll = CAPEMON64_NAME
+        else:
+            dll = CAPEMON32_NAME
 
         dll = os.path.join(os.getcwd(), dll)
 
-        if not dll or not os.path.exists(dll):
-            log.warning("No valid DLL specified to be injected in process "
+        if not dll:
+            log.warning("No DLL specified to be injected in process "
                         "with pid %d, injection aborted.", self.pid)
+            return False
+
+        if not os.path.exists(dll):
+            log.warning("Invalid path %s for monitor DLL to be injected in process "
+                        "with pid %d, injection aborted.", dll, self.pid)
             return False
 
         if thread_id or self.suspended:
@@ -652,6 +609,8 @@ class Process:
 
         bin_name = os.path.join(os.getcwd(), orig_bin_name)
 
+        log.info("%s DLL to inject is %s, loader %s", bit_str, dll, bin_name)
+
         if os.path.exists(bin_name):
             if thread_id or self.suspended:
                 ret = subprocess.call([bin_name, "inject", str(self.pid), str(thread_id), dll, str(INJECT_QUEUEUSERAPC)])
@@ -666,10 +625,10 @@ class Process:
             else:
                 return True
         else:
-            log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to analyze %s binaries.", os.path.basename(bin_name), bit_str)
+            log.error("Please ensure the %s loader is in analyzer/windows/bin in order to analyze %s binaries.", bit_str, bit_str)
             return False
 
-    def debug_inject(self, dll=None, interest=None, childprocess=False, nosleepskip=False):
+    def debug_inject(self, interest=None, childprocess=False, nosleepskip=False):
         """CAPE DLL debugger injection.
         @param dll: CAPE DLL debugger path.
         @param interest: path to file of interest, handed to cuckoomon config
@@ -677,7 +636,6 @@ class Process:
         global LOGSERVER_POOL
 
         if not self.pid:
-            log.warning("No valid pid specified, injection aborted")
             return False
 
         thread_id = 0
@@ -690,23 +648,28 @@ class Process:
             return False
 
         is_64bit = self.is_64bit()
-        if not dll:
-            log.debug("No debugger DLL has been specified for injection")
-            if is_64bit:
-                dll = CUCKOOMON64_NAME
-            else:
-                dll = CUCKOOMON32_NAME
-        else:
-            dll = os.path.join("dll", dll)
 
-        log.info("DLL to inject is %s", dll)
-        
+        if is_64bit:
+            dll = CAPEMON64_NAME
+        else:
+            dll = CAPEMON32_NAME
+
         dll = os.path.join(os.getcwd(), dll)
 
-        if not dll or not os.path.exists(dll):
-            log.warning("No valid DLL specified to be injected in process "
+        if not dll:
+            log.warning("No DLL specified to be injected in process "
                         "with pid %d, injection aborted.", self.pid)
             return False
+
+        if not os.path.exists(dll):
+            log.warning("Invalid path %s for monitor DLL to be injected in process "
+                        "with pid %d, injection aborted.", dll, self.pid)
+            return False
+
+        if thread_id or self.suspended:
+            log.debug("Using QueueUserAPC injection.")
+        else:
+            log.debug("Using CreateRemoteThread injection.")
 
         self.write_monitor_config(interest, nosleepskip)
 
@@ -721,62 +684,45 @@ class Process:
 
         bin_name = os.path.join(os.getcwd(), orig_bin_name)
 
+        log.info("%s DLL to inject is %s, loader %s", bit_str, dll, bin_name)
+
         if os.path.exists(bin_name) == False:
-            log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to debug %s binaries.", os.path.basename(bin_name), bit_str)
+            log.error("Please ensure the %s loader is in analyzer/windows/bin in order to analyze %s binaries.", bit_str, bit_str)
+            return False
+
+        if childprocess == False:
+            ret = subprocess.call([bin_name, "debug_load", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
+        else:
+            ret = subprocess.call([bin_name, "debug", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
+        if ret != 0:
+            if ret == 1:
+                log.info("Injected debugger DLL into suspended %s process with pid %d", bit_str, self.pid)
+            else:
+                log.error("Unable to inject debugger DLL into %s process with pid %d, error: %d", bit_str, self.pid, ret)
             return False
         else:
-            if childprocess == False:
-                ret = subprocess.call([bin_name, "debug_load", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
-            else:
-                ret = subprocess.call([bin_name, "debug", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
-            if ret != 0:
-                if ret == 1:
-                    log.info("Injected debugger DLL into suspended %s process with pid %d", bit_str, self.pid)
-                else:
-                    log.error("Unable to inject debugger DLL into %s process with pid %d, error: %d", bit_str, self.pid, ret)
-                return False
-            else:
-                return True
+            return True
 
-    def dump_memory(self):
-        """Dump process memory.
+    def upload_memdump(self):
+        """Upload process memory dump.
         @return: operation status.
         """
         if not self.pid:
-            log.warning("No valid pid specified, memory dump aborted")
-            return False
-
-        if not self.is_alive():
-            log.warning("The process with pid %d is not alive, memory "
-                        "dump aborted", self.pid)
+            log.warning("No valid pid specified, memory dump cannot be uploaded")
             return False
 
         bin_name = ""
         bit_str = ""
         file_path = os.path.join(PATHS["memory"], "{0}.dmp".format(self.pid))
 
-        if self.is_64bit():
-            orig_bin_name = LOADER64_NAME
-            bit_str = "64-bit"
-        else:
-            orig_bin_name = LOADER32_NAME
-            bit_str = "32-bit"
-
-        bin_name = os.path.join(os.getcwd(), orig_bin_name)
-
-        if os.path.exists(bin_name):
-            ret = subprocess.call([bin_name, "dump", str(self.pid), file_path])
-            if ret == 1:
-                log.info("Dumped %s process with pid %d", bit_str, self.pid)
-            else:
-                log.error("Unable to dump %s process with pid %d, error: %d", bit_str, self.pid, ret)
-                return False
-        else:
-            log.error("Please place the %s binary from cuckoomon into analyzer/windows/bin in order to analyze %s binaries.", os.path.basename(bin_name), bit_str)
+        nf = NetlogFile(os.path.join("memory", "{0}.dmp".format(self.pid)))
+        try:
+            infd = open(file_path, "rb")
+        except:
+            nf.close()
+            log.warning("Unable to find process dump for process %d.", self.pid)
             return False
 
-        nf = NetlogFile(os.path.join("memory", "{0}.dmp".format(self.pid)))
-        infd = open(file_path, "rb")
         buf = infd.read(1024*1024)
         try:
             while buf:
@@ -785,12 +731,12 @@ class Process:
         except:
             infd.close()
             nf.close()
-            log.warning("Memory dump of process with pid %d failed", self.pid)
+            log.warning("Upload of memory dump for process %d failed.", self.pid)
             return False
 
         infd.close()
         nf.close()
 
-        log.info("Memory dump of process with pid %d completed", self.pid)
+        log.info("Memory dump of process %d uploaded", self.pid)
 
         return True

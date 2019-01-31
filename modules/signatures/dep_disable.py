@@ -15,6 +15,8 @@
 
 from lib.cuckoo.common.abstracts import Signature
 
+ProcessExecuteFlags = 34
+
 class DEPDisable(Signature):
     name = "dep_disable"
     description = "A process disabled DEP at runtime"
@@ -30,12 +32,15 @@ class DEPDisable(Signature):
     filter_apinames = set(["NtSetInformationProcess"])
 
     def on_call(self, call, process):
-        infoclass = int(self.get_argument(call, "ProcessInformationClass"))
-        value = int(self.get_argument(call, "Value"))
+        infoclass = self.get_argument(call, "ProcessInformationClass")
 
+        if infoclass is not None:
+            infoclass = int(infoclass)
         # ProcessDEPPolicy
-        if infoclass == 34 and value == 0:
-            self.data.append({"process" : process["process_name"] + ":" + str(process["process_id"])})
+        if call["return"] == 0 and infoclass == ProcessExecuteFlags:
+            processinfo = self.get_raw_argument(call, "ProcessInformation")
+            if processinfo == 0:
+                self.data.append({"process" : process["process_name"] + ":" + str(process["process_id"])})
 
     def on_complete(self):
          if self.data:

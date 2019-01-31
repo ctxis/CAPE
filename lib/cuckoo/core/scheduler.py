@@ -20,7 +20,7 @@ from lib.cuckoo.common.exceptions import CuckooMachineError, CuckooGuestError
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.exceptions import CuckooCriticalError
 from lib.cuckoo.common.objects import File
-from lib.cuckoo.common.utils import create_folder
+from lib.cuckoo.common.utils import create_folder, get_memdump_path, free_space_monitor
 from lib.cuckoo.core.database import Database, TASK_COMPLETED, TASK_REPORTED
 from lib.cuckoo.core.database import TASK_FAILED_ANALYSIS
 from lib.cuckoo.core.guest import GuestManager
@@ -71,6 +71,7 @@ class AnalysisManager(threading.Thread):
         self.task = task
         self.errors = error_queue
         self.cfg = Config()
+        self.aux_cfg = Config("auxiliary")
         self.storage = ""
         self.binary = ""
         self.machine = None
@@ -225,6 +226,10 @@ class AnalysisManager(threading.Thread):
                 except:
                     pass
 
+        # options from auxiliar.conf
+        options["curtain"] = self.aux_cfg.curtain.enabled
+        options["sysmon"] = self.aux_cfg.sysmon.enabled
+
         return options
 
     def launch_analysis(self):
@@ -333,7 +338,8 @@ class AnalysisManager(threading.Thread):
             # Take a memory dump of the machine before shutting it off.
             if self.cfg.cuckoo.memory_dump or self.task.memory:
                 try:
-                    dump_path = os.path.join(self.storage, "memory.dmp")
+                    dump_path = get_memdump_path(self.task.id)
+                    free_space_monitor()
                     machinery.dump_memory(self.machine.label, dump_path)
 
                 except NotImplementedError:
@@ -509,7 +515,7 @@ class AnalysisManager(threading.Thread):
                     self.route = value
                     break
 
-        if self.route == "none" or self.route == "None":
+        if self.route == "none" or self.route == "None" or self.route == "drop":
             self.interface = None
             self.rt_table = None
         elif self.route == "inetsim":
@@ -560,6 +566,9 @@ class AnalysisManager(threading.Thread):
             rooter("tor_enable", self.machine.ip, str(self.cfg.resultserver.port),
                 str(self.cfg.routing.tor_dnsport), str(self.cfg.routing.tor_proxyport))
 
+        if self.route == "none" or self.route == "None" or self.route == "drop":
+            rooter("drop_enable", self.machine.ip, str(self.cfg.resultserver.port))
+
         if self.interface:
             rooter("forward_enable", self.machine.interface,
                    self.interface, self.machine.ip)
@@ -592,6 +601,9 @@ class AnalysisManager(threading.Thread):
         if self.route == "tor":
             rooter("tor_disable", self.machine.ip, str(self.cfg.resultserver.port),
                 str(self.cfg.routing.tor_dnsport), str(self.cfg.routing.tor_proxyport))
+
+        if self.route == "none" or self.route == "None" or self.route == "drop":
+            rooter("drop_disable", self.machine.ip, str(self.cfg.resultserver.port))
 
 class Scheduler:
     """Tasks Scheduler.

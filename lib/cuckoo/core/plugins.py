@@ -241,6 +241,74 @@ class RunProcessing(object):
         else:
             log.info("No processing modules loaded")
 
+        family = ""
+        # add detection based on suricata here
+        if not family and "suricata" in self.results and "alerts" in self.results["suricata"] and self.results["suricata"]["alerts"]:
+            for alert in self.results["suricata"]["alerts"]:
+                if "signature" in alert and alert["signature"]:
+                    if alert["signature"].startswith("ET TROJAN") or alert["signature"].startswith("ETPRO TROJAN"):
+                        words = re.findall(r"[A-Za-z0-9]+", alert["signature"])
+                        famcheck = words[2]
+                        famchecklower = famcheck.lower()
+                        if famchecklower == "win32" or famchecklower == "w32" or famchecklower == "ransomware":
+                            famcheck = words[3]
+                            famchecklower = famcheck.lower()
+
+                        blacklist = [
+                            "executable",
+                            "potential",
+                            "likely",
+                            "rogue",
+                            "supicious",
+                            "generic",
+                            "possible",
+                            "known",
+                            "common",
+                            "troj",
+                            "trojan",
+                            "team",
+                            "probably",
+                            "w2km",
+                            "http",
+                            "abuse",
+                            "win32",
+                            "unknown",
+                            "single",
+                            "filename",
+                            "worm",
+                            "fake",
+                            "malicious",
+                        ]
+                        isgood = True
+                        for black in blacklist:
+                            if black == famchecklower:
+                                isgood = False
+                                break
+                        if len(famcheck) < 4:
+                            isgood = False
+                        if isgood:
+                            family = famcheck.title()
+
+        if not family and self.results["info"]["category"] == "file" and "virustotal" in self.results and "results" in self.results["virustotal"] and self.results["virustotal"]["results"]:
+            detectnames = []
+            for res in self.results["virustotal"]["results"]:
+                if res["sig"] and "Trojan.Heur." not in res["sig"]:
+                    # weight Microsoft's detection, they seem to be more accurate than the rest
+                    if res["vendor"] == "Microsoft":
+                        detectnames.append(res["sig"])
+                    detectnames.append(res["sig"])
+            family = get_vt_consensus(detectnames)
+
+        # fall back to ClamAV detection
+        if not family and self.results["info"]["category"] == "file" and "clamav" in self.results["target"]["file"] and self.results["target"]["file"]["clamav"] and self.results["target"]["file"]["clamav"].startswith("Win.Trojan."):
+            words = re.findall(r"[A-Za-z0-9]+", self.results["target"]["file"]["clamav"])
+            family = words[2]
+
+        if self.results.get("cape", False):
+            self.results["malfamily"] = self.results["cape"]
+        else:
+            self.results["malfamily"] = family
+
         return self.results
 
 class RunSignatures(object):
@@ -341,7 +409,7 @@ class RunSignatures(object):
 
         if not self._check_signature_version(current):
             return None
-        
+
         log.debug("Running signature \"%s\"", current.name)
 
         try:
@@ -373,7 +441,7 @@ class RunSignatures(object):
         # This will contain all the matched signatures.
         matched = []
 
-        stats = { } 
+        stats = { }
 
         complete_list = list_plugins(group="signatures")
         evented_list = [sig(self.results)
@@ -417,8 +485,8 @@ class RunSignatures(object):
                             stats[sig.name] += timediff
                         except NotImplementedError:
                             result = False
-                        except:
-                            log.exception("Failed to run signature \"%s\":", sig.name)
+                        except Exception as e:
+                            log.exception("Failed to run signature {}: {}".format(sig.name, e))
                             result = False
 
                         # If the signature returns None we can carry on, the
@@ -468,7 +536,6 @@ class RunSignatures(object):
                     "time": float("%d.%03d" % (value.seconds,
                                              value.microseconds / 1000)),
                     })
-
         # Compat loop for old-style (non evented) signatures.
         if complete_list:
             complete_list.sort(key=lambda sig: sig.order)
@@ -497,76 +564,11 @@ class RunSignatures(object):
             malscore = 0.0
         self.results["malscore"] = malscore
 
-        family = ""
         # Make a best effort detection of malware family name (can be updated later by re-processing the analysis)
         for match in matched:
             if "families" in match and match["families"]:
-                family = match["families"][0].title()
+                self.results["malfamily"] = match["families"][0].title()
                 break
-
-        # add detection based on suricata here
-        if not family and "suricata" in self.results and "alerts" in self.results["suricata"] and self.results["suricata"]["alerts"]:
-            for alert in self.results["suricata"]["alerts"]:
-                if "signature" in alert and alert["signature"]:
-                    if alert["signature"].startswith("ET TROJAN") or alert["signature"].startswith("ETPRO TROJAN"):
-                        words = re.findall(r"[A-Za-z0-9]+", alert["signature"])
-                        famcheck = words[2]
-                        famchecklower = famcheck.lower()
-                        if famchecklower == "win32" or famchecklower == "w32" or famchecklower == "ransomware":
-                            famcheck = words[3]
-                            famchecklower = famcheck.lower()
-
-                        blacklist = [
-                            "executable",
-                            "potential",
-                            "likely",
-                            "rogue",
-                            "supicious",
-                            "generic",
-                            "possible",
-                            "known",
-                            "common",
-                            "troj",
-                            "trojan",
-                            "team",
-                            "probably",
-                            "w2km",
-                            "http",
-                            "abuse",
-                            "win32",
-                            "unknown",
-                            "single",
-                            "filename",
-                            "worm",
-                            "fake",
-                            "malicious",
-                        ]
-                        isgood = True
-                        for black in blacklist:
-                            if black == famchecklower:
-                                isgood = False
-                                break
-                        if len(famcheck) < 4:
-                            isgood = False
-                        if isgood:
-                            family = famcheck.title()
-
-        if not family and self.results["info"]["category"] == "file" and "virustotal" in self.results and "results" in self.results["virustotal"] and self.results["virustotal"]["results"]:
-            detectnames = []
-            for res in self.results["virustotal"]["results"]:
-                if res["sig"] and "Trojan.Heur." not in res["sig"]:
-                    # weight Microsoft's detection, they seem to be more accurate than the rest
-                    if res["vendor"] == "Microsoft":
-                        detectnames.append(res["sig"])
-                    detectnames.append(res["sig"])
-            family = get_vt_consensus(detectnames)
-        
-        # fall back to ClamAV detection
-        if not family and self.results["info"]["category"] == "file" and "clamav" in self.results["target"]["file"] and self.results["target"]["file"]["clamav"] and self.results["target"]["file"]["clamav"].startswith("Win.Trojan."):
-            words = re.findall(r"[A-Za-z0-9]+", self.results["target"]["file"]["clamav"])
-            family = words[2]
-
-        self.results["malfamily"] = family
 
 class RunReporting:
     """Reporting Engine.
@@ -576,7 +578,7 @@ class RunReporting:
     Engine and pass it over to the reporting modules before executing them.
     """
 
-    def __init__(self, task, results):
+    def __init__(self, task, results, reprocess=False):
         """@param analysis_path: analysis folder path."""
         self.task = task
         # remove unwanted/duplicate information from reporting
@@ -586,6 +588,7 @@ class RunReporting:
         self.results = results
         self.analysis_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task["id"]))
         self.cfg = Config("reporting")
+        self.reprocess = reprocess
 
     def process(self, module):
         """Run a single reporting module.
@@ -626,7 +629,11 @@ class RunReporting:
         try:
             log.debug("Executing reporting module \"%s\"", current.__class__.__name__)
             pretime = datetime.now()
-            current.run(self.results)
+
+            if module_name == "submitCAPE" and self.reprocess:
+                return
+            else:
+                current.run(self.results)
             posttime = datetime.now()
             timediff = posttime - pretime
             self.results["statistics"]["reporting"].append({

@@ -157,6 +157,10 @@
                         <td>Yara Rule Name for analysis samples</td>
                     </tr>
                     <tr>
+                        <td><code>capeyara:</code></td>
+                        <td>Yara Rule Name for CAPE Yara hits</td>
+                    </tr>
+                    <tr>
                         <td><code>procmemyara:</code></td>
                         <td>Yara Rule Name for process memory dumps</td>
                     </tr>
@@ -390,7 +394,9 @@
                                 {% else %}
                                 class="label label-danger"
                                 {% endif %}
-                                {% if analysis.malfamily %}
+                                {% if analysis.cape %}
+                                title="{{analysis.cape}}"
+                                {% elif analysis.malfamily %}
                                 title="{{analysis.malfamily}}"
                                 {% endif %}
                                 >{{analysis.malscore|floatformat:1}}</span>

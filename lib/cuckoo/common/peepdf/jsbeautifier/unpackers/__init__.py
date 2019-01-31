@@ -6,12 +6,7 @@
 """General code for JSBeautifier unpackers infrastructure."""
 
 import pkgutil
-
-try:
-    import re2 as re
-except ImportError:
-    import re
-
+import re
 from jsbeautifier.unpackers import evalbased
 
 # NOTE: AT THE MOMENT, IT IS DEACTIVATED FOR YOUR SECURITY: it runs js!

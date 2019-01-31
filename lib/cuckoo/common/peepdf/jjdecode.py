@@ -29,12 +29,7 @@
 #
 # Modified to integrate it with peepdf
 
-import sys
-
-try:
-    import re2 as re
-except ImportError:
-    import re
+import re, sys
 
 class JJDecoder(object):
 
@@ -208,7 +203,7 @@ class JJDecoder(object):
                     # if there is, loop s until R 0r +
                     # if there is no matching s block, throw error
                     
-                    match = 0
+                    match = 0;
                     n = None
 
                     # searching for matching pure s block
@@ -331,4 +326,5 @@ class JJDecoder(object):
                             match += 1
                     continue
             return (-1,'No match in the code!!')
+            break
         return (0, out)

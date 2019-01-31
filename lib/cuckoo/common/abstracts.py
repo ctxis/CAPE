@@ -2,18 +2,23 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+from __future__ import absolute_import
 import os
+import json
+import socket
+import dns.resolver
 import requests
 import datetime
 import threading
 import logging
 import time
 
+from urlparse import urlparse
 try:
     import re2 as re
 except ImportError:
     import re
-    
+
 import xml.etree.ElementTree as ET
 
 from lib.cuckoo.common.config import Config
@@ -27,6 +32,7 @@ from lib.cuckoo.common.objects import Dictionary
 from lib.cuckoo.common.utils import create_folder
 from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.resultserver import ResultServer
+from django.core.validators import URLValidator
 
 try:
     import libvirt
@@ -34,7 +40,20 @@ try:
 except ImportError:
     HAVE_LIBVIRT = False
 
+try:
+    import tldextract
+    HAVE_TLDEXTRACT = True
+except ImportError:
+    HAVE_TLDEXTRACT = False
+
 log = logging.getLogger(__name__)
+
+myresolver = dns.resolver.Resolver()
+myresolver.timeout = 5.0
+myresolver.lifetime = 5.0
+myresolver.domain = dns.name.Name("google-public-dns-a.google.com")
+myresolver.nameserver = ['8.8.8.8']
+
 
 class Auxiliary(object):
     """Base abstract class for auxiliary modules."""
@@ -115,7 +134,10 @@ class Machinery(object):
 
                 # If configured, use specific network interface for this
                 # machine, else use the default value.
-                machine.interface = machine_opts.get("interface")
+                if machine_opts.get("interface"):
+                    machine.interface = machine_opts["interface"]
+                else:
+                    machine.interface = mmanager_opts.get("interface")
 
                 # If configured, use specific snapshot name, else leave it
                 # empty and use default behaviour.
@@ -683,6 +705,7 @@ class Signature(object):
     filter_apinames = set()
     filter_categories = set()
     filter_analysistypes = set()
+    banned_suricata_sids = ()
 
     def __init__(self, results=None):
         self.data = []
@@ -693,11 +716,139 @@ class Signature(object):
         self._current_call_raw_cache = None
         self._current_call_raw_dict = None
 
+        if not hasattr(Signature, "_alexadb") and os.path.exists(os.path.join(CUCKOO_ROOT, "data", "alexa.json")):
+            # initialize only once
+            Signature._alexadb = json.loads(open(os.path.join(CUCKOO_ROOT, "data", "alexa.json"), "rb").read())
+
+    def yara_detected(self, name):
+        target = self.results.get("target", {})
+        if target.get("category") == "file" and target.get("file"):
+            for block in self.results["target"]["file"]["yara"]:
+                if re.findall(name, block["name"], re.I):
+                    return "sample", self.results["target"]["file"]["path"], block
+
+        for keyword in ("procdump", "procmemory", "extracted", "dropped", "CAPE"):
+            if keyword in self.results and self.results[keyword] is not None:
+                for block in self.results.get(keyword, []):
+                    for sub_keyword in ("yara", "cape_yara"):
+                        for sub_block in block.get(sub_keyword, []):
+                            log.debug((keyword, sub_keyword, sub_block["name"]))
+                            if re.findall(name, sub_block["name"], re.I):
+                                if keyword in ("procdump", "dropped", "extracted", "procmemory"):
+                                    if block.get("file", False):
+                                        path = block["file"]
+                                    elif block.get("path", False):
+                                        path = block["path"]
+                                    else:
+                                        path = ""
+                                elif keyword == "CAPE":
+                                    path = block["path"]
+                                else:
+                                    path = ""
+
+                                return keyword, path, sub_block
+
+        return False, False, False
+
     def add_statistic(self, name, field, value):
         if name not in self.results["statistics"]["signatures"]:
             self.results["statistics"]["signatures"][name] = { }
 
         self.results["statistics"]["signatures"][name][field] = value
+
+    def get_pids(self):
+        pids = list()
+        logs = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "logs")
+        processes = self.results.get("behavior", {}).get("processtree", [])
+        if processes:
+            for pid in processes:
+                pids.append(str(pid.get("pid", "")))
+                pids += [str(cpid["pid"]) for cpid in pid.get("children", []) if "pid" in cpid]
+        # in case if bsons too big
+        if os.path.exists(logs):
+            pids += [pidb.replace(".bson", "") for pidb in os.listdir(logs) if ".bson" in pidb]
+        # in case injection is not followed
+        if "procmemory" in self.results and self.results["procmemory"] is not None:
+            pids += [str(block["pid"]) for block in self.results["procmemory"]]
+        if "procdump" in self.results and self.results["procdump"] is not None:
+            pids += [str(block["pid"]) for block in self.results["procdump"]]
+        log.debug(list(set(pids)))
+
+        return ",".join(list(set(pids)))
+
+    def advanced_url_parse(self, url):
+        if HAVE_TLDEXTRACT:
+            EXTRA_SUFFIXES = ('bit',)
+            parsed = False
+            try:
+                parsed = tldextract.TLDExtract(extra_suffixes=EXTRA_SUFFIXES, suffix_list_urls=None)(url)
+            except Exception as e:
+                log.error(e)
+            return parsed
+        else:
+            log.info("missed tldextract dependency")
+
+    def _get_ip_by_host(self, hostname):
+        for data in self.results.get('network', {}).get("hosts", []):
+            if data.get("hostname", "") == hostname:
+                return [data.get("ip", "")]
+        return []
+
+    def _get_ip_by_host_dns(self, hostname):
+
+        ips = list()
+
+        try:
+            answers = myresolver.query(hostname, 'A')
+            for rdata in answers:
+                n = dns.reversename.from_address(rdata.address)
+                try:
+                    answers_inv = myresolver.query(n, 'PTR')
+                    for rdata_inv in answers_inv:
+                        ips.append(rdata.address)
+                except dns.resolver.NoAnswer:
+                    ips.append(rdata.address)
+                except dns.resolver.NXDOMAIN:
+                    ips.append(rdata.address)
+        except dns.resolver.NoAnswer:
+            print "IPs: No se puede obtener"
+        except Exception as e:
+            log.info(e)
+
+        return ips
+
+    def _is_ip(self, ip):
+        # is this string an ip?
+        try:
+            socket.inet_aton(ip)
+            return True
+        except:
+            return False
+
+    def _check_valid_url(self, url, all_checks=False):
+        """ Checks if url is correct and can be parsed by tldextract/urlparse
+        @param url: string
+        @return: url or None
+        """
+
+        val = URLValidator(schemes=["http", "https", "udp", "tcp"])
+
+        try:
+            val(url)
+            return url
+        except:
+            pass
+
+        if all_checks:
+            last = url.rfind("://")
+            if url[:last] in ("http", "https"):
+                url = url[last+3:]
+
+        try:
+            val("http://%s" % url)
+            return "http://%s" % url
+        except:
+            pass
 
     def _check_value(self, pattern, subject, regex=False, all=False, ignorecase=True):
         """Checks a pattern against a given subject.
@@ -1235,7 +1386,7 @@ class Signature(object):
             return self._current_call_dict[name]
 
         return None
-        
+
     def get_name_from_pid(self, pid):
         """Retrieve a process name from a supplied pid
         @param pid: a Process PID observed in the analysis
@@ -1272,7 +1423,7 @@ class Signature(object):
 
         return None
 
-    def check_suricata_alerts(self, pattern):
+    def check_suricata_alerts(self, pattern, blacklist=[]):
         """Check for pattern in Suricata alert signature
         @param pattern: string or expression to check for.
         @return: True/False
@@ -1280,10 +1431,40 @@ class Signature(object):
         res = False
         if isinstance(self.results.get("suricata", {}), dict):
             for alert in self.results.get("suricata", {}).get("alerts", []):
-                if re.findall(pattern, alert.get("signature", ""), re.I):
+                sid = alert.get("sid", 0)
+                if (sid not in self.banned_suricata_sids or \
+                   sid not in blacklist) and \
+                   re.findall(pattern, alert.get("signature", ""), re.I):
                     res = True
                     break
         return res
+
+    def check_alexa(self, pattern):
+        """
+        @param pattern: domain/url to check in alexa db
+        @return: True/False
+        """
+        # pre check for correct parsing
+        if "://" not in pattern:
+            pattern = "http://"+pattern
+
+        if HAVE_TLDEXTRACT:
+            try:
+                EXTRA_SUFFIXES = ('bit',)
+                tld_res = tldextract.TLDExtract(extra_suffixes=EXTRA_SUFFIXES, suffix_list_urls=None)(pattern)
+            except Exception as e:
+                return False
+            if tld_res.domain + "." + tld_res.suffix in self._alexadb:
+                # no subdomain, mean alexa match
+                if tld_res.subdomain == "":
+                    return True
+                #subdomain and alexa match
+                elif tld_res.subdomain + "." +tld_res.domain + "." + tld_res.suffix in self._alexadb[tld_res.domain + "." + tld_res.suffix]:
+                    return True
+        else:
+            log.warn("Missed tldextract dependencie")
+
+        return False
 
     def add_match(self, process, type, match):
         """Adds a match to the signature data.
@@ -1368,8 +1549,7 @@ class Report(object):
         """
         self.analysis_path = analysis_path
         self.conf_path = os.path.join(self.analysis_path, "analysis.conf")
-        self.file_path = os.path.realpath(os.path.join(self.analysis_path,
-                                                       "binary"))
+        self.file_path = os.path.realpath(os.path.join(self.analysis_path, "binary"))
         self.reports_path = os.path.join(self.analysis_path, "reports")
         self.shots_path = os.path.join(self.analysis_path, "shots")
         self.pcap_path = os.path.join(self.analysis_path, "dump.pcap")

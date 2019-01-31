@@ -40,6 +40,13 @@ except ImportError:
     HAVE_CLAMAV = False
 
 try:
+    import pefile
+    import peutils
+    HAVE_PEFILE = True
+except ImportError:
+    HAVE_PEFILE = False
+
+try:
     import re2 as re
 except ImportError:
     import re
@@ -96,6 +103,7 @@ class File:
         self._sha1      = None
         self._sha256    = None
         self._sha512    = None
+        self._pefile    = False
 
     def get_name(self):
         """Get file name.
@@ -206,6 +214,38 @@ class File:
 
         try:
             return pydeep.hash_file(self.file_path)
+        except Exception:
+            return None
+
+    def get_entrypoint(self):
+        """Get entry point (PE).
+        @return: entry point.
+        """
+        if not HAVE_PEFILE:
+            if not File.notified_pefile:
+                File.notified_pefile = True
+                log.warning("Unable to import pefile (install with `pip install pefile`)")
+            return None
+
+        try:
+            pe = pefile.PE(data=self.file_data)
+            return pe.OPTIONAL_HEADER.AddressOfEntryPoint
+        except Exception:
+            return None
+
+    def get_ep_bytes(self):
+        """Get entry point bytes (PE).
+        @return: entry point bytes (16).
+        """
+        if not HAVE_PEFILE:
+            if not File.notified_pefile:
+                File.notified_pefile = True
+                log.warning("Unable to import pefile (install with `pip install pefile`)")
+            return None
+
+        try:
+            pe = pefile.PE(data=self.file_data)
+            return binascii.b2a_hex(pe.get_data(pe.OPTIONAL_HEADER.AddressOfEntryPoint, 0x10))
         except Exception:
             return None
 
@@ -320,6 +360,7 @@ class File:
             return results
 
         try:
+            rules = False
             try:
                 filepath = ""
                 filename = ""
@@ -335,29 +376,26 @@ class File:
                     log.warning(e.args[0])
                 else:
                     rules = yara.compile(rulepath)
-            matches = rules.match(self.file_path)
+            if rules:
+                matches = rules.match(self.file_path)
 
-            # This is ancient, and breaks CAPE, so removing.
-            #if getattr(yara, "__version__", None) == "1.7.7":
-            #    return self._yara_matches_177(matches)
+                results = []
 
-            results = []
+                for match in matches:
+                    strings = set()
+                    for s in match.strings:
+                        strings.add(self._yara_encode_string(s[2]))
 
-            for match in matches:
-                strings = set()
-                for s in match.strings:
-                    strings.add(self._yara_encode_string(s[2]))
+                    addresses = {}
+                    for s in match.strings:
+                        addresses[s[1].strip('$')] = s[0]
 
-                addresses = {}
-                for s in match.strings:
-                    addresses[s[1].strip('$')] = s[0]
-
-                results.append({
-                    "name": match.rule,
-                    "meta": match.meta,
-                    "strings": list(strings),
-                    "addresses": addresses,
-                })
+                    results.append({
+                        "name": match.rule,
+                        "meta": match.meta,
+                        "strings": list(strings),
+                        "addresses": addresses,
+                    })
 
         except Exception as e:
             log.exception("Unable to match Yara signatures: %s", e)
@@ -405,6 +443,8 @@ class File:
         infos["yara"] = self.get_yara()
         infos["cape_yara"] = self.get_yara(CAPE_YARA_RULEPATH)
         infos["clamav"] = self.get_clamav()
+        infos["entrypoint"] = self.get_entrypoint()
+        infos["ep_bytes"] = self.get_ep_bytes()
 
         return infos
 
@@ -442,20 +482,26 @@ class ProcDump(object):
         return self.protmap[prot]
 
     def pretty_print(self):
-        new_addr_space = copy.deepcopy(self.address_space)
-        for map in new_addr_space:
-            map["start"] = "0x%.08x" % map["start"]
-            map["end"] = "0x%.08x" % map["end"]
-            map["size"] = "0x%.08x" % map["size"]
-            if map["prot"] is None:
-                map["prot"] = "Mixed"
-            else:
-                map["prot"] = self._prot_to_str(map["prot"])
-            for chunk in map["chunks"]:
-                chunk["start"] = "0x%.08x" % chunk["start"]
-                chunk["end"] = "0x%.08x" % chunk["end"]
-                chunk["size"] = "0x%.08x" % chunk["size"]
-                chunk["prot"] = self._prot_to_str(chunk["prot"])
+        last_map = 0
+        try:
+            new_addr_space = copy.deepcopy(self.address_space)
+            for map in new_addr_space:
+                last_map = map["start"]
+                map["start"] = "0x%.08x" % map["start"]
+                map["end"] = "0x%.08x" % map["end"]
+                map["size"] = "0x%.08x" % map["size"]
+                if map["prot"] is None:
+                    map["prot"] = "Mixed"
+                else:
+                    map["prot"] = self._prot_to_str(map["prot"])
+                for chunk in map["chunks"]:
+                    chunk["start"] = "0x%.08x" % chunk["start"]
+                    chunk["end"] = "0x%.08x" % chunk["end"]
+                    chunk["size"] = "0x%.08x" % chunk["size"]
+                    chunk["prot"] = self._prot_to_str(chunk["prot"])
+        except:
+            log.warning("Exception parsing memory dump, last map = 0x%x", last_map)
+            return
         return new_addr_space
 
     def _coalesce_chunks(self, chunklist):

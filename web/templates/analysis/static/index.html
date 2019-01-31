@@ -6,9 +6,6 @@
         {% if analysis.static and "PE32" in analysis.target.file.type and "Mono" in analysis.target.file.type %}
         <li><a href="#static_dotnet_tab" data-toggle="tab">.NET Static Analysis</a></li>
         {% endif %}
-        {% if analysis.static and analysis.static.rat %}
-        <li><a href="#static_ratconfig_tab" data-toggle="tab">RAT Configuration</a></li>
-        {% endif %}
         <li><a href="#static_strings_tab" data-toggle="tab">Strings</a></li>
         {% endif %}
         {% if analysis.info.category == "url" %}
@@ -29,7 +26,7 @@
                 {% include "analysis/static/_script.html" %}
             {% elif analysis.info.package == "vbs" or analysis.info.package == "js" %}
                 {% include "analysis/static/_script.html" %}
-            {% elif analysis.info.package == "doc" or analysis.info.package == "ppt" or analysis.info.package == "xls" %}
+            {% elif analysis.info.package == "doc" or analysis.info.package == "ppt" or analysis.info.package == "xls" or analysis.info.package == "pub" %}
                 {% include "analysis/static/_office.html" %}
             {% elif "Java Jar" in analysis.target.file.type or analysis.target.file.name|endswith:".jar" %}
                 {% include "analysis/static/_java.html" %}
@@ -41,11 +38,6 @@
         {% if analysis.info.category == "file" and analysis.static and "PE32" in analysis.target.file.type and "Mono" in analysis.target.file.type %}
         <div class="tab-pane fade" id="static_dotnet_tab">
             {% include "analysis/static/_dotnet.html" %}
-        </div>
-        {% endif %}
-        {% if analysis.info.category == "file" and analysis.static and analysis.static.rat %}
-        <div class="tab-pane fade" id="static_ratconfig_tab">
-            {% include "analysis/static/_ratconfig.html" %}
         </div>
         {% endif %}
         {% if analysis.info.category == "file" %}

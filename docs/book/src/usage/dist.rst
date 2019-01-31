@@ -105,7 +105,7 @@ machines are returned::
 POST /node
 ----------
 
-Register a new Cuckoo node by providing the name and the URL. Optionally the ht_user and ht_pass, 
+Register a new Cuckoo node by providing the name and the URL. Optionally the ht_user and ht_pass,
 if your Node API is behing htaccess authentication::
 
     $ curl http://localhost:9003/node -F name=localhost \
@@ -149,7 +149,7 @@ Update basic information of a Cuckoo node::
 
     * enabled
         False=0 or True=1 to activate or deactivate slave node
-    * ht_user 
+    * ht_user
         Username of htaccess authentication
     * ht_pass
         Passford of htaccess authentication
@@ -192,10 +192,8 @@ or::
 
     $ ./dist.py --node NAME --disable
 
-Submit a new analysis task without any special requirements (e.g., using
-Cuckoo ``tags``, a particular machine, etc)::
-
-    $ curl http://localhost:9003/task -F file=@/path/to/sample.exe -F tags=Tag1
+Submit a new analysis task
+    The method of submission is always the same: by rest api or via web-gui , both only pointing on the "master node".
 
 Get the report of a task should be requested throw master node integrated /api/ or api.py
 
@@ -300,7 +298,7 @@ VM Maintenance
 
 Ocasionally you might want to perform maintenance on VM's without shutting down your whole node.
 To do this, you need to remove the VM from being used by cuckoo in its execution, preferably without
-having to restart the ``./cuckoo.py`` daemon. 
+having to restart the ``./cuckoo.py`` daemon.
 
 First get a list of available VM's that are running on the slave::
 
@@ -315,7 +313,7 @@ way to do that, is to disable the node, so no more tasks get submitted to it::
 
    $ ./dist.py --node NAME --disable
 
-Wait for all running VM's to finish their tasks, and then restart the slaves ``./cuckoo.py``, this will 
+Wait for all running VM's to finish their tasks, and then restart the slaves ``./cuckoo.py``, this will
 re-insert the previously deleted VM's into the Database from ``conf/virtualbox.conf``.
 
 Update the VM list on the master::
@@ -333,7 +331,8 @@ Good practice for production
 Number of retrieved threads from reporting.conf should be less then general threads in uwsgi/gunicorn for api.py
 
 Installation of "uwsgi":
-    # apt-get install uwsgi uwsgi-plugin-python
+    # apt-get install uwsgi uwsgi-plugin-python nginx
+    # nginx is only required if you want use basic web auth
 
 Installation of "Gunicorn":
     # pip install gunicorn
@@ -352,6 +351,7 @@ With "config", for example you have file "/opt/cuckoo/utils/api.ini" with this c
         processes = 5
         manage-script-name = true
         socket = 0.0.0.0:8090
+        http-timeout = 200
         pidfile = /tmp/api.pid
         ; if you will use with nginx, comment next line
         protocol=http
@@ -362,6 +362,7 @@ With "config", for example you have file "/opt/cuckoo/utils/api.ini" with this c
         chown-socket = cuckoo:cuckoo
         gui = cuckoo
         uid = cuckoo
+        stats = 127.0.0.1:9191
 
 uwsgi config for dist.py - /opt/cuckoo/utils/dist.ini::
 
@@ -386,6 +387,7 @@ uwsgi config for dist.py - /opt/cuckoo/utils/dist.ini::
         chown-socket = cuckoo:cuckoo
         gui = cuckoo
         uid = cuckoo
+        stats = 127.0.0.1:9191
 
 
 To run your api with config just execute as::
@@ -403,8 +405,91 @@ To add your application to auto start after boot, move your config file to::
 
     service uwsgi restart
 
-If you need extra help, check this: 
-    
+Optimizations::
+
+    If you have many slaves is recommended
+        UWSGI:
+            set processes to be able handle number of requests dist + dist2 + 10
+        DB:
+            set max connection number to be able handle number of requests dist + dist2 + 10
+
+
+Distributed Mongo setup::
+
+Set one mongo as master and the rest just point to it, in this example cuckoo_dist.fe is our master server.
+Depend of your hardware you may prepend next command before mongod
+        numactl --interleave=all
+
+This execute on all nodes, master included:
+     mkdir -p /data/{config,}db 
+
+This commands should be executed only on master::
+
+    /usr/bin/mongod --configsvr --replSet cuckoo_config --bind_ip 0.0.0.0# only central mongo
+    /usr/bin/mongos --configdb cuckoo_config/cuckoo_dist.fe:27019 --port 27020
+    mongo --host 127.0.0.1 --port 27019
+
+    Execute in mongo console::
+
+        rs.initiate(
+          {
+            _id: "cuckoo_config",
+            configsvr: true,
+            members: [
+              { _id: 0, host: "cuckoo_dist.fe:27019" }
+            ]
+          }
+        )
+
+This should be started on all nodes including master::
+
+    /usr/bin/mongod --config /etc/mongodb.conf --shardsvr
+    /usr/bin/mongos --configdb cuckoo_config/cuckoo_dist.fe:27019 --port 27020
+
+Add clients, execute on master mongo server::
+
+    mongos --configdb cuckoo_config/cuckoo_dist.fe:27019 --port 27020
+    sh.addShard( "cuckoo_dist.fe:27017")
+    sh.addShard( "192.168.1.2:27017")
+    sh.addShard( "192.168.1.3:27017")
+    sh.addShard( "192.168.1.4:27017")
+    sh.addShard( "192.168.1.5:27017")
+
+Where 192.168.1.(2,3,4,5) is our cuckoo slaves::
+
+    mongo --port 27020
+    use cuckoo
+    db.analysis.ensureIndex ( {"_id": "hashed" } )
+    db.calls.ensureIndex ( {"_id": "hashed" } )
+    sh.enableSharding("cuckoo")
+    sh.shardCollection("cuckoo.analysis", { "_id": "hashed" })
+    sh.shardCollection("cuckoo.calls", { "_id": "hashed" })
+
+
+To see stats on master::
+
+    mongos using mongo --host 127.0.0.1 --port 27020
+    sh.status()
+
+Modify cuckoo reporting.conf [mongodb] to point all mongos in reporting.conf to
+host = 127.0.0.1
+port = 27020
+
+To remove shard node::
+
+    To see all shards:
+    db.adminCommand( { listShards: 1 } )
+
+    Then:
+    use admin
+    db.runCommand( { removeShard: "SHARD_NAME_HERE" } )
+
+For more information see:
+    https://docs.mongodb.com/manual/tutorial/remove-shards-from-cluster/
+
+
+If you need extra help, check this:
+
 See any of these files on your system::
 
     $ /etc/uwsgi/apps-available/README
@@ -415,4 +500,8 @@ See any of these files on your system::
 
 Online:
 
+    Help about UWSGI:
         http://vladikk.com/2013/09/12/serving-flask-with-nginx-on-ubuntu/
+
+    Help about mongo distributed/sharded:
+            http://dws.la/deploying-a-sharded-cluster-in-mongodb/

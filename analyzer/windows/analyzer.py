@@ -22,7 +22,7 @@ from shutil import copy
 from lib.api.process import Process
 from lib.common.abstracts import Package, Auxiliary
 from lib.common.constants import PATHS, PIPE, SHUTDOWN_MUTEX, TERMINATE_EVENT
-from lib.common.constants import CUCKOOMON32_NAME, CUCKOOMON64_NAME, LOADER32_NAME, LOADER64_NAME
+from lib.common.constants import CAPEMON32_NAME, CAPEMON64_NAME, LOADER32_NAME, LOADER64_NAME
 from lib.common.defines import ADVAPI32, KERNEL32, NTDLL
 from lib.common.defines import ERROR_MORE_DATA, ERROR_PIPE_CONNECTED
 from lib.common.defines import PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE
@@ -52,13 +52,14 @@ CAPE_DUMPED_LIST = []
 PROC_DUMPED_LIST = []
 UPLOADPATH_LIST = []
 PROCESS_LIST = []
+CRITICAL_PROCESS_LIST = []
 PROTECTED_PATH_LIST = []
 AUX_ENABLED = []
 PROCESS_LOCK = Lock()
 MONITOR_DLL = None
 MONITOR_DLL_64 = None
-LOADER = None
-LOADER_64 = None
+LOADER32 = None
+LOADER64 = None
 
 SERVICES_PID = None
 MONITORED_SERVICES = False
@@ -68,6 +69,7 @@ MONITORED_BITS = False
 MONITORED_TASKSCHED = False
 LASTINJECT_TIME = None
 NUM_INJECTED = 0
+ANALYSIS_TIMED_OUT = False
 
 PID = os.getpid()
 PPID = Process(pid=PID).get_parent_pid()
@@ -206,7 +208,7 @@ def cape_file(file_path):
         return
     file_name = os.path.basename(file_path)
     upload_path = os.path.join("CAPE", sha256)
-        
+
     if os.path.exists(file_path + "_info.txt"):
         metadata = [line.strip() for line in open(file_path + "_info.txt")]
         metastring = ""
@@ -214,8 +216,8 @@ def cape_file(file_path):
             metastring = metastring + line + ','
     else:
         log.warning("No metadata file for CAPE dump at path \"%s\"", file_path.encode("utf-8", "replace"))
-        metastring = file_path   
-        
+        metastring = file_path
+
     try:
         upload_to_host_with_metadata(file_path, upload_path, metastring)
         CAPE_DUMPED_LIST.append(sha256)
@@ -245,7 +247,7 @@ def proc_dump(file_path):
         return
     file_name = os.path.basename(file_path)
     upload_path = os.path.join("procdump", sha256)
-        
+
     if os.path.exists(file_path + "_info.txt"):
         metadata = [line.strip() for line in open(file_path + "_info.txt")]
         metastring = ""
@@ -253,8 +255,8 @@ def proc_dump(file_path):
             metastring = metastring + line + ','
     else:
         log.warning("No metadata file for process dump at path \"%s\": %s", file_path.encode("utf-8", "replace"), e)
-        metastring = file_path 
-        
+        metastring = file_path
+
     try:
         upload_to_host_with_metadata(file_path, upload_path, metastring)
         CAPE_DUMPED_LIST.append(sha256)
@@ -343,8 +345,6 @@ class PipeHandler(Thread):
         """Run handler.
         @return: operation status.
         """
-        global MONITOR_DLL
-        global MONITOR_DLL_64
         global MONITORED_SERVICES
         global MONITORED_WMI
         global MONITORED_DCOM
@@ -377,7 +377,7 @@ class PipeHandler(Thread):
 
                 break
 
-            if data:
+            if data and ANALYSIS_TIMED_OUT == False:
                 command = data.strip()
 
                 # Debug, Regular, Warning, or Critical information from CuckooMon.
@@ -406,7 +406,7 @@ class PipeHandler(Thread):
                     process_id = int(data)
                     if process_id:
                         if process_id in PROCESS_LIST:
-                            remove_pid(process_id) 
+                            remove_pid(process_id)
 
                 # same than below but we don't want to inject any DLLs because
                 # it's a kernel analysis
@@ -425,12 +425,12 @@ class PipeHandler(Thread):
                                 if not in_protected_path(filename):
                                     add_pid(process_id)
                                     log.info("Announce process name : %s", filename)
-                    PROCESS_LOCK.release()                
-            
+                    PROCESS_LOCK.release()
+
                 elif command.startswith("KERROR:"):
                     error_msg = command[7:]
                     log.error("Error : %s", str(error_msg))
-           
+
                 # if a new driver has been loaded, we stop the analysis
                 elif command == "KSUBVERT":
                     for pid in PROCESS_LIST:
@@ -442,10 +442,11 @@ class PipeHandler(Thread):
                         MONITORED_DCOM = True
                         dcom_pid = pid_from_service_name("DcomLaunch")
                         if dcom_pid:
+                            log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                             servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(dcom_pid))
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -458,33 +459,33 @@ class PipeHandler(Thread):
                         si.dwFlags = 1
                         # SW_HIDE
                         si.wShowWindow = 0
-                        log.info("Stopping WMI Service")
                         subprocess.call(['net', 'stop', 'winmgmt', '/y'], startupinfo=si)
-                        log.info("Stopped WMI Service")
                         subprocess.call("sc config winmgmt type= own", startupinfo=si)
+                        log.info("Stopped WMI Service")
 
                         if not MONITORED_DCOM:
                             MONITORED_DCOM = True
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
+                                log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
-                                servproc.set_critical()
+                                CRITICAL_PROCESS_LIST.append(int(dcom_pid))
                                 filepath = servproc.get_filepath()
-                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
 
-                        log.info("Starting WMI Service")
                         subprocess.call("net start winmgmt", startupinfo=si)
                         log.info("Started WMI Service")
 
                         wmi_pid = pid_from_service_name("winmgmt")
                         if wmi_pid:
+                            log.info("Attaching to WMI service (pid %d)", wmi_pid)
                             servproc = Process(options=self.options,config=self.config,pid=wmi_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(wmi_pid))
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -493,25 +494,21 @@ class PipeHandler(Thread):
                     if not MONITORED_TASKSCHED:
                         MONITORED_TASKSCHED = True
                         si = subprocess.STARTUPINFO()
-                        # STARTF_USESHOWWINDOW
-                        si.dwFlags = 1
-                        # SW_HIDE
-                        si.wShowWindow = 0
-                        log.info("Stopping Task Scheduler Service")
+                        si.dwFlags = 1      # STARTF_USESHOWWINDOW
+                        si.wShowWindow = 0  # SW_HIDE
                         subprocess.call(['net', 'stop', 'schedule', '/y'], startupinfo=si)
-                        log.info("Stopped Task Scheduler Service")
                         subprocess.call("sc config schedule type= own", startupinfo=si)
+                        log.info("Stopped Task Scheduler Service")
 
-                        log.info("Starting Task Scheduler Service")
                         subprocess.call("net start schedule", startupinfo=si)
                         log.info("Started Task Scheduler Service")
 
                         sched_pid = pid_from_service_name("schedule")
                         if sched_pid:
                             servproc = Process(options=self.options,config=self.config,pid=sched_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(sched_pid))
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -524,7 +521,6 @@ class PipeHandler(Thread):
                         si.dwFlags = 1
                         # SW_HIDE
                         si.wShowWindow = 0
-                        log.info("Stopping BITS Service")
                         subprocess.call(['net', 'stop', 'BITS', '/y'], startupinfo=si)
                         log.info("Stopped BITS Service")
                         subprocess.call("sc config BITS type= own", startupinfo=si)
@@ -533,10 +529,11 @@ class PipeHandler(Thread):
                             MONITORED_DCOM = True
                             dcom_pid = pid_from_service_name("DcomLaunch")
                             if dcom_pid:
+                                log.info("Attaching to DcomLaunch service (pid %d)", dcom_pid)
                                 servproc = Process(options=self.options,config=self.config,pid=dcom_pid,suspended=False)
-                                servproc.set_critical()
+                                CRITICAL_PROCESS_LIST.append(int(dcom_pid))
                                 filepath = servproc.get_filepath()
-                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                                servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                                 LASTINJECT_TIME = datetime.now()
                                 servproc.close()
                                 KERNEL32.Sleep(2000)
@@ -548,9 +545,9 @@ class PipeHandler(Thread):
                         bits_pid = pid_from_service_name("BITS")
                         if bits_pid:
                             servproc = Process(options=self.options,config=self.config,pid=bits_pid,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(bits_pid))
                             filepath = servproc.get_filepath()
-                            servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(2000)
@@ -573,14 +570,11 @@ class PipeHandler(Thread):
                         # if tasklist previously failed to get the services.exe PID we'll be
                         # unable to inject
                         if SERVICES_PID:
+                            log.info("Attaching to Service Control Manager (services.exe - pid %d)", SERVICES_PID)
                             servproc = Process(options=self.options,config=self.config,pid=SERVICES_PID,suspended=False)
-                            servproc.set_critical()
+                            CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
                             filepath = servproc.get_filepath()
-                            is_64bit = servproc.is_64bit()
-                            if is_64bit:
-                                servproc.inject(dll=MONITOR_DLL_64, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
-                            else:
-                                servproc.inject(dll=MONITOR_DLL, injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
+                            servproc.inject(injectmode=INJECT_QUEUEUSERAPC, interest=filepath, nosleepskip=True)
                             LASTINJECT_TIME = datetime.now()
                             servproc.close()
                             KERNEL32.Sleep(1000)
@@ -605,12 +599,6 @@ class PipeHandler(Thread):
                         if event_handle:
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
-                            # CAPE replaces this with its own process dumps,
-                            # with 'procmemory' processing module off, and
-                            # 'procdump' enabled instead.
-                            if self.options.get("procmemdump"):
-                                p = Process(pid=process_id)
-                                p.dump_memory()
                             dump_files()
                     PROCESS_LOCK.release()
                 # Handle case of malware terminating a process -- notify the target
@@ -627,10 +615,6 @@ class PipeHandler(Thread):
                             log.warning("Unable to open termination event for pid %u.", process_id)
                         else:
                             log.info("Notified of termination of process with pid %u.", process_id)
-                            # dump the memory of exiting processes
-                            if self.options.get("procmemdump"):
-                                p = Process(pid=process_id)
-                                p.dump_memory()
                             # make sure process is aware of the termination
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
@@ -649,10 +633,6 @@ class PipeHandler(Thread):
                 # In case of PID, the client is trying to notify the creation of
                 # a new process to be injected and monitored.
                 elif command.startswith("PROCESS:"):
-                    # Set the current DLL to the default one provided
-                    # at submission.
-                    dll = MONITOR_DLL
-                    dll_64 = MONITOR_DLL_64
                     suspended = False
                     # We parse the process ID.
                     data = command[8:]
@@ -700,28 +680,26 @@ class PipeHandler(Thread):
 
                                 is_64bit = proc.is_64bit()
                                 filename = os.path.basename(filepath)
+                                if SERVICES_PID and process_id == SERVICES_PID:
+                                    CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
-                                if is_64bit:
-                                    if not in_protected_path(filename):
-                                        res = proc.inject(dll_64, INJECT_QUEUEUSERAPC, interest)
-                                        LASTINJECT_TIME = datetime.now()
-                                else:
-                                    if not in_protected_path(filename):
-                                        res = proc.inject(dll, INJECT_QUEUEUSERAPC, interest)
-                                        LASTINJECT_TIME = datetime.now()
+                                # We want to prevent multiple injection attempts if one is already underway
+                                PROCESS_LOCK.acquire()
+                                add_pids(process_id)
+                                PROCESS_LOCK.release()
+                                NUM_INJECTED += 1
+
+                                if not in_protected_path(filename):
+                                    res = proc.inject(INJECT_QUEUEUSERAPC, interest)
+                                    LASTINJECT_TIME = datetime.now()
                                 proc.close()
                         else:
                             log.warning("Received request to inject Cuckoo "
                                         "process with pid %d, skip", process_id)
 
                 elif command.startswith("DEBUGGER:"):
-                    # Set the current DLL to the default one provided
-                    # at submission.
-                    dll = MONITOR_DLL
-                    dll_64 = MONITOR_DLL_64
-                    suspended = True
                     # We parse the process ID.
                     data = command[9:]
                     process_id = thread_id = None
@@ -737,7 +715,7 @@ class PipeHandler(Thread):
                             process_id = None
                         if param.isdigit():
                             thread_id = int(param)
-                            
+
                     if process_id:
                         if process_id not in (PID, PPID):
                             # We inject the process only if it's not being
@@ -754,19 +732,15 @@ class PipeHandler(Thread):
                                 interest = proc.get_filepath()
                                 is_64bit = proc.is_64bit()
                                 filename = os.path.basename(interest)
+                                if SERVICES_PID and process_id == SERVICES_PID:
+                                    CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
 
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
 
-                                if is_64bit:
-                                    if not in_protected_path(filename):
-                                        res = proc.debug_inject(dll_64, interest, childprocess=True)
-                                        log.info("Injected 64-bit process %s with 64-bit debugger dll: %s", filename, dll_64)
-                                        LASTINJECT_TIME = datetime.now()
-                                else:
-                                    if not in_protected_path(filename):
-                                        res = proc.debug_inject(dll, interest, childprocess=True)
-                                        log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
-                                        LASTINJECT_TIME = datetime.now()
+                                if not in_protected_path(filename):
+                                    res = proc.debug_inject(interest, childprocess=True)
+                                    log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
+                                    LASTINJECT_TIME = datetime.now()
                                 proc.close()
                         else:
                             log.warning("Received request to inject Cuckoo "
@@ -965,16 +939,18 @@ class Analyzer:
         thedate = clock.strftime("%m-%d-%y")
         thetime = clock.strftime("%H:%M:%S")
 
-        log.info("Date set to: {0}, time set to: {1}".format(thedate, thetime))
+        log.info("Date set to: {0}, time set to: {1}, timeout set to: {2}".format(thedate, thetime, self.config.timeout))
 
         # Set the DLL to be used by the PipeHandler.
         MONITOR_DLL = self.config.get_options().get("dll")
         MONITOR_DLL_64 = self.config.get_options().get("dll_64")
-        
+
         # get PID for services.exe for monitoring services
         svcpid = self.pids_from_process_name_list(["services.exe"])
         if svcpid:
             SERVICES_PID = svcpid[0]
+            self.config.services_pid = svcpid[0]
+            CRITICAL_PROCESS_LIST.append(int(svcpid[0]))
 
         protected_procname_list = [
             "vmwareuser.exe",
@@ -1040,8 +1016,8 @@ class Analyzer:
         """
         global MONITOR_DLL
         global MONITOR_DLL_64
-        global LOADER
-        global LOADER_64
+        global LOADER32
+        global LOADER64
 
         log.debug("Starting analyzer from: %s", os.getcwd())
         log.debug("Storing results at: %s", PATHS["root"])
@@ -1056,7 +1032,7 @@ class Analyzer:
             # If the analysis target is a file, we choose the package according
             # to the file format.
             if self.config.category == "file":
-                package = choose_package(self.config.file_type, self.config.file_name, self.config.exports)
+                package = choose_package(self.config.file_type, self.config.file_name, self.config.exports, self.target)
             # If it's an URL, we'll just use the default Internet Explorer
             # package.
             else:
@@ -1128,45 +1104,45 @@ class Analyzer:
             else:
                 log.debug("Started auxiliary module %s", module.__name__)
                 AUX_ENABLED.append(aux)
-       
+
         # Set the DLL to that specified by package
         if pack.options.has_key("dll") and pack.options["dll"] != None:
             MONITOR_DLL = pack.options["dll"]
             log.info("Analyzer: DLL set to %s from package %s", MONITOR_DLL, package_name)
         else:
             log.info("Analyzer: Package %s does not specify a DLL option", package_name)
-        
+
         # Set the DLL_64 to that specified by package
         if pack.options.has_key("dll_64") and pack.options["dll_64"] != None:
             MONITOR_DLL_64 = pack.options["dll_64"]
             log.info("Analyzer: DLL_64 set to %s from package %s", MONITOR_DLL_64, package_name)
         else:
             log.info("Analyzer: Package %s does not specify a DLL_64 option", package_name)
-        
+
         # Set the loader to that specified by package
         if pack.options.has_key("loader") and pack.options["loader"] != None:
             LOADER32 = pack.options["loader"]
             log.info("Analyzer: Loader (32-bit) set to %s from package %s", LOADER32, package_name)
-        
+
         if pack.options.has_key("loader_64") and pack.options["loader_64"] != None:
-            LOADER_64 = pack.options["loader_64"]
-            log.info("Analyzer: Loader (64-bit) set to %s from package %s", LOADER_64, package_name)
-        
+            LOADER64 = pack.options["loader_64"]
+            log.info("Analyzer: Loader (64-bit) set to %s from package %s", LOADER64, package_name)
+
         # randomize monitor DLL and loader executable names
         if MONITOR_DLL != None:
-            copy(os.path.join("dll", MONITOR_DLL), CUCKOOMON32_NAME)
+            copy(os.path.join("dll", MONITOR_DLL), CAPEMON32_NAME)
         else:
-            copy("dll\\CAPE.dll", CUCKOOMON32_NAME)
+            copy("dll\\capemon.dll", CAPEMON32_NAME)
         if MONITOR_DLL_64 != None:
-            copy(os.path.join("dll", MONITOR_DLL_64), CUCKOOMON64_NAME)
+            copy(os.path.join("dll", MONITOR_DLL_64), CAPEMON64_NAME)
         else:
-            copy("dll\\CAPE_x64.dll", CUCKOOMON64_NAME)
-        if LOADER != None:
-            copy(os.path.join("bin", LOADER), LOADER32_NAME)
+            copy("dll\\capemon_x64.dll", CAPEMON64_NAME)
+        if LOADER32 != None:
+            copy(os.path.join("bin", LOADER32), LOADER32_NAME)
         else:
             copy("bin\\loader.exe", LOADER32_NAME)
-        if LOADER_64 != None:
-            copy(os.path.join("bin", LOADER_64), LOADER64_NAME)
+        if LOADER64 != None:
+            copy(os.path.join("bin", LOADER64), LOADER64_NAME)
         else:
             copy("bin\\loader_x64.exe", LOADER64_NAME)
 
@@ -1215,8 +1191,9 @@ class Analyzer:
 
         while True:
             time_counter += 1
-            if time_counter == int(self.config.timeout):
-                log.info("Analysis timeout hit, terminating analysis.")
+            if time_counter >= int(self.config.timeout):
+                log.info("Analysis timeout hit (%d seconds), terminating analysis.", self.config.timeout)
+                ANALYSIS_TIMED_OUT = True
                 break
 
             # If the process lock is locked, it means that something is
@@ -1233,6 +1210,8 @@ class Analyzer:
                     if not kernel_analysis:
                         for pid in PROCESS_LIST:
                             if not Process(pid=pid).is_alive():
+                                if self.options.get("procmemdump"):
+                                    Process(pid=pid).upload_memdump()
                                 log.info("Process with pid %s has terminated", pid)
                                 PROCESS_LIST.remove(pid)
 
@@ -1280,6 +1259,32 @@ class Analyzer:
         # for a second to ensure they see it before they're terminated
         KERNEL32.Sleep(1000)
 
+        # Tell all processes to flush their logs and exit
+        if not kernel_analysis:
+            for pid in PROCESS_LIST:
+                proc = Process(pid=pid)
+                if proc.is_alive() and not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
+                    log.info("Setting terminate event for process %d.", proc.pid)
+                    try:
+                        proc.set_terminate_event()
+                    except:
+                        continue
+                if self.config.terminate_processes:
+                    # Try to terminate remaining active processes.
+                    # (This setting may render full system memory dumps less useful.)
+                    if not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
+                        log.info("Terminating process %d before shutdown.", proc.pid)
+                        proc_counter = 0
+                        while proc.is_alive():
+                            if proc_counter > 3:
+                                try:
+                                    proc.terminate()
+                                except:
+                                    continue
+                            log.info("Waiting for process %d to exit.", proc.pid)
+                            KERNEL32.Sleep(1000)
+                            proc_counter += 1
+
         log.info("Shutting down package.")
         try:
             # Before shutting down the analysis, the package can perform some
@@ -1299,36 +1304,6 @@ class Analyzer:
             except Exception as e:
                 log.warning("Cannot terminate auxiliary module %s: %s",
                             aux.__class__.__name__, e)
-
-        # Tell all processes to flush their logs regardless of terminate_processes setting
-        if not kernel_analysis:
-            for pid in PROCESS_LIST:
-                proc = Process(pid=pid)
-                if proc.is_alive():
-                    try:
-                        proc.set_terminate_event()
-                        # Cape needs time to dump and fix
-                        # each process on terminate
-                        KERNEL32.Sleep(5000)
-                    except:
-                        continue
-
-        if self.config.terminate_processes:
-            # Try to terminate remaining active processes. We do this to make sure
-            # that we clean up remaining open handles (sockets, files, etc.).
-            log.info("Terminating remaining processes before shutdown.")
-
-            if not kernel_analysis:
-                for pid in PROCESS_LIST:
-                    proc = Process(pid=pid)
-                    if proc.is_alive():
-                        try:
-                            if not proc.is_critical():
-                                proc.terminate()
-                            else:
-                                log.info("Not terminating critical process with pid %d.", proc.pid)
-                        except:
-                            continue
 
         log.info("Finishing auxiliary modules.")
         # Run the finish callback of every available Auxiliary module.
@@ -1356,7 +1331,7 @@ if __name__ == "__main__":
         analyzer = Analyzer()
         analyzer.prepare()
         completion_key = analyzer.get_completion_key()
-        
+
         # Run it and wait for the response.
         success = analyzer.run()
 

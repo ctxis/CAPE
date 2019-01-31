@@ -3,7 +3,7 @@
 #	http://peepdf.eternal-todo.com
 #	By Jose Miguel Esparza <jesparza AT eternal-todo.com>
 #
-#	Copyright (C) 2011-2014 Jose Miguel Esparza
+#	Copyright (C) 2011-2017 Jose Miguel Esparza
 #
 #	This file is part of peepdf.
 #
@@ -318,14 +318,14 @@ def numToHex(num, numBytes):
     if not isinstance(num,int):
     	return (-1,'Bad number')
     try:
-        hexNumber = hex(num)[2:]
-        if len(hexNumber) % 2 != 0:
-            hexNumber = '0'+hexNumber
-        for i in range(0,len(hexNumber)-1,2):
-            hexString += chr(int(hexNumber[i]+hexNumber[i+1],16))
-        hexString = '\0'*(numBytes-len(hexString))+hexString
+	    hexNumber = hex(num)[2:]
+	    if len(hexNumber) % 2 != 0:
+	        hexNumber = '0'+hexNumber
+	    for i in range(0,len(hexNumber)-1,2):
+	        hexString += chr(int(hexNumber[i]+hexNumber[i+1],16))
+	    hexString = '\0'*(numBytes-len(hexString))+hexString
     except:
-        return (-1,'Error in hexadecimal conversion')
+		return (-1,'Error in hexadecimal conversion')
     return (0,hexString)
                   		
 def numToString(num, numDigits):
@@ -414,7 +414,7 @@ def unescapeString(string):
 			unescapedValue += string[i]
 		i += 1
 	return unescapedValue
-
+    
 def vtcheck(md5, vtKey):
     '''
         Function to check a hash on VirusTotal and get the report summary

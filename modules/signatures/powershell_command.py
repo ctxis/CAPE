@@ -15,116 +15,250 @@
 
 from lib.cuckoo.common.abstracts import Signature
 
-class PowershellCommand(Signature):
-    name = "powershell_command"
-    description = "Attempts to execute a powershell command with suspicious parameter/s"
-    severity = 2
+import base64
+import binascii
+
+try:
+    import re2 as re
+except ImportError:
+    import re
+
+class PowershellCommandSuspicious(Signature):
+    name = "powershell_command_suspicious"
+    description = "Attempts to execute suspicious powershell command arguments"
+    severity = 3
     confidence = 70
-    weight = 0
-    categories = ["generic"]
+    categories = ["commands"]
     authors = ["Kevin Ross", "Optiv"]
-    minimum = "1.2"
+    minimum = "1.3"
     evented = True
 
-    def __init__(self, *args, **kwargs):
-        Signature.__init__(self, *args, **kwargs)
-        self.exec_policy = False
-        self.user_profile = False
-        self.hidden_window = False
-        self.b64_encoded = False
-        self.filedownload = False
-        self.noninteractive = False
-        self.startprocess = False
-        self.webrequest = False
-        self.bitstransfer = False
-        self.invokeitem = False
+    def run(self):
+        commands = [
+            "bypass",
+            "unrestricted",
+            "YnlwYXNz",
+            "J5cGFzc",
+            "ieXBhc3",
+            "dW5yZXN0cmljdGVk",
+            "VucmVzdHJpY3RlZ",
+            "1bnJlc3RyaWN0ZW",
+            "-nop",
+            "/nop",
+            "-e ",
+            "/e ",
+            "-en ",
+            "/en ",
+            "-enc",
+            "/enc",
+            "-noni",
+            "/noni",
+            "start-process",
+            "downloadfile(",
+            "ZG93bmxvYWRmaWxlK",
+            "Rvd25sb2FkZmlsZS",
+            "kb3dubG9hZGZpbGUo",
+            "net.webrequest",
+            "start-bitstransfer",
+            "invoke-item",
+            "frombase64string(",
+            "convertto-securestring",
+            "securestringtoglobalallocunicode",
+            "downloadstring(",
+            "shellexecute(",
+            "downloaddata(",
+        ]
 
-    filter_apinames = set(["CreateProcessInternalW","ShellExecuteExW"])
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "powershell" in lower:
+                for command in commands:
+                    if command in lower:
+                        ret = True
+                        self.data.append({"command" : cmdline})
+                        break
+                if ("-w" in lower or "/w" in lower) and "hidden" in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
 
-    def on_call(self, call, process):
-        if call["api"] == "CreateProcessInternalW":
-            cmdline = self.get_argument(call, "CommandLine").lower()
-        else:
-            filepath = self.get_argument(call, "FilePath").lower()
-            params = self.get_argument(call, "Parameters").lower()
-            cmdline = filepath + " " + params
+                # Decode base64 strings for reporting; will adjust this later to add detection matches against decoded content. We don't take into account here when a variable is used i.e. "$encoded = BASE64_CONTENT -enc $encoded" and so evasion from decoding the content is possible. Alternatively we could just try to hunt for base64 content in powershell command lines but this will need to be tested
+                if "-e " in lower or "/e " in lower or "-en " in lower or "/en " in lower or "-enc" in lower or "/enc" in lower:
+                    b64strings = re.findall(r'[-\/][eE][nNcCoOdDeEmMaA]{0,13}\ (\S+)', cmdline)
+                    for b64string in b64strings:
+                        encoded = str(b64string)
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
 
-        if "powershell.exe" in cmdline and ("bypass" in cmdline or "unrestricted" in cmdline or "YnlwYXNz" in cmdline or "J5cGFzc" in cmdline or "ieXBhc3" in cmdline or "dW5yZXN0cmljdGVk" in cmdline or "VucmVzdHJpY3RlZ" in cmdline or "1bnJlc3RyaWN0ZW" in cmdline):
-            self.exec_policy = True
+                if "frombase64string(" in lower:
+                    b64strings = re.findall(r'[fF][rR][oO][mM][bB][aA][sS][eE]64[sS][tT][rR][iI][nN][gG]\([\"\'](\S+)[\"\']\)', cmdline)
+                    for b64string in b64strings:
+                        encoded = str(b64string)
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
 
-        if "powershell.exe" in cmdline and "-nop" in cmdline:
-            self.user_profile = True
+        return ret
 
-        if "powershell.exe" in cmdline and "-w" in cmdline and "hidden" in cmdline:
-            self.hidden_window = True
+class PowershellRenamed(Signature):
+    name = "powershell_renamed"
+    description = "Powershell arguments were seen on a command line but powershell.exe was not called. Likely indictive of renamed/obfuscated powershell.exe or defining arguments in variables for later use"
+    severity = 3
+    confidence = 70
+    categories = ["commands"]
+    authors = ["Kevin Ross", "Optiv"]
+    minimum = "1.3"
+    evented = True
 
-        if "powershell.exe" in cmdline and ("-enc" in cmdline or "-e " in cmdline):
-            self.b64_encoded = True
-            
-        if "powershell.exe" in cmdline and "-noni" in cmdline:
-            self.noninteractive = True
-            
-        if "powershell.exe" in cmdline and "start-process" in cmdline:
-            self.startprocess = True
+    def run(self):
+        commands = [
+            "YnlwYXNz",
+            "J5cGFzc",
+            "ieXBhc3",
+            "dW5yZXN0cmljdGVk",
+            "VucmVzdHJpY3RlZ",
+            "1bnJlc3RyaWN0ZW",
+            "-nop",
+            "/nop",
+            "-noni",
+            "/noni",
+            "start-process",
+            "downloadfile(",
+            "ZG93bmxvYWRmaWxlK",
+            "Rvd25sb2FkZmlsZS",
+            "kb3dubG9hZGZpbGUo",
+            "net.webrequest",
+            "start-bitstransfer",
+            "invoke-item",
+            "frombase64string(",
+            "convertto-securestring",
+            "securestringtoglobalallocunicode",
+            "downloadstring(",
+            "shellexecute(",
+            "downloaddata(",
+        ]
 
-        if "powershell.exe" in cmdline and ("downloadfile(" in cmdline or "ZG93bmxvYWRmaWxlK" in cmdline or "Rvd25sb2FkZmlsZS" in cmdline or "kb3dubG9hZGZpbGUo" in cmdline):
-            self.filedownload = True
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "powershell" not in lower:
+                for command in commands:
+                    if command in lower:
+                        ret = True
+                        self.data.append({"command" : cmdline})
+                        break
+                if ("-w" in lower or "/w" in lower) and "hidden" in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
+                if ("-ex" in lower or "/ex" in lower) and ("bypass" in lower or "unrestricted" in lower):
+                    ret = True
+                    self.data.append({"command" : cmdline})
 
-        if "powershell.exe" in cmdline and "system.net.webrequest" in cmdline and "create(" in cmdline and "getresponse" in cmdline:
-            self.webrequest = True
+                # Decode base64 strings for reporting; will adjust this later to add detection matches against decoded content. We don't take into account here when a variable is used i.e. "$encoded = BASE64_CONTENT -enc $encoded" and so evasion from decoding the content is possible. Alternatively we could just try to hunt for base64 content in powershell command lines but this will need to be tested
+                if "-e " in lower or "/e " in lower or "-en " in lower or "/en " in lower or "-enc" in lower or "/enc" in lower:
+                    b64strings = re.findall(r'[-\/][eE][nNcCoOdDeEmMaA]{0,13}\ (\S+)', cmdline)
+                    for b64string in b64strings:
+                        encoded = str(b64string)
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            ret = True
+                            self.data.append({"command" : cmdline})
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
 
-        if "powershell.exe" in cmdline and "start-bitstransfer" in cmdline:
-            self.bitstransfer = True
+                if "frombase64string(" in lower:
+                    b64strings = re.findall(r'[fF][rR][oO][mM][bB][aA][sS][eE]64[sS][tT][rR][iI][nN][gG]\([\"\'](\S+)[\"\']\)', cmdline)
+                    for b64string in b64strings:
+                        encoded = str(b64string)
+                        if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
+                            ret = True
+                            self.data.append({"command" : cmdline})
+                            decoded = base64.b64decode(encoded)
+                            self.data.append({"decoded_base64_string" : decoded})
 
-        if "powershell.exe" in cmdline and "invoke-item" in cmdline:
-            self.invokeitem = True
+        return ret
 
-    def on_complete(self):
-        if self.exec_policy:
-            self.data.append({"execution_policy" : "Attempts to bypass execution policy"})
-            self.severity = 3
-            self.weight += 1
+class PowershellReversed(Signature):
+    name = "powershell_reversed"
+    description = "Possible reversed powershell command arguments detected"
+    severity = 3
+    confidence = 70
+    categories = ["commands"]
+    authors = ["Kevin Ross", "Optiv"]
+    minimum = "1.3"
+    evented = True
 
-        if self.user_profile:
-            self.data.append({"user_profile" : "Does not load current user profile"})
-            self.severity = 3
-            self.weight += 1
+    def run(self):
+        commands = [
+            "bypass",
+            "unrestricted",
+            "YnlwYXNz",
+            "J5cGFzc",
+            "ieXBhc3",
+            "dW5yZXN0cmljdGVk",
+            "VucmVzdHJpY3RlZ",
+            "1bnJlc3RyaWN0ZW",
+            "-nop",
+            "/nop",
+            "-e ",
+            "/e ",
+            "-en ",
+            "/en ",
+            "-enc",
+            "/enc",
+            "-noni",
+            "/noni",
+            "start-process",
+            "downloadfile(",
+            "ZG93bmxvYWRmaWxlK",
+            "Rvd25sb2FkZmlsZS",
+            "kb3dubG9hZGZpbGUo",
+            "net.webrequest",
+            "start-bitstransfer",
+            "invoke-item",
+            "frombase64string(",
+            "convertto-securestring",
+            "securestringtoglobalallocunicode",
+            "downloadstring(",
+            "shellexecute(",
+            "downloaddata(",
+        ]
 
-        if self.hidden_window:
-            self.data.append({"hidden_window" : "Attempts to execute command with a hidden window"})
-            self.weight += 1
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            for command in commands:
+                if command[::-1] in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
+                    break
+            if ("-w"[::-1] in lower or "/w"[::-1] in lower) and "hidden"[::-1] in lower:
+                ret = True
+                self.data.append({"command" : cmdline})
 
-        if self.b64_encoded:
-            self.data.append({"b64_encoded" : "Uses a Base64 encoded command value"})
-            self.weight += 1
-            
-        if self.noninteractive:
-            self.data.append({"noninteractive" : "Creates a non-interactive prompt"})
-            self.weight += 1
+        return ret
 
-        if self.startprocess:
-            self.data.append({"starts_process" : "Creates a new process"})
-            self.weight += 1
-        
-        if self.filedownload:
-            self.data.append({"file_download" : "Uses powershell to download a file"})
-            self.severity = 3
-            self.weight += 1
+class PowershellVariableObfuscation(Signature):
+    name = "powershell_variable_obfuscation"
+    description = "A powershell command using multiple variables was executed possibly indicative of obfuscation"
+    severity = 3
+    confidence = 50
+    categories = ["commands", "obuscation"]
+    authors = ["Kevin Ross", "Optiv"]
+    minimum = "1.3"
+    evented = True
 
-        if self.webrequest:
-            self.data.append({"web_request" : "Uses powershell System.Net.WebRequest method to perform a HTTP request potentially to fetch a second stage file"})
-            self.severity = 3
-            self.weight += 1
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "powershell" in lower:
+                if re.search('\$[^env=]*=.*\$[^env=]*=', lower):
+                    ret = True
+                    self.data.append({"command" : cmdline})  
 
-        if self.bitstransfer:
-            self.data.append({"bitsadmin_download" : "Uses BitsTransfer to download a file"})
-            self.severity = 3
-            self.weight += 1
-
-        if self.invokeitem:
-            self.data.append({"invoke_item" : "Potentially uses Invoke-Item to execute a file"})
-            self.weight += 1
-
-        if self.weight:
-            return True
-        return False
+        return ret

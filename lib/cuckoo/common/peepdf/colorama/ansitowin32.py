@@ -1,9 +1,5 @@
 
-try:
-    import re2 as re
-except ImportError:
-    import re
-
+import re
 import sys
 
 from .ansi import AnsiFore, AnsiBack, AnsiStyle, Style

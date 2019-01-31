@@ -4,7 +4,7 @@
 
 from lib.common.abstracts import Package
 
-class Jar(Package):
+class Extraction_Jar(Package):
     """Java analysis package."""
     PATHS = [
         ("ProgramFiles", "Java", "jre*", "bin", "java.exe"),

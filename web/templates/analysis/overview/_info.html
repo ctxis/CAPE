@@ -1,3 +1,33 @@
+{% if analysis.cape or children|length > 0 %}
+    <section id="cape">
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h4 class="panel-title">CAPE</h4>
+        </div>
+    <div class="panel-body" style="padding: 0px 0px 0px 20px; height: 50px;">
+    <h4>
+    {% if analysis.cape != None %}
+        {% if children|length > 0 %}
+            Detections: <span style="border-color:#d9534f;background-color:#d9534f;font-size:16px;font-weight:600;display:inline-block;min-width:10px;padding:3px 7px;color:#fff;text-align:center;white-space:nowrap;vertical-align:baseline;line-height:1.6" class="btn btn-primary btn-small">{{analysis.cape}}</span>
+            Triggered CAPE Tasks: 
+            {% for child in children %}
+                <a href="/submit/status/{{ child.0 }}/" class="btn btn-primary btn-small">Task #{{ child.0 }}: {{ child.1 }}</a>
+            {% endfor %}
+        {% else %}
+            Detections: <span style="border-color:#d9534f;background-color:#d9534f;font-size:16px;font-weight:600;display:inline-block;min-width:10px;padding:3px 7px;color:#fff;text-align:center;white-space:nowrap;vertical-align:baseline;line-height:1.6" class="btn btn-primary btn-small">{{analysis.cape}}</span>
+        {% endif %}
+    {% else %}
+        Triggered CAPE Tasks:
+        {% for child in children %}
+            <a href="/submit/status/{{ child.0 }}/" class="btn btn-primary btn-small">Task #{{ child.0 }}: {{ child.1 }}</a>
+        {% endfor %}
+    {% endif %}
+    </h4>
+    </br>
+    </div>
+    </section>
+{% endif %}
+
 <section id="information">
     <div class="row">
     <div class="col-lg-11">
@@ -13,6 +43,9 @@
                     <th>Started</th>
                     <th>Completed</th>
                     <th>Duration</th>
+                    {% if analysis.info.options %}
+                        <th>Options</th>
+                    {% endif %}
                     <th>Log</th>
                 </tr>
             </thead>
@@ -23,6 +56,9 @@
                     <td>{{analysis.info.started}}</td>
                     <td>{{analysis.info.ended}}</td>
                     <td>{{analysis.info.duration}} seconds</td>
+                    {% if analysis.info.options %}
+                        <td><a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#options">Show Options</a></td>
+                    {% endif %}
                     <td><a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#info-log">Show Log</a></td>
                 </tr>
             </tbody>
@@ -59,7 +95,9 @@
     {% else %}
     <h2 style="text-align:center; margin: 0px;"><span class="label label-success">{{analysis.malscore}}</span></h2>
     {% endif %}
-    {% if analysis.malfamily %}
+    {% if analysis.cape %}
+    <h5 style="text-align:center; margin: 15px 0px 2px 0px;">{{analysis.cape}}</h5>
+    {% elif analysis.malfamily %}
     <h5 style="text-align:center; margin: 15px 0px 2px 0px;">{{analysis.malfamily}}</h5>
     {% elif analysis.malscore > 6.0 %}
     <h5 style="text-align:center; margin: 15px 0px 2px 0px;">Malicious</h5>
@@ -112,6 +150,6 @@
                     </tr>
                 </tbody>
             </table>
-            </div>
+            </div
     </section>
 {% endif %}

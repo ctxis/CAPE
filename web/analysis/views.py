@@ -17,6 +17,7 @@ import zipfile
 import tempfile
 import zlib
 
+import subprocess
 from bson.binary import Binary
 from bson.binary import Binary
 from django.conf import settings
@@ -750,7 +751,7 @@ def report(request, task_id):
                                   {"error": "The specified analysis does not exist"})
 
     children = 0
-    # If compressed, decompress CAPE data    
+    # If compressed, decompress CAPE data
     if "CAPE" in report:
         try:
             report["CAPE"] = json.loads(zlib.decompress(report["CAPE"]))
@@ -766,7 +767,7 @@ def report(request, task_id):
             report["procdump"] = json.loads(zlib.decompress(report["procdump"]))
         except:
             pass
-    
+
     if "enhanced" in report["behavior"]:
         try:
             report["behavior"]["enhanced"] = json.loads(zlib.decompress(report["behavior"]["enhanced"]))
@@ -840,14 +841,36 @@ def report(request, task_id):
         except:
             pass
 
+    vba2graph = False
+    vba2graph_svg_content = ""
+    vba2graph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "vba2graph", "svg", "vba2graph.svg")
+    if os.path.exists(vba2graph_svg_path):
+        vba2graph_svg_content = open(vba2graph_svg_path, "rb").read()
+        vba2graph = True
+
+    bingraph = False
+    bingraph_svg_content = ""
+    bingraph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "bingraph", "ent.svg")
+    if os.path.exists(bingraph_svg_path):
+        bingraph_svg_content = open(bingraph_svg_path, "rb").read()
+        bingraph = True
+
     return render(request, "analysis/report.html",
-                             {"analysis": report,
-                              "children" : children,
-                              "domainlookups": domainlookups,
-                              "iplookups": iplookups,
-                              "similar": similarinfo,
-                              "settings": settings,
-                              "config": enabledconf})
+        {
+            "analysis": report,
+            "children" : children,
+            "domainlookups": domainlookups,
+            "iplookups": iplookups,
+            "similar": similarinfo,
+            "settings": settings,
+            "config": enabledconf,
+            "graphs": {
+                "vba2graph": {"enabled": vba2graph, "content": vba2graph_svg_content},
+                "bingraph": {"enabled": bingraph, "content": bingraph_svg_content},
+
+            },
+        }
+    )
 
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
@@ -863,6 +886,38 @@ def file(request, category, task_id, dlfile):
     if category == "sample":
         path = os.path.join(CUCKOO_ROOT, "storage", "binaries", dlfile)
         #file_name += ".bin"
+    elif category in ("samplezip", "droppedzip", "CAPE", "CAPEZIP"):
+        # ability to download password protected zip archives
+        path = ""
+        if category == "samplezip":
+            path = os.path.join(CUCKOO_ROOT, "storage", "binaries", file_name)
+        elif category == "droppedzip":
+            path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "files", file_name)
+        elif category.startswith("CAPE"):
+            buf = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "CAPE", file_name)
+            if os.path.isdir(buf):
+                # Backward compat for when each dropped file was in a separate dir
+                # Grab smaller file name as we store guest paths in the
+                # [orig file namoka
+                # ahora e]_info.exe
+                dfile = min(os.listdir(buf), key=len)
+                path = os.path.join(buf, dfile)
+                #file_name = dfile + ".bin"
+            else:
+                path = buf
+                #file_name += ".bin"
+        TMPDIR = "/tmp"
+        if path and category in ("samplezip", "droppedzip", "CAPEZIP"):
+            try:
+                cmd = ["7z", "a", "-y", "-pinfected", os.path.join(TMPDIR, file_name + ".zip"), path]
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as e:
+                output = e.output
+            file_name += ".zip"
+            path = os.path.join(TMPDIR, file_name)
+            cd = "application/zip"
+    elif category == "rtf":
+        path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "rtf_objects", file_name)
     elif category == "pcap":
         file_name += ".pcap"
         # Forcefully grab dump.pcap, serve it as [sha256].pcap
@@ -900,23 +955,10 @@ def file(request, category, task_id, dlfile):
             #file_name = dfile + ".bin"
         else:
             path = buf
-            #file_name += ".bin"            
+            #file_name += ".bin"
     elif category == "procdump":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "procdump", file_name)
-        if os.path.isdir(buf):
-            # Backward compat for when each dropped file was in a separate dir
-            # Grab smaller file name as we store guest paths in the
-            # [orig file name]_info.exe
-            dfile = min(os.listdir(buf), key=len)
-            path = os.path.join(buf, dfile)
-            #file_name = dfile + ".bin"
-        else:
-            path = buf
-            #file_name += ".bin"
-    elif category == "CAPE":
-        buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
-                           task_id, "CAPE", file_name)
         if os.path.isdir(buf):
             # Backward compat for when each dropped file was in a separate dir
             # Grab smaller file name as we store guest paths in the
@@ -1030,6 +1072,7 @@ def filereport(request, task_id, category):
         "htmlsummary": "summary-report.html",
         "pdf": "report.pdf",
         "maec": "report.maec-4.1.xml",
+        "maec5": "report.maec-5.0.json",
         "metadata": "report.metadata.xml",
         "misp": "misp.json"
     }
@@ -1127,6 +1170,7 @@ def perform_search(term, value):
         "suritlsfingerprint" : "suricata.tls.fingerprint",
         "clamav" : "target.file.clamav",
         "yaraname" : "target.file.yara.name",
+        "capeyara" : "target.file.cape_yara.name",
         "procmemyara" : "procmemory.yara.name",
         "virustotal" : "virustotal.results.sig",
         "comment" : "info.comments.Data",

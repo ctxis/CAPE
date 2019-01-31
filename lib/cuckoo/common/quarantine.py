@@ -5,9 +5,16 @@
 import os
 import struct
 import hashlib
+import logging
 from binascii import crc32
 
-import lib.cuckoo.common.office.olefile as olefile
+try:
+    import olefile
+    HAVE_OLEFILE = True
+except ImportError:
+    HAVE_OLEFILE = False
+    print("Missed olefile dependency: pip install olefile")
+
 from lib.cuckoo.common.utils import store_temp_file
 
 def bytearray_xor(data, key):
@@ -20,6 +27,8 @@ def read_trend_tag(data, offset):
     """
     code, length = struct.unpack("<BH", data[offset:offset+3])
     return code, bytes(data[offset+3:offset+3+length])
+
+log = logging.getLogger(__name__)
 
 # Never before published in an accurate form; reversed & developed by Optiv, Inc.
 # 95% black box inference from quarantine samples, 5% information obtained from
@@ -418,6 +427,10 @@ def trend_unquarantine(f):
     return store_temp_file(data[dataoffset:], origname)
 
 def mcafee_unquarantine(f):
+    if not HAVE_OLEFILE:
+        log.info("Missed olefile dependency: pip install olefile")
+        return None
+
     if not olefile.isOleFile(f):
         return None
 
@@ -474,7 +487,9 @@ def unquarantine(f):
     base = os.path.basename(f)
     realbase, ext = os.path.splitext(base)
 
-    if ext.lower() == ".bup" or olefile.isOleFile(f):
+    if not HAVE_OLEFILE:
+        log.info("Missed olefile dependency: pip install olefile")
+    if ext.lower() == ".bup" or (HAVE_OLEFILE and olefile.isOleFile(f)):
         try:
             return mcafee_unquarantine(f)
         except:

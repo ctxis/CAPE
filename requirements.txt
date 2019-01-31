@@ -1,7 +1,7 @@
 sqlalchemy
 jinja2
 markupsafe
-libvirt-python 
+libvirt-python
 pymongo
 bottle
 #pefile
@@ -10,7 +10,7 @@ chardet
 pygal
 clamd
 pycrypto
-rarfile 
+rarfile
 jsbeautifier
 dpkt
 nose
@@ -35,3 +35,17 @@ requests
 sqlalchemy
 # upx
 maec
+oletools==0.53.1
+networkx>=2.1
+regex
+graphviz>=0.8.4
+pydot>=1.2.4
+olefile==0.45.1
+mixbox
+matplotlib==2.2.2
+numpy==1.15.0
+six==1.11.0
+statistics==1.0.3.5
+xmltodict
+pyyaml
+pyelftools

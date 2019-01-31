@@ -11,8 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-from mwcp.malwareconfigparser import malwareconfigparser
+
+from mwcp.parser import Parser
 import yara
 
 rule_source = '''
@@ -50,9 +50,9 @@ def string_from_offset(data, offset):
     string = data[offset:offset+MAX_STRING_SIZE].split("\0")[0]
     return string
     
-class ChChes(malwareconfigparser):
+class ChChes(Parser):
     def __init__(self, reporter=None):
-        malwareconfigparser.__init__(self, description='ChChes configuration parser.', author='kev', reporter=reporter)
+        Parser.__init__(self, description='ChChes configuration parser.', author='kev', reporter=reporter)
 
     def run(self):
         filebuf = self.reporter.data

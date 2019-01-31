@@ -139,9 +139,9 @@ class Package(object):
             
         if not kernel_analysis:
             if is_64bit:
-                p.inject(dll_64, INJECT_QUEUEUSERAPC, interest)
+                p.inject(INJECT_QUEUEUSERAPC, interest)
             else:
-                p.inject(dll, INJECT_QUEUEUSERAPC, interest)
+                p.inject(INJECT_QUEUEUSERAPC, interest)
         p.resume()
         p.close()
         
@@ -154,8 +154,6 @@ class Package(object):
         @param interest: file of interest, passed to the cuckoomon config
         @return: process pid
         """
-        dll = self.options.get("dll")
-        dll_64 = self.options.get("dll_64")
         gw = self.options.get("setgw", None)
 
         u = Utils()
@@ -172,9 +170,9 @@ class Package(object):
         is_64bit = p.is_64bit()
             
         if is_64bit:
-            p.debug_inject(dll_64, interest, childprocess=False)
+            p.debug_inject(interest, childprocess=False)
         else:
-            p.debug_inject(dll, interest, childprocess=False)
+            p.debug_inject(interest, childprocess=False)
         p.resume()
         p.close()
         
@@ -189,14 +187,13 @@ class Package(object):
     
     def finish(self):
         """Finish run.
-        If specified to do so, this method dumps the memory of
+        If configured, upload memory dumps of
         all running processes.
         """
-        # Process dumping is now handled in-process (CAPE)
         if self.options.get("procmemdump"):
             for pid in self.pids:
                 p = Process(pid=pid)
-                p.dump_memory()
+                p.upload_memdump()
         
         return True
 

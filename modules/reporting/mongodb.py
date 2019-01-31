@@ -14,6 +14,7 @@ MEGABYTE = 0x100000
 
 try:
     from pymongo import MongoClient
+    from bson.objectid import ObjectId
     from pymongo.errors import ConnectionFailure, InvalidDocument
     HAVE_MONGO = True
 except ImportError:
@@ -180,6 +181,21 @@ class MongoDB(Report):
         # with large amounts of data.
         # Note: Silently ignores the creation if the index already exists.
         self.db.analysis.create_index("info.id", background=True)
+
+        #trick for distributed api
+        if results.get("info", {}).get("options", {}).get("main_task_id", ""):
+            report["info"]["id"] = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
+
+        analyses = self.db.analysis.find({"info.id": int(report["info"]["id"])})
+        if analyses.count() > 0:
+            log.debug("Deleting analysis data for Task %s" % report["info"]["id"])
+            for analysis in analyses:
+                for process in analysis["behavior"]["processes"]:
+                    for call in process["calls"]:
+                        self.db.calls.remove({"_id": ObjectId(call)})
+                self.db.analysis.remove({"_id": ObjectId(analysis["_id"])})
+            log.debug("Deleted previous MongoDB data for Task %s" % report["info"]["id"])
+
 
         # Store the report and retrieve its object id.
         try:

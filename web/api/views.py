@@ -11,7 +11,7 @@ import requests
 from django.conf import settings
 from wsgiref.util import FileWrapper
 from django.http import HttpResponse, StreamingHttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_safe
@@ -623,9 +623,9 @@ def tasks_vtdl(request):
             base_dir = tempfile.mkdtemp(prefix='cuckoovtdl',dir=settings.VTDL_PATH)
             hashlist = []
             if "," in vtdl:
-                hashlist=vtdl.split(",")
+                hashlist=vtdl.replace(" ", "").strip().split(",")
             else:
-                hashlist.append(vtdl)
+                hashlist=vtdl.split()
             onesuccess = False
 
             for h in hashlist:
@@ -878,6 +878,8 @@ def ext_tasks_search(request):
                 records = results_db.analysis.find({"target.file.clamav": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
             elif option == "yaraname":
                 records = results_db.analysis.find({"target.file.yara.name": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
+            elif option == "capeyara":
+                records = results_db.analysis.find({"target.file.cape_yara.name": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
             elif option == "procmemyara":
                 records = results_db.analysis.find({"procmemory.yara.name": {"$regex": dataarg, "$options": "-i"}}).sort([["_id", -1]])
             elif option == "virustotal":
@@ -948,6 +950,8 @@ def ext_tasks_search(request):
                 records = es.search(index=fullidx, doc_type="analysis", q="target.file.clamav: %s" % value)["hits"]["hits"]
             elif term == "yaraname":
                 records = es.search(index=fullidx, doc_type="analysis", q="target.file.yara.name: %s" % value)["hits"]["hits"]
+            elif term == "capeyara":
+                records = es.search(index=fullidx, doc_type="analysis", q="target.file.cape_yara.name: %s" % value)["hits"]["hits"]
             elif term == "procmemyara":
                 records = es.search(index=fullidx, doc_type="analysis", q="procmemory.yara.name: %s" % value)["hits"]["hits"]
             elif term == "virustotal":
@@ -1219,7 +1223,7 @@ def tasks_report(request, task_id, report_format="json"):
                           "%s" % task_id, "reports")
 
     # Report validity check
-    if len(os.listdir(srcdir)) == 0:
+    if os.path.exists(srcdir) and len(os.listdir(srcdir)) == 0:
         resp = {"error": True,
                 "error_value": "No reports created for task %s" % task_id}
 
@@ -1450,7 +1454,7 @@ def tasks_iocs(request, task_id, detail=None):
     if "dropped" in buf:
         for entry in buf["dropped"]:
             tmpdict = {}
-            if entry["clamav"]:
+            if entry.get("clamav", False):
                 tmpdict['clamav'] = entry["clamav"]
             if entry["sha256"]:
                 tmpdict['sha256'] = entry["sha256"]
@@ -1458,7 +1462,7 @@ def tasks_iocs(request, task_id, detail=None):
                 tmpdict['md5'] = entry["md5"]
             if entry["yara"]:
                 tmpdict['yara'] = entry["yara"]
-            if entry["trid"]:
+            if entry.get("trid", False):
                 tmpdict['trid'] = entry["trid"]
             if entry["type"]:
                 tmpdict["type"] = entry["type"]
@@ -1625,7 +1629,7 @@ def tasks_dropped(request, task_id):
     srcdir = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                           "%s" % task_id, "files")
 
-    if not len(os.listdir(srcdir)):
+    if not os.path.exists(srcdir) or not len(os.listdir(srcdir)):
         resp = {"error": True,
                 "error_value": "No files dropped for task %s" % task_id}
         return jsonize(resp, response=True)
@@ -1855,13 +1859,24 @@ def tasks_fullmemory(request, task_id):
     if check["error"]:
         return jsonize(check, response=True)
 
+    filename = ""
     file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "memory.dmp")
     if os.path.exists(file_path):
         filename = os.path.basename(file_path)
-    else:
+    elif os.path.exists(file_path+".zip"):
         file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "memory.dmp.zip")
         if os.path.exists(file_path):
             filename = os.path.basename(file_path)
+    elif repconf.distributed.enabled:
+        # check for memdump on slave
+        try:
+            res = requests.get("http://127.0.0.1:9003/task/{task_id}".format(task_id=task_id), verify=False, timeout=30)
+            if res and res.ok and res.json()["status"] == 1:
+                url = res.json()["url"]
+                dist_task_id = res.json()["task_id"]
+                return redirect(url.replace(":8090", ":8000")+"api/tasks/get/fullmemory/"+str(dist_task_id)+"/", permanent=True)
+        except Exception as e:
+            log.error(e)
     if filename:
         content_type = "application/octet-stream"
         chunk_size = 8192

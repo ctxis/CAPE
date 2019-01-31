@@ -16,10 +16,7 @@
 
 """deobfuscator for scripts messed up with JavascriptObfuscator.com"""
 
-try:
-    import re2 as re
-except ImportError:
-    import re
+import re
 
 PRIORITY = 1
 
