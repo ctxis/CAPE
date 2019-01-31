@@ -19,6 +19,8 @@ except ImportError:
 
 try:
     from sflock import unpack
+    from sflock.unpack.office import OfficeFile
+    from sflock.abstracts import File as sfFile
     HAS_SFLOCK = True
 except ImportError:
     HAS_SFLOCK = False
@@ -63,13 +65,13 @@ def demux_office(filename, password):
     decryptor = aux_options.msoffice.get("decryptor", None)
     result = 0
 
-    if decryptor and os.path.exists(decryptor):
-        basename = os.path.basename(filename)
-        target_path = os.path.join(tmp_path, "cuckoo-tmp/msoffice-crypt-tmp")
-        if not os.path.exists(target_path):
-            os.mkdir(target_path)
-        decrypted_name = os.path.join(target_path, basename)
+    basename = os.path.basename(filename)
+    target_path = os.path.join(tmp_path, "cuckoo-tmp/msoffice-crypt-tmp")
+    if not os.path.exists(target_path):
+        os.mkdir(target_path)
+    decrypted_name = os.path.join(target_path, basename)
 
+    if decryptor and os.path.exists(decryptor):
         try:
             result = subprocess.call([decryptor, "-p", password, "-d", filename, decrypted_name])
         except Exception as e:
@@ -81,8 +83,16 @@ def demux_office(filename, password):
             raise CuckooDemuxError("MS Office decryptor: unsupported document type")
         elif result == 3:
             raise CuckooDemuxError("MS Office decryptor: bad password")
+    elif HAS_SFLOCK:
+        ofile = OfficeFile(sfFile.from_path(filename))
+        d = ofile.decrypt(password)
+        with open(decrypted_name, "w") as outs:
+            outs.write(d.contents)
+        # TODO add decryption verification checks
+        if "Encrypted" not in d.magic:
+            retlist.append(decrypted_name)
     else:
-        raise CuckooDemuxError("MS Office decryptor binary not found")
+        raise CuckooDemuxError("MS Office decryptor not available")
 
     if not retlist:
         retlist.append(filename)
