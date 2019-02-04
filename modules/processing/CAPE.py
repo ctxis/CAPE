@@ -79,6 +79,7 @@ HANCITOR_CONFIG         = 0x34
 HANCITOR_PAYLOAD        = 0x35
 QAKBOT_CONFIG           = 0x38
 QAKBOT_PAYLOAD          = 0x39
+SCRIPT_DUMP             = 0x66
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -399,7 +400,8 @@ class CAPE(Processing):
                 cape_name = "Ursnif"
                 malwareconfig_loaded = False
                 try:
-                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers",
+                                                         "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
                     module = imp.load_module(cape_name, file, pathname, description)
                     malwareconfig_loaded = True
@@ -575,8 +577,55 @@ class CAPE(Processing):
                     if type_strings[2] == ("(DLL)"):
                         file_info["cape_type"] += "DLL"
                     else:
-                        file_info["cape_type"] += "executable"                        
-        
+                        file_info["cape_type"] += "executable"
+
+            # Attempt to decrypt script dump
+            if file_info["cape_type_code"] == SCRIPT_DUMP:
+                file_info["cape_type"] = "Script Dump"
+                cape_name = "ScriptDump"
+                malwareconfig_loaded = False
+                try:
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers",
+                                                         "malwareconfig")
+                    file, pathname, description = imp.find_module(cape_name, [malwareconfig_parsers])
+                    module = imp.load_module(cape_name, file, pathname, description)
+                    malwareconfig_loaded = True
+                    log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
+                except ImportError:
+                    log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
+                if malwareconfig_loaded:
+                    try:
+                        script_data = module.config(self, file_data)
+                        if script_data and "more_eggs" in script_data["type"]:
+                            cape_config["cape_config"] = {}
+                            bindata = script_data["data"]
+                            sha256 = hashlib.sha256(bindata).hexdigest()
+                            filepath = os.path.join(self.dropped_path, sha256)
+                            with open(filepath + "_info.txt", "w") as infofd:
+                                infofd.write(sha256)
+                            if "text" in script_data["datatype"]:
+                                cape_config["cape_config"].update({'Dropped File Hash': [sha256]})
+                                cape_config["cape_config"].update({'File Type': ["More Eggs JS"]})
+                                cape_config["cape_type"] = "MoreEggsJS"
+                                file_info["cape_type"] = "MoreEggsJS"
+                                cape_name = "MoreEggsJS"
+                                with open(filepath, 'w') as cfile:
+                                    cfile.write(bindata)
+                            if "binary" in script_data["datatype"]:
+                                cape_config["cape_config"].update({'Dropped File Hash': [sha256]})
+                                cape_config["cape_config"].update({'File Type': ["More Eggs Binary"]})
+                                cape_config["cape_type"] = "MoreEggsDropper"
+                                file_info["cape_type"] = "MoreEggsDropper"
+                                cape_name = "MoreEggsDropper"
+                                file_info["cape_type"] = "MoreEggsDropper"
+                                with open(filepath, 'wb') as cfile:
+                                    cfile.write(bindata)
+                        else:
+                            log.info("CAPE: Script Dump does not contain known encrypted payload.")
+                    except Exception as e:
+                        log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
+                append_file = True
+
         # Process CAPE Yara hits
         for hit in file_info["cape_yara"]:
             # Check to see if file is packed with UPX
@@ -635,7 +684,8 @@ class CAPE(Processing):
             malwareconfig_loaded = False
             if cape_name and mwcp_loaded == False:
                 try:
-                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers",
+                                                         "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
                     module = imp.load_module(cape_name, file, pathname, description)
                     malwareconfig_loaded = True
@@ -670,7 +720,7 @@ class CAPE(Processing):
             if "cape_config" in cape_config:
                 if cape_config["cape_config"] == {}:
                     del cape_config["cape_config"]
-            
+
         if cape_name:
             if "cape_config" in cape_config:
                     cape_config["cape_name"] = format(cape_name)
