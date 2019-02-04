@@ -13,11 +13,6 @@ log = logging.getLogger(__name__)
 s=requests.Session()
 s.verify=False
 
-host = ""
-port = ""
-username = ""
-password = ""
-
 class VMwareREST(Machinery):
     """Virtualization layer for remote VMware Workstation Server using vmrun utility."""
     LABEL = "id"
@@ -84,7 +79,7 @@ class VMwareREST(Machinery):
             log.info("Powering on vm %s", id)
             status = s.put('https://'+self.host+':'+self.port+'/api/vms/'+vmmoid+'/power', auth=(self.username,self.password), data='on', headers={'content-type':'application/vnd.vmware.vmw.rest-v1+json'})
             if "Authentication failed" in status.text:
-                log.info("Authentication failed, please check credentials in vmwarerest.conf: %s %s", self.username, self.password)
+                log.info("Authentication failed, please check credentials in vmwarerest.conf")
                 return None
             return status
         log.info("There was a problem powering on vm %s", id)
