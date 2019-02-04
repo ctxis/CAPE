@@ -14,7 +14,7 @@ s=requests.Session()
 s.verify=False
 
 class VMwareREST(Machinery):
-    """Virtualization layer for remote VMware Workstation Server using vmrun utility."""
+    """Virtualization layer for remote VMware REST Server."""
     LABEL = "id"
 
     def _initialize_check(self):
@@ -100,39 +100,20 @@ class VMwareREST(Machinery):
         log.info("There was a problem querying power status for vm %s", id)
 
     def start(self, id):
-        """Start a virtual machine.
-        @param id: path to vmx file.
-        @raise CuckooMachineError: if unable to start.
-        """
         log.info("Starting vm %s" % id)
         self.stop(id)
         self.poweron_vm(id)
 
     def stop(self, id):
-        """Stops a virtual machine.
-        @param id: path to vmx file
-        @raise CuckooMachineError: if unable to stop.
-        """
         if self._is_running(id):
             log.info("Stopping vm %s" % id)
             self.poweroff_vm(id)
 
     def _revert(self, id, snapshot):
-        """Revets machine to snapshot.
-        @param id: path to vmx file
-        @param snapshot: snapshot name
-        @raise CuckooMachineError: if unable to revert
-        """
-        vmmoid = self.get_vmmoid(id)
-        if vmmoid:
-            log.info("Revert snapshot for vm %s: %s" % (id, snapshot))
-            self.poweroff_vm(vmmoid)
+        log.info("Revert snapshot for vm %s: %s" % (id, snapshot))
+        self.poweroff_vm(id)
 
     def _is_running(self, id):
-        """Checks if virtual machine is running.
-        @param id: path to vmx file
-        @return: running status
-        """
         log.info("Checking vm %s" % id)
         power_state = self.get_power_for_vm(id)
 
