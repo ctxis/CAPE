@@ -5,9 +5,9 @@
 import os
 
 from lib.cuckoo.common.abstracts import Processing
-from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.utils import convert_to_printable
+
 
 class Dropped(Processing):
     """Dropped files analysis."""
@@ -23,6 +23,8 @@ class Dropped(Processing):
         if self.task["category"] == "pcap":
             return dropped_files
 
+        textchars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
+        is_binary_file = lambda bytes: bool(bytes.translate(None, textchars))
         file_names = os.listdir(self.dropped_path)
         for file_name in file_names:
             file_path = os.path.join(self.dropped_path, file_name)
@@ -32,19 +34,12 @@ class Dropped(Processing):
                 continue
             guest_paths = [line.strip() for line in open(file_path + "_info.txt")]
             guest_name = guest_paths[0].split("\\")[-1]
-            file_info = File(file_path=file_path,guest_paths=guest_paths, file_name=guest_name).get_all()
-            texttypes = [
-                "ASCII",
-                "Windows Registry text",
-                "XML document text",
-                "Unicode text",
-            ]
-            readit = False
-            for texttype in texttypes:
-                if texttype in file_info["type"]:
-                    readit = True
-                    break
-            if readit:
+            file_info = File(file_path=file_path, guest_paths=guest_paths, file_name=guest_name).get_all()
+
+
+            if is_binary_file(open(file_info["path"], 'rb').read(8192)):
+                pass
+            else:
                 with open(file_info["path"], "r") as drop_open:
                     filedata = drop_open.read(buf + 1)
                 if len(filedata) > buf:
