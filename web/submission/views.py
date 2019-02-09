@@ -85,7 +85,7 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
         elif r.status_code == 403:
             return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
     
-    if len(content) == 0:
+    if content and len(content) == 0:
         return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
 
     try:
@@ -103,7 +103,8 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
         for entry in task_machines:
             task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
                                                          machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock)
-            task_ids.extend(task_ids_new)
+            if isinstance(task_ids, list):
+                task_ids.extend(task_ids_new)
     if not onesuccess:
         return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
     return "ok", task_ids
@@ -423,7 +424,11 @@ def index(request, resubmit_hash=False):
         if status == "error":
             # is render msg
             return task_ids
-        tasks_count = len(task_ids)
+        if isinstance(task_ids, list):
+            tasks_count = len(task_ids)
+        else:
+            # ToDo improve error msg
+            tasks_count = 0
         if tasks_count > 0:
             return render(request, "submission/complete.html",
                           {"tasks": task_ids,

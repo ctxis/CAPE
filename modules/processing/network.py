@@ -118,6 +118,17 @@ class Pcap:
             "\.gvt1\.com$",
             "\.msedge\.net$",
             "\.msftncsi\.com$",
+            "^apps\.identrust\.com$",
+            "^isrg\.trustid\.ocsp\.identrust\.com$",
+            "^urs\.microsoft\.com$",
+            "^config\.edge\.skype\.com$",
+            "^client-office365-tas\.msedge\.net$",
+            "^files\.acrobat\.com$",
+            "^acroipm2\.adobe\.com$",
+            "^acroipm\.adobe\.com$",
+            "^ocsp\.trust-provider\.com$",
+            "^ocsp\.comodoca4\.com$",
+            "^ocsp\.pki\.goog$",
         ]
         if enabled_whitelist and whitelist_file:
              with open(os.path.join(CUCKOO_ROOT, whitelist_file), 'r') as f:
