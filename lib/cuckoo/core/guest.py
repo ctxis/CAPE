@@ -169,7 +169,7 @@ class GuestManager:
                     raise CuckooGuestError("{0}: unable to upload malware to "
                                            "analysis machine: {1}".format(self.id, e))
 
-            # Debug analyzer.py in vm
+            # Debug analyzer.py in vm
             if "CUCKOO_DBG" in os.environ:
                 while True:
                     pass
