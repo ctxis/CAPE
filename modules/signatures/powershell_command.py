@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from lib.cuckoo.common.abstracts import Signature
-
+from lib.cuckoo.common.utils import convert_to_printable
 import base64
 import binascii
 
@@ -90,7 +90,7 @@ class PowershellCommandSuspicious(Signature):
                         encoded = str(b64string)
                         if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
                             decoded = base64.b64decode(encoded)
-                            self.data.append({"decoded_base64_string" : decoded})
+                            self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
                 if "frombase64string(" in lower:
                     b64strings = re.findall(r'[fF][rR][oO][mM][bB][aA][sS][eE]64[sS][tT][rR][iI][nN][gG]\([\"\'](\S+)[\"\']\)', cmdline)
@@ -98,7 +98,7 @@ class PowershellCommandSuspicious(Signature):
                         encoded = str(b64string)
                         if re.match('^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$', encoded):
                             decoded = base64.b64decode(encoded)
-                            self.data.append({"decoded_base64_string" : decoded})
+                            self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
         return ret
 
@@ -166,7 +166,7 @@ class PowershellRenamed(Signature):
                             ret = True
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
-                            self.data.append({"decoded_base64_string" : decoded})
+                            self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
                 if "frombase64string(" in lower:
                     b64strings = re.findall(r'[fF][rR][oO][mM][bB][aA][sS][eE]64[sS][tT][rR][iI][nN][gG]\([\"\'](\S+)[\"\']\)', cmdline)
@@ -176,7 +176,7 @@ class PowershellRenamed(Signature):
                             ret = True
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
-                            self.data.append({"decoded_base64_string" : decoded})
+                            self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
         return ret
 
@@ -259,6 +259,6 @@ class PowershellVariableObfuscation(Signature):
             if "powershell" in lower:
                 if re.search('\$[^env=]*=.*\$[^env=]*=', lower):
                     ret = True
-                    self.data.append({"command" : cmdline})  
+                    self.data.append({"command" : cmdline})
 
         return ret
