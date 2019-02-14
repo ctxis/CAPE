@@ -34,9 +34,15 @@
                     <th></th>
                     {% if config.mongodb %}
                     <td><a href="{% url "analysis.views.mongo_file" "CAPE" file.object_id %}" class="btn btn-primary btn-small">Download</a>
+                    {% if file.data %}
+                        <a class="btn btn-primary btn-small" data-toggle="collapse" data-target="#{{file.sha256}}">Display Text</a>
+                    {% endif %}
                     </td>
                     {% elif config.elasticsearchdb %}
                     <td><a href="{% url "analysis.views.elastic_file" "CAPE" analysis.info.id file.dropdir %}" class="btn btn-primary btn-small">Download</a>
+                    {% if file.data %}
+                        <a class="btn btn-primary btn-small" data-toggle="collapse" data-target="#{{file.sha256}}">Display Text</a>
+                    {% endif %}
                     </td>
                     {% endif %}
                 </tr>
@@ -44,9 +50,17 @@
                 <tr>
                     <th></th>
                     <td><a href="{% url "configdownload" analysis.info.id file.cape_name%}" class="btn btn-primary btn-small">Download</a>
+                    {% if file.data %}
+                        <a class="btn btn-primary btn-small" data-toggle="collapse" data-target="#{{file.sha256}}">Display Text</a>
+                    {% endif %}
                     </td>
                 </tr>
-                {% endif %}                
+                {% endif %}
+                {% if file.data %}
+                <tr class="collapse" id="{{file.sha256}}">
+                    <td colspan="2"><pre>{{file.data}}</pre></td>
+                </tr>
+                {% endif %}
             </table>
         </div> 
         </tr>
@@ -179,6 +193,9 @@
                 <tr>
                     <th></th>
                     <td><a href="{% url "file" "CAPE" analysis.info.id file.dropdir %}" class="btn btn-primary btn-small">Download</a>
+                    {% if file.data %}
+                        <a class="btn btn-primary btn-small" data-toggle="collapse" data-target="#{{file.sha256}}">Display Text</a>
+                    {% endif %}
                     </td>
                 </tr>
                 {% elif file.sha256 %}
@@ -187,9 +204,18 @@
                     <td>
                         <a href="{% url "file" "CAPE" analysis.info.id file.sha256 %}" class="btn btn-primary btn-small">Download</a>
                         <a href="{% url "file" "CAPEZIP" analysis.info.id file.sha256 %}" class="btn btn-primary btn-small">Download ZIP</a>
+                        {% if file.data %}
+                            <a class="btn btn-primary btn-small" data-toggle="collapse" data-target="#{{file.sha256}}">Display Text</a>
+                        {% endif %}
                     </td>
                 </tr>
-                {% endif %}            </table>
+                {% endif %}
+                {% if file.data %}
+                <tr class="collapse" id="{{file.sha256}}">
+                    <td colspan="2"><pre>{{file.data}}</pre></td>
+                </tr>
+                {% endif %}
+            </table>
         </div>
         {% endif %}        
     {% endfor %}

@@ -37,6 +37,7 @@ from lib.cuckoo.common.exceptions import CuckooProcessingError
 from struct import unpack_from, calcsize
 from socket import inet_ntoa
 import collections
+from lib.cuckoo.common.utils import convert_to_printable
 
 try:
     import pydeep
@@ -79,6 +80,9 @@ HANCITOR_CONFIG         = 0x34
 HANCITOR_PAYLOAD        = 0x35
 QAKBOT_CONFIG           = 0x38
 QAKBOT_PAYLOAD          = 0x39
+SCRIPT_DUMP             = 0x65
+MOREEGGSJS_PAYLOAD      = 0x68
+MOREEGGSBIN_PAYLOAD     = 0x69
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
@@ -199,21 +203,28 @@ class CAPE(Processing):
             "Unicode text",
         ]
 
+        textchars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
+        is_binary_file = lambda bytes: bool(bytes.translate(None, textchars))
+
         if os.path.exists(file_path + "_info.txt"):
             with open(file_path + "_info.txt", 'r') as f:
                 metastring = f.readline()
         else:
-            metastring=""
+            metastring = ""
 
         file_info = File(file_path, metastring).get_all()
 
         # Get the file data
         with open(file_info["path"], "r") as file_open:
             file_data = file_open.read(buf + 1)
-        if len(file_data) > buf:
-            file_info["data"] = binascii.b2a_hex(file_data[:buf] + " <truncated>")
+
+        if is_binary_file(file_data[:8192]):
+            file_info["data"] = None
         else:
-            file_info["data"] = binascii.b2a_hex(file_data)
+            if len(file_data) > buf:
+                file_info["data"] = convert_to_printable(file_data[:buf] + " <truncated>")
+            else:
+                file_info["data"] = convert_to_printable(file_data)
             
         metastrings = metastring.split(",")
         if len(metastrings) > 1:
@@ -399,7 +410,8 @@ class CAPE(Processing):
                 cape_name = "Ursnif"
                 malwareconfig_loaded = False
                 try:
-                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers",
+                                                         "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
                     module = imp.load_module(cape_name, file, pathname, description)
                     malwareconfig_loaded = True
@@ -575,8 +587,79 @@ class CAPE(Processing):
                     if type_strings[2] == ("(DLL)"):
                         file_info["cape_type"] += "DLL"
                     else:
-                        file_info["cape_type"] += "executable"                        
-        
+                        file_info["cape_type"] += "executable"
+
+            # Attempt to decrypt script dump
+            if file_info["cape_type_code"] == SCRIPT_DUMP:
+                data = file_data.decode("utf-16").replace("\x00", "")
+                file_info["data"] = data
+                cape_name = "ScriptDump"
+                malwareconfig_loaded = False
+                try:
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers",
+                                                         "malwareconfig")
+                    file, pathname, description = imp.find_module(cape_name, [malwareconfig_parsers])
+                    module = imp.load_module(cape_name, file, pathname, description)
+                    malwareconfig_loaded = True
+                    log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
+                except ImportError:
+                    log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
+                if malwareconfig_loaded:
+                    try:
+                        script_data = module.config(self, data)
+                        if script_data and "more_eggs" in script_data["type"]:
+                            bindata = script_data["data"]
+                            sha256 = hashlib.sha256(bindata).hexdigest()
+                            filepath = os.path.join(self.CAPE_path, sha256)
+                            tmpstr = file_info["pid"]
+                            tmpstr += "," + file_info["process_path"]
+                            tmpstr += "," + file_info["module_path"]
+                            if "text" in script_data["datatype"]:
+                                file_info["cape_type"] = "MoreEggsJS"
+                                outstr = str(MOREEGGSJS_PAYLOAD) + "," + tmpstr + "\n"
+                                with open(filepath + "_info.txt", "w") as infofd:
+                                    infofd.write(outstr)
+                                with open(filepath, 'w') as cfile:
+                                    cfile.write(bindata)
+                            elif "binary" in script_data["datatype"]:
+                                file_info["cape_type"] = "MoreEggsBin"
+                                outstr = str(MOREEGGSBIN_PAYLOAD) + "," + tmpstr + "\n"
+                                with open(filepath + "_info.txt", "w") as infofd:
+                                    infofd.write(outstr)
+                                with open(filepath, 'wb') as cfile:
+                                    cfile.write(bindata)
+                            if os.path.exists(filepath):
+                                self.script_dump_files.append(filepath)
+                        else:
+                            file_info["cape_type"] = "Script Dump"
+                            log.info("CAPE: Script Dump does not contain known encrypted payload.")
+                    except Exception as e:
+                        log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
+                append_file = True
+
+            # More_Eggs
+            if file_info["cape_type_code"] == MOREEGGSJS_PAYLOAD:
+                file_info["cape_type"] = "More Eggs JS Payload"
+                cape_name = "MoreEggs"
+                append_file = True
+            if file_info["cape_type_code"] == MOREEGGSBIN_PAYLOAD:
+                file_info["cape_type"] = "More_Eggs Binary Payload"
+                cape_name = "MoreEggs"
+                type_strings = file_info["type"].split()
+                if type_strings[0] == "PE32+":
+                    file_info["cape_type"] += ": 64-bit "
+                    if type_strings[2] == "(DLL)":
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                if type_strings[0] == "PE32":
+                    file_info["cape_type"] += ": 32-bit "
+                    if type_strings[2] == "(DLL)":
+                        file_info["cape_type"] += "DLL"
+                    else:
+                        file_info["cape_type"] += "executable"
+                append_file = True
+
         # Process CAPE Yara hits
         for hit in file_info["cape_yara"]:
             # Check to see if file is packed with UPX
@@ -635,7 +718,8 @@ class CAPE(Processing):
             malwareconfig_loaded = False
             if cape_name and mwcp_loaded == False:
                 try:
-                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers", "malwareconfig")
+                    malwareconfig_parsers = os.path.join(CUCKOO_ROOT, "modules", "processing", "parsers",
+                                                         "malwareconfig")
                     file, pathname, description = imp.find_module(cape_name,[malwareconfig_parsers])
                     module = imp.load_module(cape_name, file, pathname, description)
                     malwareconfig_loaded = True
@@ -670,7 +754,7 @@ class CAPE(Processing):
             if "cape_config" in cape_config:
                 if cape_config["cape_config"] == {}:
                     del cape_config["cape_config"]
-            
+
         if cape_name:
             if "cape_config" in cape_config:
                     cape_config["cape_name"] = format(cape_name)
@@ -701,6 +785,7 @@ class CAPE(Processing):
         cape_config = {}
         self.key = "CAPE"
         CAPE_output = []
+        self.script_dump_files = []
 
         if hasattr(self, "CAPE_path"):
             # Process dynamically dumped CAPE files
@@ -712,6 +797,9 @@ class CAPE(Processing):
                         self.process_file(file_path, CAPE_output, True)
                     else:
                         self.process_file(file_path, CAPE_output, False)
+            # Process files that may have been decrypted from ScriptDump
+            for file_path in self.script_dump_files:
+                self.process_file(file_path, CAPE_output, False)
         # We want to process procdumps too just in case they might
         # be detected as payloads and trigger config parsing
         if hasattr(self, "procdump_path"):
