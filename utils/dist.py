@@ -436,6 +436,7 @@ class Retriever(threading.Thread):
             db = session()
             for node in db.query(Node).filter_by(enabled=True).all():
                 log.info("Checking for failed tasks on: {}".format(node.name))
+                "ToDo add failed_processing"
                 for task in node_fetch_tasks("failed_analysis", node.url, node.ht_user, node.ht_pass, action="delete"):
                     t = db.query(Task).filter_by(task_id=task["id"], node_id=node.id).order_by(Task.id.desc()).first()
                     if t is not None:
@@ -793,6 +794,7 @@ def output_json(data, code, headers=None):
     resp.headers.extend(headers or {})
     return resp
 
+
 class NodeBaseApi(RestResource):
     def __init__(self, *args, **kwargs):
         RestResource.__init__(self, *args, **kwargs)
@@ -895,6 +897,7 @@ class TaskBaseApi(RestResource):
         self._parser.add_argument("clock", type=int)
         self._parser.add_argument("enforce_timeout", type=bool, default=False)
 
+
 class TaskInfo(RestResource):
     def get(self, main_task_id):
         response = dict(status=0)
@@ -905,6 +908,7 @@ class TaskInfo(RestResource):
             response = dict(status=1, task_id=task_db.task_id, url=node.url, name=node.name)
         db.close()
         return response
+
 
 class StatusRootApi(RestResource):
     def get(self):
@@ -920,12 +924,14 @@ class StatusRootApi(RestResource):
         db.close()
         return jsonify({"nodes":STATUSES, "tasks":tasks})
 
+
 class DistRestApi(RestApi):
     def __init__(self, *args, **kwargs):
         RestApi.__init__(self, *args, **kwargs)
         self.representations = {
             "application/json": output_json,
         }
+
 
 def update_machine_table(node_name):
     db = session()
@@ -1068,7 +1074,7 @@ if __name__ == "__main__":
 
     log = init_logging(args.debug)
 
-    if args.clean_slaves:
+    if args.enable_clean:
         cron_cleaner()
         sys.exit()
 
