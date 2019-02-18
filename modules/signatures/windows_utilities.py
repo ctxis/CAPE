@@ -179,3 +179,73 @@ class ScriptToolExecuted(Signature):
                     self.data.append({"command" : cmdline})
 
         return ret
+
+class SuspiciousPingUse(Signature):
+    name = "suspicious_ping_use"
+    description = "A ping command was executed with the -n argument possibly to delay analysis"
+    severity = 2
+    confidence = 100
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "ping" in lower and ("-n" in lower or "/n" in lower):
+                ret = True
+                self.data.append({"command" : cmdline})
+
+        return ret
+
+class WMICCommandSuspicious(Signature):
+    name = "wmic_command_supicious"
+    description = "Suspicious wmic.exe use was detected"
+    severity = 3
+    confidence = 80
+    categories = ["commands", "wmi"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+        arguments = [
+            "antivirusproduct",
+            "baseboard",
+            "bios",
+            "compuersystem",
+            "datafile",
+            "diskdrive",
+            "group",
+            "fsdir",
+            "logicaldisk",
+            "memcache",
+            "memorychip",
+            "nicconfig",
+            "nteventlog",
+            "onboarddevice",
+            "os get",
+            "process",
+            "product",
+            "qfe",
+            "service",
+            "startup",
+            "sysdriver",
+            "useraccount",
+        ]
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "wmic" in lower:
+                for argument in self.arguments:
+                    if argument in lower:
+                        ret = True
+                        self.data.append({"command" : cmdline})
+
+        return ret
