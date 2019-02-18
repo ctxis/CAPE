@@ -203,7 +203,7 @@ class SuspiciousPingUse(Signature):
         return ret
 
 class WMICCommandSuspicious(Signature):
-    name = "wmic_command_supicious"
+    name = "wmic_command_suspicious"
     description = "Suspicious wmic.exe use was detected"
     severity = 3
     confidence = 80
