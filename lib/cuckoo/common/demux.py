@@ -355,7 +355,6 @@ def demux_email(filename, options):
 
 
 def demux_msg(filename, options):
-
     retlist = []
     try:
         retlist = Message(filename).get_extracted_attachments()
@@ -380,16 +379,21 @@ def demux_sample(filename, package, options):
     # don't try to extract from office docs
     magic = File(filename).get_type()
     # if file is an Office doc and password is supplied, try to decrypt the doc
-    if "Microsoft" in magic or "Composite Document File" in magic or "CDFV2 Encrypted" in magic:
-        password = False
-        tmp_pass = options2passwd(options)
-        if tmp_pass:
-            password = tmp_pass
-        if password:
-            return demux_office(filename, password)
-        else:
-            return [filename]
-    if "Microsoft" in magic or "Java Jar" in magic or "Composite Document File" in magic:
+    if "Microsoft" in magic:
+        if "Outlook" or "Message" in magic:
+            pass
+        elif "Composite Document File" in magic or "CDFV2 Encrypted" in magic:
+            password = False
+            tmp_pass = options2passwd(options)
+            if tmp_pass:
+                password = tmp_pass
+            if password:
+                return demux_office(filename, password)
+            else:
+                return [filename]
+
+    # don't try to extract from Java archives or executables
+    if "Java Jar" in magic:
         return [filename]
     if "PE32" in magic or "MS-DOS executable" in magic:
         return [filename]
@@ -431,5 +435,8 @@ def demux_sample(filename, package, options):
     # original file
     if not retlist:
         retlist.append(filename)
+    else:
+        if len(retlist) > 10:
+            retlist = retlist[:10]
 
     return retlist
