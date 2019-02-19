@@ -29,6 +29,9 @@ from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.rooter import vpns
 from utils import submit_utils
 
+# Tags
+from lib.cuckoo.common.dist_db import Machine, create_session
+
 # this required for hash searches
 FULL_DB = False
 repconf = Config("reporting")
@@ -449,6 +452,20 @@ def index(request, resubmit_hash=False):
         else:
             enabledconf["gateways"] = False
         enabledconf["tags"] = False
+        enabledconf["dist_master_storage_only"] = repconf.distributed.master_storage_only
+
+        all_tags = list()
+        if repconf.distributed.enabled:
+            try:
+                session = create_session(repconf.distributed.db)
+                db = session()
+                for vm in db.query(Machine).all():
+                    all_tags += vm.tags
+                all_tags = sorted(filter(None, all_tags))
+                db.close()
+            except exception as e:
+                print(e)
+
         # Get enabled machinery
         machinery = Config("cuckoo").cuckoo.get("machinery")
         # Get VM names for machinery config elements
@@ -457,6 +474,9 @@ def index(request, resubmit_hash=False):
         for vmtag in vms:
             if "tags" in getattr(Config(machinery), vmtag).keys():
                 enabledconf["tags"] = True
+
+        if enabledconf["tags"] is False and all_tags:
+            enabledconf["tags"] = True
 
         files = os.listdir(os.path.join(settings.CUCKOO_PATH, "analyzer", "windows", "modules", "packages"))
 
@@ -476,6 +496,7 @@ def index(request, resubmit_hash=False):
                 tags.append(tag.name)
 
             if tags:
+                all_tags += tags
                 label = machine.label + ": " + ", ".join(tags)
             else:
                 label = machine.label
@@ -497,6 +518,7 @@ def index(request, resubmit_hash=False):
                                    "gateways": settings.GATEWAYS,
                                    "config": enabledconf,
                                    "resubmit": resubmit_hash,
+                                   "tags": sorted(list(set(all_tags))),
                                 })
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
