@@ -151,7 +151,7 @@ $(document).ready( function() {
                                         {% endfor %}
                                     </select>
                                 </div>
-                                {% if config.dist_master_storage_only %}
+                                {% if not config.dist_master_storage_only %}
                                     <div class="form-group">
                                         <label for="form_machine">Machine</label>
                                         <select class="form-control" id="form_machine" name="machine">

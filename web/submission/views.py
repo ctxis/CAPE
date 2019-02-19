@@ -74,6 +74,20 @@ def update_options(gw, orig_options):
 
     return options
 
+session = create_session(repconf.distributed.db)
+def load_vms_tags():
+    all_tags = list()
+    if repconf.distributed.enabled:
+        try:
+            db = session()
+            for vm in db.query(Machine).all():
+                all_tags += vm.tags
+            all_tags = sorted(filter(None, all_tags))
+            db.close()
+        except exception as e:
+            print(e)
+
+    return all_tags
 
 def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines):
     onesuccess = False
@@ -216,6 +230,11 @@ def index(request, resubmit_hash=False):
         if not task_gateways:
             # To reduce to the default case
             task_gateways = [None]
+
+        all_tags = load_vms_tags()
+        if not all([tag.strip() in all_tags for tag in tags.split(",")]):
+            return render(request, "error.html",
+                {"error": "Check Tags help, you have introduced incorrect tag(s)"})
 
         db = Database()
         task_ids = []
@@ -454,17 +473,7 @@ def index(request, resubmit_hash=False):
         enabledconf["tags"] = False
         enabledconf["dist_master_storage_only"] = repconf.distributed.master_storage_only
 
-        all_tags = list()
-        if repconf.distributed.enabled:
-            try:
-                session = create_session(repconf.distributed.db)
-                db = session()
-                for vm in db.query(Machine).all():
-                    all_tags += vm.tags
-                all_tags = sorted(filter(None, all_tags))
-                db.close()
-            except exception as e:
-                print(e)
+        all_tags = load_vms_tags()
 
         # Get enabled machinery
         machinery = Config("cuckoo").cuckoo.get("machinery")
