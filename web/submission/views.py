@@ -232,7 +232,7 @@ def index(request, resubmit_hash=False):
             task_gateways = [None]
 
         all_tags = load_vms_tags()
-        if not all([tag.strip() in all_tags for tag in tags.split(",")]):
+        if tags and not all([tag.strip() in all_tags for tag in tags.split(",")]):
             return render(request, "error.html",
                 {"error": "Check Tags help, you have introduced incorrect tag(s)"})
 
