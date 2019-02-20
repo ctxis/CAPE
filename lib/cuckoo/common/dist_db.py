@@ -91,7 +91,7 @@ class Task(Base):
         self.retrieved = False
 
 
-def create_session(db_connectionn)
+def create_session(db_connectionn):
     engine = create_engine(db_connectionn, pool_size=20, max_overflow=100)
     Base.metadata.create_all(engine)
     session = sessionmaker(autocommit=False, autoflush=True, bind=engine)
