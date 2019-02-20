@@ -46,6 +46,16 @@ if repconf.mongodb.enabled:
 # Increase request size limit
 BaseRequest.MEMFILE_MAX = 1024 * 1024 * 4
 
+def createProcessTreeNode(process):
+    """Creates a single ProcessTreeNode corresponding to a single node in the tree observed cuckoo.
+    @param process: process from cuckoo dict.
+    """
+    process_node_dict = {"pid" : process["pid"],
+                         "name" : process["name"],
+                         "spawned_processes" : [createProcessTreeNode(child_process) for child_process in process["children"]]
+                        }
+    return process_node_dict
+
 def jsonize(data):
     """Converts data dict to JSON.
     @param data: data dict
