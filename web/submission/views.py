@@ -29,8 +29,13 @@ from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.rooter import vpns
 from utils import submit_utils
 
-# Tags
-from lib.cuckoo.common.dist_db import Machine, create_session
+try:
+    # Tags
+    from lib.cuckoo.common.dist_db import Machine, create_session
+    HAVE_DIST = True
+except Exception as e:
+    HAVE_DIST = False
+    print(e)
 
 # this required for hash searches
 FULL_DB = False
@@ -74,7 +79,8 @@ def update_options(gw, orig_options):
 
     return options
 
-session = create_session(repconf.distributed.db)
+if HAVE_DIST:
+    session = create_session(repconf.distributed.db)
 def load_vms_tags():
     all_tags = list()
     if repconf.distributed.enabled:
