@@ -10,7 +10,6 @@ chardet
 pygal
 clamd
 pycrypto
-rarfile
 jsbeautifier
 dpkt
 nose
@@ -49,3 +48,4 @@ statistics==1.0.3.5
 xmltodict
 pyyaml
 pyelftools
+sflock

@@ -151,18 +151,37 @@ $(document).ready( function() {
                                         {% endfor %}
                                     </select>
                                 </div>
+                                {% if not config.dist_master_storage_only %}
+                                    <div class="form-group">
+                                        <label for="form_machine">Machine</label>
+                                        <select class="form-control" id="form_machine" name="machine">
+                                            {% for id,label in machines %}
+                                            <option value="{{id}}">{{label}}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                {% endif %}
+                                {% if config.tags and tags %}
                                 <div class="form-group">
-                                    <label for="form_machine">Machine</label>
-                                    <select class="form-control" id="form_machine" name="machine">
-                                        {% for id,label in machines %}
-                                        <option value="{{id}}">{{label}}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                {% if config.tags %}
-                                <div class="form-group">
-                                    <label for="form_tags">Machine Tags</label>
-                                    <input type="text" class="form-control" id="form_tags" name="tags" />
+                                    <label for="form_tags">Machine Tags (<a href="#tagshelp" data-toggle="collapse">help</a>)</label>
+                                    <input type="text" class="form-control" id="form_tags" name="tags" value=""/>
+                                    <div id="tagshelp" class="collapse">
+                                        <p class="text-muted" style="margin-top: 10px;">Syntax is tag1,tag2,tag3, etc.</p>
+                                        <table class="table table-striped table-centered">
+                                            <thead>
+                                                <tr>
+                                                    <th style="text-align: center;">Tags</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for tag in tags %}
+                                                <tr>
+                                                    <td><code>{{tag}}</code></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                                 {% endif %}
                                 {% if config.gateways %}
