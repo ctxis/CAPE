@@ -277,7 +277,7 @@ class AltersWindowsUtility(Signature):
             "regsrv32.exe",
             "sc.exe",
             "schtasks.exe",
-            "systeminfo.exe,
+            "systeminfo.exe",
             "tasklist.exe",
             "vssadmin.exe",
             "wevutil.exe",
