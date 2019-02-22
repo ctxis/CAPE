@@ -264,6 +264,8 @@ class AltersWindowsUtility(Signature):
         self.ret = False
         self.utilities = [
             "at.exe",
+            "bcdedit.exe",
+            "bitsadmin.exe",
             "cmd.exe",
             "cscript.exe",
             "dir.exe",
