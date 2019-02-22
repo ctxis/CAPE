@@ -249,3 +249,44 @@ class WMICCommandSuspicious(Signature):
                         self.data.append({"command" : cmdline})
 
         return ret
+
+class AltersWindowsUtility(Signature):
+    name = "alters_windows_utility"
+    description = "Attempts to move, copy or rename a command line or scripting utility likely for evasion"
+    severity = 3
+    categories = ["commands", "stealth", "evasion"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.ret = False
+        self.utilities = [
+            "at.exe",
+            "cmd.exe",
+            "cscript.exe",
+            "net.exe",
+            "powershell.exe",
+            "regsrv32.exe",
+            "sc.exe",
+            "vssadmin.exe",
+            "wevutil.exe",
+            "wmic.exe",
+            "wscript.exe",
+            ]
+
+    filter_apinames = set(["CopyFileExA","CopyFileExW","MoveFileWithProgressW","MoveFileWithProgressTransactedW"])
+
+    def on_call(self, call, process):
+        self.ret = False
+        origfile = self.get_argument(call, "ExistingFileName")
+        destfile = self.get_argument(call, "NewFileName")
+        for utility in self.utilities:
+            lower = origfile.lower()
+            if lower.endswith(utility):
+                self.ret = True
+                self.data.append({"utility" : "source file %s destination file %s" % (origfile,destfile)})
+
+    def on_complete(self):
+        return self.ret
