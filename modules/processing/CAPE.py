@@ -474,73 +474,118 @@ class CAPE(Processing):
                     if index == '22':
                         values = data.split(':')
                         ConfigItem = "Password #1"
-                        ConfigData = values[2]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[2]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
+                        except:
+                            pass
                         ConfigItem = "Username #1"
-                        ConfigData = values[1]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[1]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                         ConfigItem = "C2 #1"
-                        ConfigData = values[0]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[0]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                     if index == '23':
                         values = data.split(':')
                         ConfigItem = "Password #2"
-                        ConfigData = values[2]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[2]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
+                        except:
+                            pass
                         ConfigItem = "Username #2"
-                        ConfigData = values[1]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[1]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                         ConfigItem = "C2 #2"
-                        ConfigData = values[0]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[0]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass                
                     if index == '24':
                         values = data.split(':')
                         ConfigItem = "Password #3"
-                        ConfigData = values[2]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[2]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
+                        except:
+                            pass
                         ConfigItem = "Username #3"
-                        ConfigData = values[1]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[1]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                         ConfigItem = "C2 #3"
-                        ConfigData = values[0]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[0]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                     if index == '25':
                         values = data.split(':')
                         ConfigItem = "Password #4"
-                        ConfigData = values[2]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[2]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
+                        except:
+                            pass
                         ConfigItem = "Username #4"
-                        ConfigData = values[1]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[1]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                         ConfigItem = "C2 #4"
-                        ConfigData = values[0]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[0]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                     if index == '26':
                         values = data.split(':')
                         ConfigItem = "Password #5"
-                        ConfigData = values[2]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[2]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
+                        except:
+                            pass
                         ConfigItem = "Username #5"
-                        ConfigData = values[1]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[1]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                         ConfigItem = "C2 #5"
-                        ConfigData = values[0]
-                        if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        try:
+                            ConfigData = values[0]
+                            if ConfigData:
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                        except:
+                            pass
                 append_file = False
             if file_info["cape_type_code"] == QAKBOT_PAYLOAD:
                 file_info["cape_type"] = "QakBot Payload"
