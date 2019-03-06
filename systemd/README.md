@@ -51,12 +51,20 @@ These files help run all the various parts of CAPE as systemd services, so that 
 
     ```bash
     sudo cp /opt/CAPE/systemd/*.service /opt/systemd/system
+    sudo cp /opt/CAPE/systemd/*.timer /opt/systemd/system
     sudo sudo systemctl daemon-reload
+    sudo systemctl enable suricata-update.service
+    sudo systemctl enable suricata-update.timer
+    sudo systemctl enable cuckoo-rooter.service
+    sudo systemctl enable cuckoo-processor.service
+    sudo systemctl enable cuckoo.service
+    sudo systemctl enable cuckoo-wsgi.service
     ```
 
 10. Start the services for the first time
 
     ```bash
+    sudo service suricata-update start
     sudo service cuckoo-rooter start
     sudo service cuckoo-processor start
     sudo service cuckoo start
