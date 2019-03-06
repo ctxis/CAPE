@@ -77,4 +77,4 @@ To view the full output of a service (including crashed services):
     journalctl -u cuckoo-wsgi.service -r
     ```
 
-Note: The `journalctl -r` switch displays the log log lines in reverse order, with the newest lines on top.
+Note: The `journalctl -r` switch displays the log lines in reverse order, with the newest lines on top.
