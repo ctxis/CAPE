@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<p style="margin-bottom: 10px;"><img src="{{ STATIC_URL }}graphic/cape.png" /></p>
+<p style="margin-bottom: 10px;"><center><img height="100" width="200" src="{{ STATIC_URL }}graphic/tcr.svg" /></p></center>
 <div class="alert alert-success"><h4>Submission complete!</h4>
 The following tasks were added successfully:
 {% for task in tasks %}
@@ -8,4 +8,12 @@ The following tasks were added successfully:
 {% endfor %}.
 Click on the links to monitor the status of the submission.
 </div>
+{% if failed_hashes %}
+    <div class="alert alert-danger"><h4>Submission Failed!</h4>
+    The following tasks failed:
+    {% for ftask in failed_hashes %}
+        <p>{{ftask}}</p>
+    {% endfor %}
+    </div>
+{% endif %}
 {% endblock %}
