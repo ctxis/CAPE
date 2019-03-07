@@ -49,3 +49,5 @@ statistics==1.0.3.5
 xmltodict
 pyyaml
 pyelftools
+gunicorn
+suricata-update
