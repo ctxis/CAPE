@@ -107,7 +107,7 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
             content = r.content
         elif r.status_code == 403:
             return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
-    
+
     if content and len(content) == 0:
         return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
 
@@ -189,7 +189,7 @@ def index(request, resubmit_hash=False):
             if options:
                 options += ","
             options += "procdump=1"
-        
+
         if request.POST.get("process_memory"):
             if options:
                 options += ","
@@ -198,8 +198,8 @@ def index(request, resubmit_hash=False):
         if request.POST.get("import_reconstruction"):
             if options:
                 options += ","
-            options += "import_reconstruction=1"        
-            
+            options += "import_reconstruction=1"
+
         if request.POST.get("disable_cape"):
             if options:
                 options += ","
@@ -208,7 +208,7 @@ def index(request, resubmit_hash=False):
         if request.POST.get("kernel_analysis"):
             if options:
                 options += ","
-            options += "kernel_analysis=yes"   
+            options += "kernel_analysis=yes"
 
         if request.POST.get("norefer"):
             if options:
@@ -226,7 +226,7 @@ def index(request, resubmit_hash=False):
                 if request.POST.get("all_gw_in_group"):
                     tgateway = settings.GATEWAYS[gateway].split(",")
                     for e in tgateway:
-                        task_gateways.append(settings.GATEWAYS[e]) 
+                        task_gateways.append(settings.GATEWAYS[e])
                 else:
                     tgateway = random.choice(settings.GATEWAYS[gateway].split(","))
                     task_gateways.append(settings.GATEWAYS[tgateway])
@@ -252,6 +252,7 @@ def index(request, resubmit_hash=False):
         else:
             task_machines.append(machine)
 
+        failed_hashes = list()
         status = "ok"
         if "hash" in request.POST and request.POST.get("hash", False) and request.POST.get("hash")[0] != '':
             resubmission_hash = request.POST.get("hash").strip()
@@ -284,6 +285,9 @@ def index(request, resubmit_hash=False):
                 status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", path, package, timeout, options, priority, machine, gateway,
                                                  clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
 
+                if status != "ok":
+                    failed_hashes.append(h)
+
         elif "sample" in request.FILES:
             samples = request.FILES.getlist("sample")
             for sample in samples:
@@ -298,12 +302,12 @@ def index(request, resubmit_hash=False):
                 elif sample.size > settings.MAX_UPLOAD_SIZE:
                     return render(request, "error.html",
                                               {"error": "You uploaded a file that exceeds the maximum allowed upload size specified in web/web/local_settings.py."})
-    
+
                 # Moving sample from django temporary file to Cuckoo temporary storage to
                 # let it persist between reboot (if user like to configure it in that way).
                 path = store_temp_file(sample.read(),
                                        sample.name)
-    
+
                 for gw in task_gateways:
                     options = update_options(gw, orig_options)
 
@@ -329,7 +333,7 @@ def index(request, resubmit_hash=False):
                 elif sample.size > settings.MAX_UPLOAD_SIZE:
                     return render(request, "error.html",
                                               {"error": "You uploaded a quarantine file that exceeds the maximum allowed upload size specified in web/web/local_settings.py."})
-    
+
                 # Moving sample from django temporary file to Cuckoo temporary storage to
                 # let it persist between reboot (if user like to configure it in that way).
                 tmp_path = store_temp_file(sample.read(),
@@ -358,7 +362,7 @@ def index(request, resubmit_hash=False):
                 if not sample.size:
                     if len(samples) != 1:
                         continue
-                    
+
                     return render(request, "error.html",
                                               {"error": "You uploaded an empty PCAP file."})
                 elif sample.size > settings.MAX_UPLOAD_SIZE:
@@ -381,7 +385,7 @@ def index(request, resubmit_hash=False):
                     else:
                         return render(request, "error.html",
                                                   {"error": "Conversion from SAZ to PCAP failed."})
-       
+
                 task_id = db.add_pcap(file_path=path, priority=priority)
                 task_ids.append(task_id)
 
@@ -449,6 +453,9 @@ def index(request, resubmit_hash=False):
 
                         status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
                                                          clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+                if status != "ok":
+                    failed_hashes.append(h)
+
         if status == "error":
             # is render msg
             return task_ids
@@ -458,9 +465,11 @@ def index(request, resubmit_hash=False):
             # ToDo improve error msg
             tasks_count = 0
         if tasks_count > 0:
-            return render(request, "submission/complete.html",
-                          {"tasks": task_ids,
-                           "tasks_count": tasks_count})
+            data = {"tasks": task_ids, "tasks_count": tasks_count}
+            if failed_hashes:
+                data["failed_hashes"] = failed_hashes
+            return render(request, "submission/complete.html", data)
+
         else:
             return render(request, "error.html",
                           {"error": "Error adding task to Cuckoo's database."})
