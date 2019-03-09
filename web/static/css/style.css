@@ -179,3 +179,16 @@ pre {
     background-color: white;
     color: #5bc0de;
 }
+
+.col-count-4 {
+    column-count: 4;
+}
+
+.col-count-4 * {
+    word-break: break-all;
+}
+
+.mh-300 {
+    max-height: 300px;
+    overflow: auto;
+}

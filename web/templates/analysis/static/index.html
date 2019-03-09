@@ -42,7 +42,9 @@
         {% endif %}
         {% if analysis.info.category == "file" %}
         <div class="tab-pane fade" id="static_strings_tab">
-            {% include "analysis/static/_strings.html" %}
+            {% with well=True %}
+                {% include "analysis/static/_strings.html" %}
+            {%  endwith %}
         </div>
         {% endif %}
         {% if analysis.info.category == "url" %}

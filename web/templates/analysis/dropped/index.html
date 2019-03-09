@@ -78,6 +78,16 @@
                     <th>VirusTotal</th>
                     <td><a href="https://www.virustotal.com/en/file/{{file.sha256}}/analysis/">Search for Analysis</a></td>
                 </tr>
+                {% if file.strings and file.strings.flossed and file.strings|length > 1 or file.strings and not file.strings.flossed and file.strings|length %}
+                <tr>
+                    <th>Strings</th>
+                    <td>
+                        {% with analysis=file id_prefix=file.md5 %}
+                            {% include "analysis/static/_strings.html" %}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% endif %}
                 {% if file.dropdir %}
                 <tr>
                     <th></th>
