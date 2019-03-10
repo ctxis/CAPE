@@ -97,33 +97,24 @@ class Strings(Processing):
         """
         self.key = "strings"
         floss_path = self.options.get("floss_path", "/usr/sbin/floss")
+        floss_enabled = self.options.get("floss_enabled", True)
+        floss_max_file_size = self.options.get("floss_max_file_size", 0)
+        floss_allowed = lambda file_path: floss_enabled and os.path.isfile(floss_path) and (not floss_max_file_size or os.path.getsize(file_path) / 1024 / 1024 <= floss_max_file_size)
 
-        if os.path.isfile(floss_path):
-            # FLOSS exists in the said path
+        # Extract strings from the file that is being analysed
+        if floss_allowed(self.file_path):
             strings = {}
             if self.task["category"] == "file":
                 strings = self.floss(self.file_path, floss_path)
-            if 'dropped' in self.results:
-                for item in self.results['dropped']:
-                    item['strings'] = self.floss(item['path'], floss_path)
-
-            if 'CAPE' in self.results:
-                for item in self.results['CAPE']:
-                    item['strings'] = self.floss(item['path'], floss_path)
-
         else:
-            # FLOSS does not exist where it said it is, so
-            # fall back to regular strings method
-            strings = []
-
             if self.task["category"] == "file":
                 strings = self.extract_strings(self.file_path)
-            if 'dropped' in self.results:
-                for item in self.results['dropped']:
-                    item['strings'] = self.extract_strings(item['path'])
 
-            if 'CAPE' in self.results:
-                for item in self.results['CAPE']:
-                    item['strings'] = self.extract_strings(item['path'])
+        # Extract strings from dropped files and cape extracts
+        for item in self.results.get('dropped', []) + self.results.get('CAPE', []):
+            if floss_allowed(item['path']):
+                item['strings'] = self.floss(item['path'], floss_path)
+            else:
+                item['strings'] = self.extract_strings(item['path'])
 
         return strings
