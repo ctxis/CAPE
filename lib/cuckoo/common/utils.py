@@ -7,6 +7,8 @@ import time
 import shutil
 import ntpath
 import string
+import random
+import logging
 import tempfile
 import xmlrpclib
 import errno
@@ -19,6 +21,7 @@ from collections import defaultdict
 
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.config import Config
+from lib.cuckoo.common.constants import CUCKOO_ROOT
 
 try:
     import re2 as re
@@ -30,6 +33,44 @@ try:
     HAVE_CHARDET = True
 except ImportError:
     HAVE_CHARDET = False
+
+config = Config()
+if hasattr(config, "ramfs"):
+    ramfs = Config().ramfs
+    HAVE_RAMFS = True
+else:
+    HAVE_RAMFS = False
+
+log = logging.getLogger(__name__)
+
+def free_space_monitor():
+    # TODO: Windows support
+    if hasattr(os, "statvfs") and HAVE_RAMFS and ramfs.enabled:
+        while True:
+            dir_stats = os.statvfs(ramfs.path)
+            # Calculate the free disk space in megabytes.
+            space_available = dir_stats.f_bavail * dir_stats.f_frsize
+            space_available /= 1024 * 1024
+            if space_available < ramfs.freespace:
+                log.error("Not enough free disk space! (Only %d MB!)",
+                            space_available)
+                time.sleep(5)
+            else:
+                break
+
+def get_memdump_path(id, analysis_folder=False):
+    """
+    Get the path of memdump to store
+    analysis_folder: force to return default analysis folder
+    """
+    id = str(id)
+    if HAVE_RAMFS and ramfs.enabled and analysis_folder is False:
+        memdump_path = os.path.join(ramfs.path, id + ".dmp")
+    else:
+        memdump_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", id, "memory.dmp")
+
+    return memdump_path
+
 
 def validate_referrer(url):
     if not url:
@@ -1711,6 +1752,11 @@ def sanitize_filename(x):
             out += c
         else:
             out += "_"
+
+    """Prevent long filenames such as files named by hash
+    as some malware checks for this."""
+    if len(out) >= 32:
+        out = ''.join(random.choice(string.ascii_uppercase+string.ascii_lowercase+string.digits) for i in range(random.randint(5,15)))
 
     return out
 

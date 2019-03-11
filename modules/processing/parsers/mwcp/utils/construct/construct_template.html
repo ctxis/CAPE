@@ -1,0 +1,153 @@
+{#
+    This is the html template used to convert parsed constructs into user-friendly html
+    that can be used in reports.
+
+    Please see construct_html.py for its use.
+#}
+
+<html>
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 14 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:Courier;
+	panose-1:2 7 4 9 2 2 5 2 4 4;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:"Times New Roman","serif";}
+h1
+	{mso-style-link:"Heading 1 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:"Calibri","sans-serif";
+	color:#943634;}
+h3
+	{mso-style-link:"Heading 3 Char";
+	margin-top:10.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	page-break-after:avoid;
+	font-size:11.0pt;
+	font-family:"Times New Roman","serif";}
+p.MsoNoSpacing, li.MsoNoSpacing, div.MsoNoSpacing
+	{mso-style-link:"No Spacing Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	font-size:11.0pt;
+	font-family:"Calibri","sans-serif";}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-link:"Heading 1";
+	color:#943634;
+	font-weight:bold;}
+span.Heading3Char
+	{mso-style-name:"Heading 3 Char";
+	mso-style-link:"Heading 3";
+	font-family:"Times New Roman","serif";
+	font-weight:bold;}
+span.NoSpacingChar
+	{mso-style-name:"No Spacing Char";
+	mso-style-link:"No Spacing";
+	font-family:"Calibri","sans-serif";}
+.MsoChpDefault
+	{font-family:"Calibri","sans-serif";}
+.MsoPapDefault
+	{margin-bottom:10.0pt;
+	line-height:115%;}
+@page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+</head>
+<body lang=EN-US>
+<div class=WordSection1>
+    {# TODO: Fix headers to be dynamically generated based on width #}
+<p class=MsoNormal style='background:#FFFFFF'><span style='font-size:8.0pt;
+font-family:"Courier New"'>&nbsp;offset&nbsp;|&nbsp;&nbsp;0&nbsp;&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5&nbsp;&nbsp;6&nbsp;&nbsp;7&nbsp;&nbsp;8&nbsp;&nbsp;9&nbsp;&nbsp;a&nbsp;&nbsp;b&nbsp;&nbsp;c&nbsp;&nbsp;d&nbsp;&nbsp;e&nbsp;&nbsp;f&nbsp;|&nbsp;0123456789abcdef</span></p>
+<p class=MsoNormal style='background:#FFFFFF'><span style='font-size:8.0pt;
+font-family:"Courier New"'>&nbsp;------ |  -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --  |  ----------------</span></p>
+
+{# Display hex dump #}
+{% for offset, hex_line, ascii_line in hex_dump %}
+    <p class=MsoNormal style="background:#FFFFFF">
+        <span style="font-size:8.0pt;font-family:'Courier New'">
+            &nbsp;{{offset}}&nbsp;|&nbsp;{{hex_line}}&nbsp;|&nbsp;{{ascii_line}}
+        </span>
+    </p>
+{% endfor %}
+
+<p class=MsoNormal>&nbsp;</p>
+
+{# Display variable table #}
+    <table class=MsoNormalTable border=1 cellspacing=0 cellpadding=0
+     style='margin-left:5.4pt;border-collapse:collapse;border:none'>
+     <tr>
+      <td width=175 valign=top style='width:131.05pt;border:solid windowtext 1.0pt;
+      background:#244061;padding:0in 5.4pt 0in 5.4pt'>
+      <p class=MsoNoSpacing align=center style='text-align:center'><b><span
+      style='font-size:9.0pt;font-family:"Times New Roman","serif";color:white'>Offset</span></b></p>
+      </td>
+      <td width=238 valign=top style='width:178.7pt;border:solid windowtext 1.0pt;
+      border-left:none;background:#244061;padding:0in 5.4pt 0in 5.4pt'>
+      <p class=MsoNoSpacing align=center style='text-align:center'><b><span
+      style='font-size:9.0pt;font-family:"Times New Roman","serif";color:white'>Name</span></b></p>
+      </td>
+      <td width=218 valign=top style='width:163.65pt;border:solid windowtext 1.0pt;
+      border-left:none;background:#244061;padding:0in 5.4pt 0in 5.4pt'>
+      <p class=MsoNoSpacing align=center style='text-align:center'><b><span
+      style='font-size:9.0pt;font-family:"Times New Roman","serif";color:white'>Value</span></b></p>
+      </td>
+     </tr>
+
+    {% for offset, (colors, member) in color_map.items()|sort %}
+        <tr>
+            {# Offset #}
+            <td width=175 valign=top style="width:131.05pt;border:solid windowtext 1.0pt;  border-top:none;padding:0in 5.4pt 0in 5.4pt">
+                <p class=MsoNoSpacing>
+                    <span style="font-size:8.0pt;font-family:'Courier New';  ">{{'%06x' % offset}}</span>
+                </p>
+            </td>
+
+            {# Name #}
+            <td width=238 valign=top style="width:178.7pt;border-top:none;border-left:  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;  padding:0in 5.4pt 0in 5.4pt">
+                <p class=MsoNoSpacing>
+                    <span style="font-size:8.0pt;font-family:'Courier New';background:{{colors[0]}};color:{{colors[1]}}">
+                        {{member.name}}
+                    </span>
+                </p>
+            </td>
+
+            {# Value #}
+            <td width=218 valign=top style="width:163.65pt;border-top:none;border-left:  none;border-bottom:solid windowtext 1.0pt;border-right:solid windowtext 1.0pt;  padding:0in 5.4pt 0in 5.4pt">
+                <p class=MsoNoSpacing>
+                    <span style="font-size:8.0pt;font-family:'Courier New'">
+                        {{member.value_str|replace('\n', '<br/>')|replace('\t', '&nbsp;&nbsp;')}}
+                    </span>
+                </p>
+            </td>
+        </tr>
+    {% endfor %}
+
+    </table>
+</div>
+</body>
+</html>

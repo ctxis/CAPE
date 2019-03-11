@@ -2,8 +2,10 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
-from lib.common.abstracts import Package
+import os
+import shutil
 
+from lib.common.abstracts import Package
 
 class XLS(Package):
     """Excel analysis package."""
@@ -15,4 +17,9 @@ class XLS(Package):
 
     def start(self, path):
         excel = self.get_path_glob("Microsoft Office Excel")
+        if "." not in os.path.basename(path):
+            new_path = path + ".xls"
+            os.rename(path, new_path)
+            path = new_path
+
         return self.execute(excel, "\"%s\" /e" % path, path)

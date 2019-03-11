@@ -19,6 +19,9 @@ class TrID(Processing):
         """
         self.key = "trid"
         strings = []
+        remlist = ["",
+                   "Warning: file seems to be plain text/ASCII",
+                   "         TrID is best suited to analyze binary files!", ]
 
         if self.task["category"] == "file":
             if not os.path.exists(self.file_path):
@@ -27,8 +30,10 @@ class TrID(Processing):
             trid_binary = self.options.get("identifier", "/home/cuckoo/trid/trid")
             definitions = self.options.get("definitions", "/home/cuckoo/trid/triddefs.trd")
 
-	    output = subprocess.check_output([ trid_binary, "-d:%s" % definitions, self.file_path], stderr=subprocess.STDOUT)
-	    strings = output.split('\n')
-	    # trim data
-	    strings = strings[6:-1]
+            output = subprocess.check_output([trid_binary, "-d:%s" % definitions, self.file_path],
+                                             stderr=subprocess.STDOUT)
+            strings = output.split('\n')
+            # trim data
+            strings = strings[6:-1]
+            strings = filter(lambda x: x not in remlist, strings)
         return strings

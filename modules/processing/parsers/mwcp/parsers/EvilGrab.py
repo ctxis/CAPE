@@ -11,8 +11,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-from mwcp.malwareconfigparser import malwareconfigparser
+
+from mwcp.parser import Parser
 import struct
 import pefile
 import yara
@@ -66,9 +66,9 @@ def string_from_va(pe, offset):
     string = pe.__data__[string_offset:string_offset+MAX_STRING_SIZE].split("\0")[0]
     return string
     
-class evilgrab(malwareconfigparser):
+class evilgrab(Parser):
     def __init__(self, reporter=None):
-        malwareconfigparser.__init__(self, description='EvilGrab configuration parser.', author='kev', reporter=reporter)
+        Parser.__init__(self, description='EvilGrab configuration parser.', author='kev', reporter=reporter)
 
     def run(self):
         filebuf = self.reporter.data

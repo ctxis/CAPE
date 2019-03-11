@@ -29,6 +29,14 @@ from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.rooter import vpns
 from utils import submit_utils
 
+try:
+    # Tags
+    from lib.cuckoo.common.dist_db import Machine, create_session
+    HAVE_DIST = True
+except Exception as e:
+    HAVE_DIST = False
+    print(e)
+
 # this required for hash searches
 FULL_DB = False
 repconf = Config("reporting")
@@ -71,6 +79,21 @@ def update_options(gw, orig_options):
 
     return options
 
+if HAVE_DIST:
+    session = create_session(repconf.distributed.db)
+def load_vms_tags():
+    all_tags = list()
+    if repconf.distributed.enabled:
+        try:
+            db = session()
+            for vm in db.query(Machine).all():
+                all_tags += vm.tags
+            all_tags = sorted(filter(None, all_tags))
+            db.close()
+        except exception as e:
+            print(e)
+
+    return all_tags
 
 def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines):
     onesuccess = False
@@ -84,6 +107,10 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
             content = r.content
         elif r.status_code == 403:
             return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
+    
+    if content and len(content) == 0:
+        return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
+
     try:
         f = open(filename, 'wb')
         f.write(content)
@@ -99,7 +126,8 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
         for entry in task_machines:
             task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
                                                          machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock)
-            task_ids.extend(task_ids_new)
+            if isinstance(task_ids, list):
+                task_ids.extend(task_ids_new)
     if not onesuccess:
         return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
     return "ok", task_ids
@@ -208,6 +236,11 @@ def index(request, resubmit_hash=False):
         if not task_gateways:
             # To reduce to the default case
             task_gateways = [None]
+
+        all_tags = load_vms_tags()
+        if tags and not all([tag.strip() in all_tags for tag in tags.split(",")]):
+            return render(request, "error.html",
+                {"error": "Check Tags help, you have introduced incorrect tag(s)"})
 
         db = Database()
         task_ids = []
@@ -419,7 +452,11 @@ def index(request, resubmit_hash=False):
         if status == "error":
             # is render msg
             return task_ids
-        tasks_count = len(task_ids)
+        if isinstance(task_ids, list):
+            tasks_count = len(task_ids)
+        else:
+            # ToDo improve error msg
+            tasks_count = 0
         if tasks_count > 0:
             return render(request, "submission/complete.html",
                           {"tasks": task_ids,
@@ -440,6 +477,10 @@ def index(request, resubmit_hash=False):
         else:
             enabledconf["gateways"] = False
         enabledconf["tags"] = False
+        enabledconf["dist_master_storage_only"] = repconf.distributed.master_storage_only
+
+        all_tags = load_vms_tags()
+
         # Get enabled machinery
         machinery = Config("cuckoo").cuckoo.get("machinery")
         # Get VM names for machinery config elements
@@ -448,6 +489,9 @@ def index(request, resubmit_hash=False):
         for vmtag in vms:
             if "tags" in getattr(Config(machinery), vmtag).keys():
                 enabledconf["tags"] = True
+
+        if enabledconf["tags"] is False and all_tags:
+            enabledconf["tags"] = True
 
         files = os.listdir(os.path.join(settings.CUCKOO_PATH, "analyzer", "windows", "modules", "packages"))
 
@@ -467,6 +511,7 @@ def index(request, resubmit_hash=False):
                 tags.append(tag.name)
 
             if tags:
+                all_tags += tags
                 label = machine.label + ": " + ", ".join(tags)
             else:
                 label = machine.label
@@ -488,6 +533,7 @@ def index(request, resubmit_hash=False):
                                    "gateways": settings.GATEWAYS,
                                    "config": enabledconf,
                                    "resubmit": resubmit_hash,
+                                   "tags": sorted(list(set(all_tags))),
                                 })
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)

@@ -10,7 +10,6 @@ chardet
 pygal
 clamd
 pycrypto
-rarfile
 jsbeautifier
 dpkt
 nose
@@ -47,3 +46,6 @@ numpy==1.15.0
 six==1.11.0
 statistics==1.0.3.5
 xmltodict
+pyyaml
+pyelftools
+sflock

@@ -4,8 +4,6 @@
 
 from __future__ import absolute_import
 import os
-import sys
-import csv
 import json
 import socket
 import dns.resolver
@@ -744,7 +742,7 @@ class Signature(object):
                                     else:
                                         path = ""
                                 elif keyword == "CAPE":
-                                    path = block["raw"]
+                                    path = block["path"]
                                 else:
                                     path = ""
 

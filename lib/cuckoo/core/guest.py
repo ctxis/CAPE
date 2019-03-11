@@ -169,6 +169,10 @@ class GuestManager:
                     raise CuckooGuestError("{0}: unable to upload malware to "
                                            "analysis machine: {1}".format(self.id, e))
 
+            # Debug analyzer.py in vm
+            if "CUCKOO_DBG" in os.environ:
+                while True:
+                    pass
             # Launch the analyzer.
             pid = self.server.execute()
             log.debug("%s: analyzer started with PID %d", self.id, pid)

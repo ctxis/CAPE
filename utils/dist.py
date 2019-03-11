@@ -15,33 +15,25 @@ import shutil
 import Queue
 import hashlib
 import logging
+from logging import handlers
 import tarfile
-import zipfile
 import StringIO
-import tempfile
 import argparse
 import threading
 from datetime import datetime
 from itertools import combinations
 
+from sqlalchemy import Column, ForeignKey, Integer, Text, String, Boolean, DateTime, or_, and_, desc
+
 CUCKOO_ROOT = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
 sys.path.append(CUCKOO_ROOT)
-
-logging.basicConfig(format="%(asctime)s %(levelname)s:%(module)s:%(threadName)s - %(message)s")
 
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.utils import store_temp_file
 from lib.cuckoo.core.database import Database, TASK_COMPLETED, TASK_REPORTED, TASK_RUNNING, TASK_PENDING, TASK_FAILED_REPORTING, TASK_DISTRIBUTED_COMPLETED
-# http://pythoncentral.io/introductory-tutorial-python-sqlalchemy/
-from sqlalchemy import Column, ForeignKey, Integer, Text, String, Boolean, DateTime, or_, and_, desc
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session, relationship
-from sqlalchemy.sql import func
-from sqlalchemy.types import TypeDecorator
 
-Base = declarative_base()
-
+from lib.cuckoo.common.dist_db import Node, StringList, Task, Machine, create_session
+log = logging.getLogger(__name__)
 
 # we need original db to reserve ID in db,
 # to store later report, from master or slave
@@ -99,91 +91,7 @@ try:
 except ImportError:
     required("flask-restful")
 
-class Node(Base):
-    """Cuckoo node database model."""
-    __tablename__ = "node"
-    id = Column(Integer, primary_key=True)
-    name = Column(Text, nullable=False)
-    url = Column(Text, nullable=True)
-    enabled = Column(Boolean, default=False)
-    ht_user = Column(String(255), nullable=False)
-    ht_pass = Column(String(255), nullable=False)
-    last_check = Column(DateTime(timezone=False))
-    machines = relationship("Machine", backref="node", lazy="dynamic")
-
-
-class StringList(TypeDecorator):
-    """List of comma-separated strings as field."""
-    impl = Text
-    def process_bind_param(self, value, dialect):
-        return ", ".join(value)
-    def process_result_value(self, value, dialect):
-        return value.split(", ")
-
-
-class Machine(Base):
-    """Machine database model related to a Cuckoo node."""
-    __tablename__ = "machine"
-    id = Column(Integer, primary_key=True)
-    name = Column(Text, nullable=False)
-    platform = Column(Text, nullable=False)
-    tags = Column(StringList)
-    node_id = Column(Integer, ForeignKey("node.id"))
-
-
-class Task(Base):
-    """Analysis task database model."""
-    __tablename__ = "task"
-    id = Column(Integer, primary_key=True)
-    path = Column(Text)
-    category = Column(Text)
-    package = Column(Text)
-    timeout = Column(Integer)
-    priority = Column(Integer)
-    options = Column(Text)
-    machine = Column(Text)
-    platform = Column(Text)
-    tags = Column(Text)
-    custom = Column(Text)
-    memory = Column(Text)
-    clock = Column(DateTime(timezone=False),
-                   default=datetime.now(),
-                   nullable=False)
-    enforce_timeout = Column(Text)
-    # Cuckoo node and Task ID this has been submitted to.
-    node_id = Column(Integer, ForeignKey("node.id"))
-    task_id = Column(Integer)
-    finished = Column(Boolean, nullable=False, default=False)
-    main_task_id = Column(Integer)
-    retrieved = Column(Boolean, nullable=False, default=False)
-    notificated = Column(Boolean, nullable=True, default=False)
-    deleted = Column(Boolean, nullable=False, default=False)
-
-    def __init__(self, path, category, package, timeout, priority, options, machine,
-                 platform, tags, custom, memory, clock, enforce_timeout, main_task_id=None, retrieved=False):
-        self.path = path
-        self.category = category
-        self.package = package
-        self.timeout = timeout
-        self.priority = priority
-        self.options = options
-        self.machine = machine
-        self.platform = platform
-        self.tags = tags
-        self.custom = custom
-        self.memory = memory
-        self.clock = clock
-        self.enforce_timeout = enforce_timeout
-        self.node_id = None
-        self.task_id = None
-        self.main_task_id = main_task_id
-        self.finished = False
-        self.retrieved = False
-
-engine = create_engine(reporting_conf.distributed.db, pool_size=20, max_overflow=100)
-Base.metadata.create_all(engine)
-session = sessionmaker(autocommit=False, autoflush=True, bind=engine)
-
+session = create_session(reporting_conf.distributed.db)
 
 def node_status(url, name, ht_user, ht_pass):
     try:
@@ -262,8 +170,8 @@ def node_submit_task(task_id, node_id):
             enforce_timeout=task.enforce_timeout,
         )
 
-        url = os.path.join(node.url, "tasks", "create", task.category)
         if task.category == "file":
+            url = os.path.join(node.url, "tasks", "create", "file")
             # If the file does not exist anymore, ignore it and move on
             # to the next file.
             if not os.path.isfile(task.path):
@@ -281,7 +189,16 @@ def node_submit_task(task_id, node_id):
                             auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
                             verify = False)
         elif task.category == "url":
+            url = os.path.join(node.url, "tasks", "create", "url")
             data["url"] = task.path
+            r = requests.post(url,
+                            data=data,
+                            auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
+                            verify = False)
+        elif task.category == "pcap":
+            url = os.path.join(node.url, "tasks", "create", "file")
+            files = dict(file=open(task.path, "rb"))
+
             r = requests.post(url,
                             data=data,
                             auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
@@ -305,7 +222,7 @@ def node_submit_task(task_id, node_id):
                 task.task_id = r.json()["task_id"]
             else:
                 log.debug("Failed to submit task {} to node: {}".format(task_id, node.name))
-            log.debug("Submitted task to slave: {} - {} - {}".format(task.task_id, task.main_task_id, r.json()))
+            log.debug("Submitted task to slave: {} - {} - {} - {}".format(node.name, task.task_id, task.main_task_id, r.json()))
             check = True
         elif r.status_code == 500:
             log.debug((r.status_code, r.text))
@@ -412,8 +329,9 @@ class Retriever(threading.Thread):
                     log.debug("reporting main_task_id: {}".format(task.main_task_id))
                     for url in urls:
                         try:
-                            res = requests.post(url, data=json.dumps({"task_id":task.main_task_id}))
+                            res = requests.post(url, data=json.dumps({"task_id":int(task.main_task_id)}))
                             if res and res.ok:
+                                #log.info(res.content)
                                 task.notificated = True
                                 db.commit()
                                 db.refresh(task)
@@ -429,6 +347,7 @@ class Retriever(threading.Thread):
             db = session()
             for node in db.query(Node).filter_by(enabled=True).all():
                 log.info("Checking for failed tasks on: {}".format(node.name))
+                "ToDo add failed_processing"
                 for task in node_fetch_tasks("failed_analysis", node.url, node.ht_user, node.ht_pass, action="delete"):
                     t = db.query(Task).filter_by(task_id=task["id"], node_id=node.id).order_by(Task.id.desc()).first()
                     if t is not None:
@@ -487,13 +406,13 @@ class Retriever(threading.Thread):
                             (task["id"], node.id) not in self.fetcher_queue.queue:
                                 limit += 1
                                 self.fetcher_queue.put((task, node.id))
-                                log.debug("{} - {}".format(task, node.id))
+                                #log.debug("{} - {}".format(task, node.id))
                                 completed_on = datetime.strptime(task["completed_on"], "%Y-%m-%d %H:%M:%S")
                                 if node.last_check is None or completed_on > node.last_check:
                                     node.last_check = completed_on
                                     db.commit()
                                     db.refresh(node)
-                                if limit == 200:
+                                if limit == 50:
                                     break
                     except Exception as e:
                         self.status_count[node.name] += 1
@@ -526,13 +445,13 @@ class Retriever(threading.Thread):
 
                     # sometime it not deletes tasks in slaves of some fails or something
                     # this will do the trick
-                    log.debug("tf else,")
+                    #log.debug("tf else,")
                     if (node_id, task.get("id")) not in self.cleaner_queue.queue:
                         self.cleaner_queue.put((node_id, task.get("id")))
                     continue
 
                 log.debug("Fetching dist report for: id: {}, task_id: {}, main_task_id:{} from node_id: {}".format(t.id, t.task_id, t.main_task_id, t.node_id))
-                # set complated_on time
+                # set completed_on time
                 main_db.set_status(t.main_task_id, TASK_DISTRIBUTED_COMPLETED)
                 # set reported time
                 main_db.set_status(t.main_task_id, TASK_REPORTED)
@@ -607,7 +526,7 @@ class Retriever(threading.Thread):
         if node:
             try:
                 url = os.path.join(node.url, "tasks", "delete", "%d" % task_id)
-                log.info("Removing task id: {0} - from node: {1}".format(task_id, node.name))
+                log.debug("Removing task id: {0} - from node: {1}".format(task_id, node.name))
                 res = requests.get(url,auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
                                     verify = False)
                 if res and res.status_code != 200:
@@ -631,8 +550,23 @@ class StatusThread(threading.Thread):
                 log.debug("going to upload {} tasks to node id {}".format(pend_tasks_num, node_id))
                 limit = 0
                 for t in main_db_tasks:
+
+                    # convert the options string to a dict, e.g. {'opt1': 'val1', 'opt2': 'val2', 'opt3': 'val3'}
+                    if "node=" in t.options:
+                        try:
+                            options = dict((value.strip() for value in option.split("=", 1)) for option in t.options.split(","))
+                            if options.get("node", node.name) != node.name:
+                                # skip task
+                                continue
+                        except Exception as e:
+                            log.error(e)
                     tasks = db.query(Task).filter_by(main_task_id=t.id).all()
                     if not tasks:
+                        # Check if file exist, if no wipe from db and continue, rare cases
+                        if not os.path.exists(t.target):
+                            main_db.delete_task(t.id)
+                            log.info("Task id: {} - File doesn't exist: {}".format(t.id, t.target))
+                            continue
                         # Convert array of tags into comma separated list
                         tags = ','.join([tag.name for tag in t.tags])
                         # Append a comma, to make LIKE searches more precise
@@ -653,6 +587,10 @@ class StatusThread(threading.Thread):
                             log.info(e)
                             continue
                         if reporting_conf.distributed.enable_tags:
+                            # Only get tasks that have not been pushed yet.
+                            q = db.query(Task).filter(or_(Task.node_id==None, Task.task_id==None), Task.finished==False)
+                            # Order by task priority and task id.
+                            q = q.order_by(-Task.priority, Task.main_task_id)
                             # Get available node tags
                             machines = db.query(Machine).filter_by(node_id=node.id).all()
 
@@ -660,33 +598,43 @@ class StatusThread(threading.Thread):
                             ta = set()
                             for m in machines:
                                 for i in xrange(1, len(m.tags)+1):
-                                    for t in combinations(m.tags, i):
-                                        ta.add(','.join(t))
+                                    for tag in combinations(m.tags, i):
+                                        ta.add(','.join(tag))
                             ta = list(ta)
-
                             # Create filter query from tasks in ta
                             tags = [ getattr(Task, "tags")=="" ]
                             for tg in ta:
                                 if len(tg.split(',')) == 1:
-                                    tags.append(getattr(Task, "tags")==(t+','))
+                                    tags.append(getattr(Task, "tags")==(tg+','))
                                 else:
                                     tg = tg.split(',')
                                     # ie. LIKE '%,%,%,'
                                     t_combined = [ getattr(Task, "tags").like("%s" % ('%,'*len(tg)) ) ]
-                                    for tag in t:
+                                    for tag in tg:
                                         t_combined.append(getattr(Task, "tags").like("%%%s%%" % (tag+',') ))
                                     tags.append( and_(*t_combined) )
 
                             # Filter by available tags
                             q = q.filter(or_(*tags))
-                        # Submit appropriate tasks to node
-                        submitted = node_submit_task(task.id, node.id)
-                        if submitted:
-                            main_db.set_status(t.id, TASK_RUNNING)
-                        limit += 1
-                        if limit == pend_tasks_num:
-                            db.close()
-                            return
+
+                            # Submit appropriate tasks to node
+                            if pend_tasks_num > 0:
+                                for task in q.limit(pend_tasks_num).all():
+                                    log.info(task.id)
+                                    submitted = node_submit_task(task.id, node.id)
+                                    if submitted:
+                                        main_db.set_status(t.id, TASK_RUNNING)
+                                db.close()
+                                return
+                        else:
+                            # Submit appropriate tasks to node
+                            submitted = node_submit_task(task.id, node.id)
+                            if submitted:
+                                main_db.set_status(t.id, TASK_RUNNING)
+                            limit += 1
+                            if limit == pend_tasks_num:
+                                db.close()
+                                return
                     else:
                         for task in tasks:
                             log.info("Deleting incorrectly uploaded file from dist db, main_task_id: {}".format(t.id))
@@ -739,7 +687,18 @@ class StatusThread(threading.Thread):
                 log.info("Status.. %s -> %s", node.name, status)
                 statuses[node.name] = status
                 STATUSES = statuses
-                pend_tasks_num = MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"]
+                #log.info(STATUSES)
+
+                # we have all info about all nodes
+                #node_current_minimal = min(STATUSES, key=lambda node_name: STATUSES[node_name]["total"]-STATUSES[node_name]["reported"])
+                #log.info(node_current_minimal)
+                node = db.query(Node).filter_by(name=node.name).first()
+                try:
+                    pend_tasks_num = MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"]
+                except KeyError:
+                    # servers hotplug
+                    MINIMUMQUEUE[node.name] = db.query(Machine).filter_by(node_id=node.id).count()
+                    continue
                 if pend_tasks_num <= 0:
                     continue
                 # If - master only used for storage, not check master queue
@@ -752,15 +711,11 @@ class StatusThread(threading.Thread):
             db.close()
             time.sleep(INTERVAL)
 
-"""
-if not os.path.isdir(reporting_conf.distributed.samples_directory):
-    os.makedirs(reporting_conf.distributed.samples_directory)
-"""
-
 def output_json(data, code, headers=None):
     resp = make_response(json.dumps(data), code)
     resp.headers.extend(headers or {})
     return resp
+
 
 class NodeBaseApi(RestResource):
     def __init__(self, *args, **kwargs):
@@ -864,6 +819,7 @@ class TaskBaseApi(RestResource):
         self._parser.add_argument("clock", type=int)
         self._parser.add_argument("enforce_timeout", type=bool, default=False)
 
+
 class TaskInfo(RestResource):
     def get(self, main_task_id):
         response = dict(status=0)
@@ -871,9 +827,10 @@ class TaskInfo(RestResource):
         task_db = db.query(Task).filter_by(main_task_id=main_task_id).first()
         if task_db:
             node = db.query(Node).filter_by(id=task_db.node_id).first()
-            response = dict(status=1, task_id=task_db.task_id, url=node.url)
+            response = dict(status=1, task_id=task_db.task_id, url=node.url, name=node.name)
         db.close()
         return response
+
 
 class StatusRootApi(RestResource):
     def get(self):
@@ -889,12 +846,14 @@ class StatusRootApi(RestResource):
         db.close()
         return jsonify({"nodes":STATUSES, "tasks":tasks})
 
+
 class DistRestApi(RestApi):
     def __init__(self, *args, **kwargs):
         RestApi.__init__(self, *args, **kwargs)
         self.representations = {
             "application/json": output_json,
         }
+
 
 def update_machine_table(node_name):
     db = session()
@@ -995,6 +954,30 @@ def create_app(database_connection):
 
     return app
 
+def init_logging(debug=False):
+    global log
+    formatter = logging.Formatter("%(asctime)s %(levelname)s:%(module)s:%(threadName)s - %(message)s")
+    if not os.path.exists(os.path.join(CUCKOO_ROOT, "log")):
+        os.makedirs(os.path.join(CUCKOO_ROOT, "log"))
+    fh = handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "dist.log"), when="midnight", backupCount=10)
+    fh.setFormatter(formatter)
+
+
+    handler_stdout = logging.StreamHandler(sys.stdout)
+    handler_stdout.setFormatter(formatter)
+    log.addHandler(handler_stdout)
+    log.addHandler(fh)
+
+
+    if debug:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.INFO)
+
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+    return log
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("host", nargs="?", default="0.0.0.0", help="Host to listen on")
@@ -1007,16 +990,21 @@ if __name__ == "__main__":
     p.add_argument("--enable", action="store_true", help="Enable Node provided in --node")
     p.add_argument("--clean-slaves", action="store_true", help="Delete reported and notificated tasks from slaves")
     p.add_argument("-ec", "--enable-clean", action="store_true", help="Enable delete tasks from nodes, also will remove tasks submited by humands and not dist")
+    p.add_argument("-fr", "--force-reported", action="store", help="change report to reported")
+
     args = p.parse_args()
 
-    log = logging.getLogger(__name__)
-    if args.debug:
-        log.setLevel(logging.DEBUG)
-    else:
-        log.setLevel(logging.INFO)
+    log = init_logging(args.debug)
 
-    if args.clean_slaves:
+    if args.enable_clean:
         cron_cleaner()
+        sys.exit()
+
+    if args.force_reported:
+        # set completed_on time
+        main_db.set_status(args.force_reported, TASK_DISTRIBUTED_COMPLETED)
+        # set reported time
+        main_db.set_status(args.force_reported, TASK_REPORTED)
         sys.exit()
 
     delete_enabled = args.enable_clean
@@ -1029,6 +1017,7 @@ if __name__ == "__main__":
             node_enabled(args.node, False)
         if not args.delete_vm and not args.disable and not args.enable:
             update_machine_table(args.node)
+        sys.exit()
 
     else:
         app = create_app(database_connection=reporting_conf.distributed.db)
@@ -1047,8 +1036,7 @@ else:
     app = create_app(database_connection=reporting_conf.distributed.db)
 
     # this allows run it with gunicorn/uwsgi
-    log = logging.getLogger(__name__)
-    log.setLevel(logging.DEBUG)
+    log = init_logging(True)
     retrieve = Retriever()
     retrieve.daemon = True
     retrieve.start()

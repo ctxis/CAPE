@@ -1,0 +1,34 @@
+version: 1
+disable_existing_loggers: False  # fixes issue with module level loggers
+
+filters:
+  # This filter is necessary to use the "%(level_char)s" format variable.
+  level_char:
+    (): mwcp.utils.logutil.LevelCharFilter
+
+formatters:
+  simple:
+    format: "[%(level_char)s] (%(processName)s:%(name)s): %(message)s"
+  error:
+    format: "<PID %(process)d:%(processName)s> [%(name)s:%(funcName)s():%(lineno)d]: %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: simple
+    filters: [level_char]
+    stream: ext://sys.stderr
+
+  error_file:
+    # Custom handler necessary to fix issues that can occur in Windows.
+    (): mwcp.utils.logutil.MPRotatingFileHandler
+    level: WARNING
+    formatter: error
+    filename: "%LOCALAPPDATA%/mwcp/errors.log"
+    maxBytes: 10485760 # 10MB
+    backupCount: 3
+    encoding: utf8
+
+root:
+  level: INFO
+  handlers: [console, error_file]

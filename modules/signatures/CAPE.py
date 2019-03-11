@@ -526,3 +526,21 @@ class CAPE_TransactedHollowing(Signature):
     def on_complete(self):
         if self.transacted_hollowing == True:
             return True
+
+class CAPEDetectedThreat(Signature):
+    name = "cape_detected_threat"
+    description = "CAPE detected a specific malware threat"
+    severity = 3
+    categories = ["malware"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def run(self):
+
+        if "cape" in self.results:
+            detection = self.results["cape"]
+            self.description = "CAPE detected the %s malware family" % detection
+            return True
+
+        return False

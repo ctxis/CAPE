@@ -30,6 +30,12 @@
             <td style="text-align: right;"><a class="btn btn-primary btn-small" href="{% url "filereport" analysis.info.id "maec" %}">Download</a></td>
         </tr>
       {% endif %}
+      {% if config.maec5 %}
+        <tr>
+            <th>MAEC Report</th>
+            <td style="text-align: right;"><a class="btn btn-primary btn-small" href="{% url "filereport" analysis.info.id "maec5" %}">Download</a></td>
+        </tr>
+      {% endif %}
       {% if config.mmdef %}
         <tr>
             <th>Metadata Report</th>

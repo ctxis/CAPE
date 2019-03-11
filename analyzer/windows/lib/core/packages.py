@@ -2,7 +2,7 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
-def choose_package(file_type, file_name, exports):
+def choose_package(file_type, file_name, exports, file_path):
     """Choose analysis package due to file type and file extension.
     @param file_type: file type.
     @param file_name: file name.
@@ -12,6 +12,7 @@ def choose_package(file_type, file_name, exports):
         return None
 
     file_name = file_name.lower()
+    file_content = open(file_path, "rb").read()
 
     if "DLL" in file_type:
         if file_name.endswith(".cpl"):
@@ -33,7 +34,8 @@ def choose_package(file_type, file_name, exports):
             "Microsoft Office Word" in file_type or \
             "Microsoft OOXML" in file_type or \
             "MIME entity" in file_type or \
-            file_name.endswith((".doc", ".dot", ".docx", ".dotx", ".docm", ".dotm", ".docb", ".rtf", ".mht", ".mso")):
+            file_name.endswith((".doc", ".dot", ".docx", ".dotx", ".docm", ".dotm", ".docb", ".rtf", ".mht", ".mso")) or \
+            ('mso-application' in file_content and 'Word.Document' in file_content):
         return "doc"
     elif "Microsoft Office Excel" in file_type or \
             "Microsoft Excel" in file_type or \

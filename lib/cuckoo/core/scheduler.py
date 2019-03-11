@@ -20,7 +20,7 @@ from lib.cuckoo.common.exceptions import CuckooMachineError, CuckooGuestError
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.exceptions import CuckooCriticalError
 from lib.cuckoo.common.objects import File
-from lib.cuckoo.common.utils import create_folder
+from lib.cuckoo.common.utils import create_folder, get_memdump_path, free_space_monitor
 from lib.cuckoo.core.database import Database, TASK_COMPLETED, TASK_REPORTED
 from lib.cuckoo.core.database import TASK_FAILED_ANALYSIS
 from lib.cuckoo.core.guest import GuestManager
@@ -338,7 +338,8 @@ class AnalysisManager(threading.Thread):
             # Take a memory dump of the machine before shutting it off.
             if self.cfg.cuckoo.memory_dump or self.task.memory:
                 try:
-                    dump_path = os.path.join(self.storage, "memory.dmp")
+                    dump_path = get_memdump_path(self.task.id)
+                    free_space_monitor()
                     machinery.dump_memory(self.machine.label, dump_path)
 
                 except NotImplementedError:

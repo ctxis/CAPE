@@ -42,7 +42,7 @@ cape_package_list = [
         "DumpOnAPI", "Doppelganging", "EvilGrab", "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", 
         "Extraction_ps1", "Extraction_jar", "Extraction_pdf", "Extraction_js", "Hancitor", "Hancitor_doc", "Injection", 
         "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "Injection_js", "PlugX", 
-        "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "Sedreco",
+        "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "RegBinary", "Sedreco",
         "Sedreco_dll", "Shellcode-Extraction", "Trace", "Trace_dll", "TrickBot", "TrickBot_doc", "UPX", "UPX_dll", "Ursnif"
     ];
 
@@ -153,9 +153,17 @@ class SubmitCAPE(Report):
                         self.task_options_stack.remove(item)
                 self.task_options_stack.append("bp0={0}".format(anti_sandbox))
                 detections.add('QakBot')
-            decrypt_config = cape_yara["addresses"].get("decrypt_config")
+            decrypt_config = cape_yara["addresses"].get("decrypt_config1")
             if decrypt_config:
                 decrypt_config = decrypt_config + 16 # Offset of "CALL" (decrypt)
+                for item in self.task_options_stack:
+                    if 'bp1' in item:
+                        self.task_options_stack.remove(item)
+                self.task_options_stack.append("bp1={0}".format(decrypt_config))
+                detections.add('QakBot')
+            decrypt_config = cape_yara["addresses"].get("decrypt_config2")
+            if decrypt_config:
+                decrypt_config = decrypt_config + 30 # Offset of "CALL" (decrypt)
                 for item in self.task_options_stack:
                     if 'bp1' in item:
                         self.task_options_stack.remove(item)
@@ -360,6 +368,17 @@ class SubmitCAPE(Report):
         # everything we need for its respective family.
         package = None
 
+        if 'PlugXPayload' in detections:
+            package = 'PlugXPayload'
+        elif 'PlugX_zip' in detections:
+            package = 'PlugX_zip'
+        elif 'PlugX_doc' in detections:
+            package = 'PlugX_doc'
+        elif 'PlugX_dll' in detections:
+            package = 'PlugX_dll'
+        elif 'PlugX' in detections:
+            package = 'PlugX'
+
         if 'EvilGrab' in detections and parent_package=='exe':
             package = 'EvilGrab'
 
@@ -392,7 +411,11 @@ class SubmitCAPE(Report):
 
         if 'QakBot' in detections and parent_package=='exe':
             package = 'QakBot'	
-            
+
+        #if 'RegBinary' in detections or 'CreatesLargeKey' in detections and parent_package=='exe':
+        if 'RegBinary' in detections and parent_package=='exe':
+            package = 'RegBinary'	
+
         # we want to switch off automatic process dumps in CAPE submissions
         if self.task_options and 'procdump=1' in self.task_options:
             self.task_options = self.task_options.replace(u"procdump=1", u"procdump=0", 1)

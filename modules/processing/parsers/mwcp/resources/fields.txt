@@ -109,6 +109,11 @@ Example config parser output:
             "192.168.1.1",
             "443",
             "tcp"
+        ],
+        [
+            "192.168.1.1",
+            "80",
+            "tcp"
         ]
     ],
     "c2_socketaddress": [
@@ -122,6 +127,24 @@ Example config parser output:
             "443",
             "tcp"
         ]
+    ],
+    "proxy": [
+        [
+            "admin",
+            "pass",
+            "192.168.1.1",
+            "80",
+            "tcp"
+        ]
+    ],
+    "proxy_socketaddress": [
+        [
+            "192.168.1.1",
+            "80",
+            "tcp"
+        ]
+    ],
+    "email_address": [
+        "user@bad.com"
     ]
 }
-

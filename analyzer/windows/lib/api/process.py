@@ -519,6 +519,15 @@ class Process:
                 "bp3",
                 "depth",
                 "count",
+                "action0",
+                "action1",
+                "action2",
+                "action3",
+                "instruction0",
+                "instruction1",
+                "instruction2",
+                "instruction3",
+                "break-on-return"
                 ]
             
             for optname in simple_optnames:
@@ -528,6 +537,8 @@ class Process:
 
             if "procdump" in self.options:
                 config.write("procdump={0}\n".format(self.options["procdump"]))
+            else:
+                config.write("procdump=1\n")    # Default will be overridden by some packages
             if "procmemdump" in self.options:
                 config.write("procmemdump={0}\n".format(self.options["procmemdump"]))
             if "import_reconstruction" in self.options:
@@ -705,7 +716,13 @@ class Process:
         file_path = os.path.join(PATHS["memory"], "{0}.dmp".format(self.pid))
 
         nf = NetlogFile(os.path.join("memory", "{0}.dmp".format(self.pid)))
-        infd = open(file_path, "rb")
+        try:
+            infd = open(file_path, "rb")
+        except:
+            nf.close()
+            log.warning("Unable to find process dump for process %d.", self.pid)
+            return False
+
         buf = infd.read(1024*1024)
         try:
             while buf:
@@ -714,7 +731,7 @@ class Process:
         except:
             infd.close()
             nf.close()
-            log.warning("Upload of memory dump for process %d failed", self.pid)
+            log.warning("Upload of memory dump for process %d failed.", self.pid)
             return False
 
         infd.close()

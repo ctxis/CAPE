@@ -208,7 +208,7 @@ def cape_file(file_path):
         return
     file_name = os.path.basename(file_path)
     upload_path = os.path.join("CAPE", sha256)
-        
+
     if os.path.exists(file_path + "_info.txt"):
         metadata = [line.strip() for line in open(file_path + "_info.txt")]
         metastring = ""
@@ -216,8 +216,8 @@ def cape_file(file_path):
             metastring = metastring + line + ','
     else:
         log.warning("No metadata file for CAPE dump at path \"%s\"", file_path.encode("utf-8", "replace"))
-        metastring = file_path   
-        
+        metastring = file_path
+
     try:
         upload_to_host_with_metadata(file_path, upload_path, metastring)
         CAPE_DUMPED_LIST.append(sha256)
@@ -247,7 +247,7 @@ def proc_dump(file_path):
         return
     file_name = os.path.basename(file_path)
     upload_path = os.path.join("procdump", sha256)
-        
+
     if os.path.exists(file_path + "_info.txt"):
         metadata = [line.strip() for line in open(file_path + "_info.txt")]
         metastring = ""
@@ -255,8 +255,8 @@ def proc_dump(file_path):
             metastring = metastring + line + ','
     else:
         log.warning("No metadata file for process dump at path \"%s\": %s", file_path.encode("utf-8", "replace"), e)
-        metastring = file_path 
-        
+        metastring = file_path
+
     try:
         upload_to_host_with_metadata(file_path, upload_path, metastring)
         CAPE_DUMPED_LIST.append(sha256)
@@ -406,7 +406,7 @@ class PipeHandler(Thread):
                     process_id = int(data)
                     if process_id:
                         if process_id in PROCESS_LIST:
-                            remove_pid(process_id) 
+                            remove_pid(process_id)
 
                 # same than below but we don't want to inject any DLLs because
                 # it's a kernel analysis
@@ -425,12 +425,12 @@ class PipeHandler(Thread):
                                 if not in_protected_path(filename):
                                     add_pid(process_id)
                                     log.info("Announce process name : %s", filename)
-                    PROCESS_LOCK.release()                
-            
+                    PROCESS_LOCK.release()
+
                 elif command.startswith("KERROR:"):
                     error_msg = command[7:]
                     log.error("Error : %s", str(error_msg))
-           
+
                 # if a new driver has been loaded, we stop the analysis
                 elif command == "KSUBVERT":
                     for pid in PROCESS_LIST:
@@ -715,7 +715,7 @@ class PipeHandler(Thread):
                             process_id = None
                         if param.isdigit():
                             thread_id = int(param)
-                            
+
                     if process_id:
                         if process_id not in (PID, PPID):
                             # We inject the process only if it's not being
@@ -939,12 +939,12 @@ class Analyzer:
         thedate = clock.strftime("%m-%d-%y")
         thetime = clock.strftime("%H:%M:%S")
 
-        log.info("Date set to: {0}, time set to: {1}".format(thedate, thetime))
+        log.info("Date set to: {0}, time set to: {1}, timeout set to: {2}".format(thedate, thetime, self.config.timeout))
 
         # Set the DLL to be used by the PipeHandler.
         MONITOR_DLL = self.config.get_options().get("dll")
         MONITOR_DLL_64 = self.config.get_options().get("dll_64")
-        
+
         # get PID for services.exe for monitoring services
         svcpid = self.pids_from_process_name_list(["services.exe"])
         if svcpid:
@@ -1032,7 +1032,7 @@ class Analyzer:
             # If the analysis target is a file, we choose the package according
             # to the file format.
             if self.config.category == "file":
-                package = choose_package(self.config.file_type, self.config.file_name, self.config.exports)
+                package = choose_package(self.config.file_type, self.config.file_name, self.config.exports, self.target)
             # If it's an URL, we'll just use the default Internet Explorer
             # package.
             else:
@@ -1104,39 +1104,39 @@ class Analyzer:
             else:
                 log.debug("Started auxiliary module %s", module.__name__)
                 AUX_ENABLED.append(aux)
-       
+
         # Set the DLL to that specified by package
         if pack.options.has_key("dll") and pack.options["dll"] != None:
             MONITOR_DLL = pack.options["dll"]
             log.info("Analyzer: DLL set to %s from package %s", MONITOR_DLL, package_name)
         else:
             log.info("Analyzer: Package %s does not specify a DLL option", package_name)
-        
+
         # Set the DLL_64 to that specified by package
         if pack.options.has_key("dll_64") and pack.options["dll_64"] != None:
             MONITOR_DLL_64 = pack.options["dll_64"]
             log.info("Analyzer: DLL_64 set to %s from package %s", MONITOR_DLL_64, package_name)
         else:
             log.info("Analyzer: Package %s does not specify a DLL_64 option", package_name)
-        
+
         # Set the loader to that specified by package
         if pack.options.has_key("loader") and pack.options["loader"] != None:
             LOADER32 = pack.options["loader"]
             log.info("Analyzer: Loader (32-bit) set to %s from package %s", LOADER32, package_name)
-        
+
         if pack.options.has_key("loader_64") and pack.options["loader_64"] != None:
             LOADER64 = pack.options["loader_64"]
             log.info("Analyzer: Loader (64-bit) set to %s from package %s", LOADER64, package_name)
-        
+
         # randomize monitor DLL and loader executable names
         if MONITOR_DLL != None:
             copy(os.path.join("dll", MONITOR_DLL), CAPEMON32_NAME)
         else:
-            copy("dll\\CAPE.dll", CAPEMON32_NAME)
+            copy("dll\\capemon.dll", CAPEMON32_NAME)
         if MONITOR_DLL_64 != None:
             copy(os.path.join("dll", MONITOR_DLL_64), CAPEMON64_NAME)
         else:
-            copy("dll\\CAPE_x64.dll", CAPEMON64_NAME)
+            copy("dll\\capemon_x64.dll", CAPEMON64_NAME)
         if LOADER32 != None:
             copy(os.path.join("bin", LOADER32), LOADER32_NAME)
         else:
@@ -1191,8 +1191,8 @@ class Analyzer:
 
         while True:
             time_counter += 1
-            if time_counter == int(self.config.timeout):
-                log.info("Analysis timeout hit, terminating analysis.")
+            if time_counter >= int(self.config.timeout):
+                log.info("Analysis timeout hit (%d seconds), terminating analysis.", self.config.timeout)
                 ANALYSIS_TIMED_OUT = True
                 break
 
@@ -1331,7 +1331,7 @@ if __name__ == "__main__":
         analyzer = Analyzer()
         analyzer.prepare()
         completion_key = analyzer.get_completion_key()
-        
+
         # Run it and wait for the response.
         success = analyzer.run()
 
