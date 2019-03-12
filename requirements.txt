@@ -1,4 +1,4 @@
-sqlalchemy
+sqlalchemy==1.2.18
 jinja2
 markupsafe
 libvirt-python
