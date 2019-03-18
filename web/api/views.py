@@ -622,22 +622,21 @@ def tasks_vtdl(request):
         else:
             base_dir = tempfile.mkdtemp(prefix='cuckoovtdl',dir=settings.VTDL_PATH)
             hashlist = []
+            params = {}
             if "," in vtdl:
                 hashlist=vtdl.replace(" ", "").strip().split(",")
             else:
                 hashlist=vtdl.split()
             onesuccess = False
-
             for h in hashlist:
                 filename = base_dir + "/" + h
                 if settings.VTDL_PRIV_KEY:
-                    url = 'https://www.virustotal.com/vtapi/v2/file/download'
-                    params = {'apikey': settings.VTDL_PRIV_KEY, 'hash': h}
-                else:
-                    url = 'https://www.virustotal.com/intelligence/download/'
-                    params = {'apikey': settings.VTDL_INTEL_KEY, 'hash': h}
+                    headers = {'x-apikey': settings.VTDL_PRIV_KEY}
+                elif settings.VTDL_INTEL_KEY:
+                    headers = {'x-apikey': settings.VTDL_INTEL_KEY}
+                url = "https://www.virustotal.com/api/v3/files/{id}/download".format(id = h)
                 try:
-                    r = requests.get(url, params=params, verify=True)
+                    r = requests.get(url, headers=headers, verify=True)
                 except requests.exceptions.RequestException as e:
                     resp = {"error": True, "error_value": "Error completing connection to VirusTotal: {0}".format(e)}
                     return jsonize(resp, response=True)
