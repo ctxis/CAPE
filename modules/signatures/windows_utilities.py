@@ -108,6 +108,7 @@ class SuspiciousCommandTools(Signature):
             "bitsadmin",
             "bginfo",
             "cacls",
+            "certutil",
             "csvde",
             "del ",
             "del.exe",
