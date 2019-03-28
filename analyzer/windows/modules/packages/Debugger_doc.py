@@ -7,16 +7,16 @@ import shutil
 
 from lib.common.abstracts import Package
 
-class Trace_doc(Package):
-    """CAPE Word Trace package."""
+class Debugger_doc(Package):
+    """CAPE Word Debugger package."""
     
     def __init__(self, options={}, config=None):
         """@param options: options dict."""
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "Trace.dll"
-        self.options["dll_64"] = "Trace_x64.dll"
+        self.options["dll"] = "Debugger.dll"
+        self.options["dll_64"] = "Debugger_x64.dll"
         self.options["loader"] = "newloader.exe"
         self.options["loader_64"] = "newloader_x64.exe"
 

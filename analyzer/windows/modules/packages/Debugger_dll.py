@@ -7,8 +7,8 @@ import shutil
 
 from lib.common.abstracts import Package
 
-class Trace_dll(Package):
-    """CAPE Trace_DLL analysis package."""
+class Debugger_dll(Package):
+    """CAPE Debugger_DLL analysis package."""
     PATHS = [
         ("SystemRoot", "system32", "rundll32.exe"),
     ]
@@ -17,8 +17,10 @@ class Trace_dll(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.options["dll"] = "Trace.dll"
-        self.options["dll_64"] = "Trace_x64.dll"
+        self.options["dll"] = "Debugger.dll"
+        self.options["dll_64"] = "Debugger_x64.dll"
+        self.options["loader"] = "newloader.exe"
+        self.options["loader_64"] = "newloader_x64.exe"
         
     def start(self, path):
         rundll32 = self.get_path("rundll32.exe")
