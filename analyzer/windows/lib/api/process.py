@@ -412,8 +412,13 @@ class Process:
         if event_handle:
             # make sure process is aware of the termination
             KERNEL32.SetEvent(event_handle)
+            if KERNEL32.WaitForSingleObject(event_handle, 5000) == 0x00000080:   #WAIT_ABANDONED
+                log.error("Wait for reply to terminare_event timed out for pid %d", self.pid)
+            else:
+                log.info("Successfully received reply to terminare_event, pid %d", self.pid)
             KERNEL32.CloseHandle(event_handle)
-            KERNEL32.Sleep(500)
+        else:
+            log.error("Failed to open terminate event for pid %d", self.pid)
 
     def terminate(self):
         """Terminate process.
@@ -492,65 +497,20 @@ class Process:
 
             if "norefer" not in self.options and "referrer" not in self.options:
                 config.write("referrer={0}\n".format(get_referrer_url(interest)))
-
-            simple_optnames = [
-                "force-sleepskip",
-                "full-logs",
-                "force-flush",
-                "no-stealth",
-                "buffer-max",
-                "large-buffer-max",
-                "referrer",
-                "serial",
-                "sysvol_ctimelow",
-                "sysvol_ctimehigh",
-                "sys32_ctimelow",
-                "sys32_ctimehigh",
-                "debug",
-                "disable_hook_content",
-                "hook-type",
-                "base-on-api",
-                "exclude-apis",
-                "exclude-dlls",
-                "dump-on-api",
-                "bp0",
-                "bp1",
-                "bp2",
-                "bp3",
-                "depth",
-                "count",
-                "action0",
-                "action1",
-                "action2",
-                "action3",
-                "instruction0",
-                "instruction1",
-                "instruction2",
-                "instruction3",
-                "break-on-return"
-                ]
             
-            for optname in simple_optnames:
-                if optname in self.options:
-                    config.write("{0}={1}\n".format(optname, self.options[optname]))
-                    log.info("Option '%s' with value '%s' sent to monitor", optname, self.options[optname])
+            server_options = [
+                "disable_cape",
+                "dll",
+                "dll_64",
+                "loader",
+                "loader_64",
+                "route"
+                ]
 
-            if "procdump" in self.options:
-                config.write("procdump={0}\n".format(self.options["procdump"]))
-            else:
-                config.write("procdump=1\n")    # Default will be overridden by some packages
-            if "procmemdump" in self.options:
-                config.write("procmemdump={0}\n".format(self.options["procmemdump"]))
-            if "import_reconstruction" in self.options:
-                config.write("import_reconstruction={0}\n".format(self.options["import_reconstruction"]))
-            if "CAPE_var1" in self.options:
-                config.write("CAPE_var1={0}\n".format(self.options["CAPE_var1"]))
-            if "CAPE_var2" in self.options:
-                config.write("CAPE_var2={0}\n".format(self.options["CAPE_var2"]))
-            if "CAPE_var3" in self.options:
-                config.write("CAPE_var3={0}\n".format(self.options["CAPE_var3"]))
-            if "CAPE_var4" in self.options:
-                config.write("CAPE_var4={0}\n".format(self.options["CAPE_var4"]))
+            for optname, option in self.options.items():
+                if optname not in server_options:
+                    config.write("{0}={1}\n".format(optname, option))
+                    log.info("Option '%s' with value '%s' sent to monitor", optname, option)
 
     def inject(self, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
         """Cuckoo DLL injection.

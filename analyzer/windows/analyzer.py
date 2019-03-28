@@ -325,6 +325,30 @@ def dump_files():
     for file_path in FILES_LIST:
         dump_file(file_path)
 
+def upload_debugger_logs():
+    """Create a copy of the given file path."""
+    log_folder = PATHS["root"] + "\\debugger"
+    try:
+        if os.path.exists(log_folder):
+            log.info("Uploading debugger log at path \"%s\" ", log_folder.encode("utf-8", "replace"))
+        else:
+            log.warning("File at path \"%s\" does not exist, skip.",
+                        log_folder.encode("utf-8", "replace"))
+            return
+    except IOError as e:
+        log.warning("Unable to access file at path \"%s\": %s", log_folder.encode("utf-8", "replace"), e)
+        return
+
+    for root, dirs, files in os.walk(log_folder):
+        for file in files:
+            file_path = os.path.join(root, file)
+            upload_path = os.path.join("debugger", file)
+            try:
+                upload_to_host(file_path, upload_path, False)
+            except (IOError, socket.error) as e:
+                log.error("Unable to upload dropped file at path \"%s\": %s",
+                          file_path.encode("utf-8", "replace"), e)
+
 class PipeHandler(Thread):
     """Pipe Handler.
 
@@ -1000,6 +1024,9 @@ class Analyzer:
 
         # Dump all the notified files.
         dump_files()
+
+        # Copy the debugger log.
+        upload_debugger_logs()
 
         # Hell yeah.
         log.info("Analysis completed.")
