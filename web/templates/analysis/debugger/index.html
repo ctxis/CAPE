@@ -28,12 +28,13 @@
             {% endfor %}
         {% endfor %}
         </ul>
+    </div>
     <div class="tab-content">
         {% for process in analysis.behavior.processes %}
             {% for key, value in analysis.debugger_logs.items %}
                 {% if key == process.process_id %}
                     <div class="tab-pane{% if forloop.parentloop.counter == 1 %} fade in active{% else %} fade{% endif %}" id="{{key}}" data-pid="{{key}}">
-                        <div class="alert alert-info center"><a class="btn btn-primary btn-small" href="{% url "file" "debugger_log" analysis.info.id key %}">Download Log</a></div>
+                        <div class="alert alert-info center"><a class="btn btn-primary btn-small" href="{% url "file" "debugger_log" analysis.info.id key %}"">Download Log</a></div>
                         <pre>{{value}}</pre>
                     </div>            
                 {% endif %}
