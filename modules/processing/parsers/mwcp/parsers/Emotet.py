@@ -97,15 +97,20 @@ class Emotet(Parser):
             refc2list = yara_scan(filebuf, '$snippet3')
         if refc2list:
             c2list_va_offset = int(refc2list['$snippet3'])
-
-            c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0] - image_base
+            c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0]
+            if c2_list_va > 0x10000:
+                c2_list_va = c2_list_va & 0xffff
+            c2_list_rva = c2_list_va - image_base
             try:
                 c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
             except PEFormatError as err:
                 pass
 
             while 1:
-                ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                try:
+                    ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                except:
+                    return
                 if ip == 0:
                     return
                 c2_address = socket.inet_ntoa(struct.pack('!L', ip))
@@ -120,15 +125,21 @@ class Emotet(Parser):
             refc2list = yara_scan(filebuf, '$snippet4')
             if refc2list:
                 c2list_va_offset = int(refc2list['$snippet4'])
-
-                c2_list_rva = struct.unpack('i', filebuf[c2list_va_offset+8:c2list_va_offset+12])[0] - image_base
+                c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+8:c2list_va_offset+12])[0]
+                if c2_list_va > 0x10000:
+                    c2_list_rva = c2_list_va & 0xffff
+                else:
+                    c2_list_rva = c2_list_va - image_base
                 try:
                     c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
                 except PEFormatError as err:
                     pass
 
                 while 1:
-                    ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                    try:
+                        ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                    except:
+                        return
                     if ip == 0:
                         return
                     c2_address = socket.inet_ntoa(struct.pack('!L', ip))
