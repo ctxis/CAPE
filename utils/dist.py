@@ -200,7 +200,7 @@ def node_submit_task(task_id, node_id):
             files = dict(file=open(task.path, "rb"))
 
             r = requests.post(url,
-                            data=data,
+                            data=data, files=files,
                             auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
                             verify = False)
         else:
