@@ -33,7 +33,6 @@ from lib.cuckoo.common.utils import store_temp_file
 from lib.cuckoo.core.database import Database, TASK_COMPLETED, TASK_REPORTED, TASK_RUNNING, TASK_PENDING, TASK_FAILED_REPORTING, TASK_DISTRIBUTED_COMPLETED
 
 from lib.cuckoo.common.dist_db import Node, StringList, Task, Machine, create_session
-log = logging.getLogger(__name__)
 
 # we need original db to reserve ID in db,
 # to store later report, from master or slave
@@ -170,7 +169,7 @@ def node_submit_task(task_id, node_id):
             enforce_timeout=task.enforce_timeout,
         )
 
-        if task.category == "file":
+        if task.category in ("file", "pcap"):
             url = os.path.join(node.url, "tasks", "create", "file")
             # If the file does not exist anymore, ignore it and move on
             # to the next file.
@@ -183,7 +182,6 @@ def node_submit_task(task_id, node_id):
                     db.rollback()
                 return
             files = dict(file=open(task.path, "rb"))
-            log.debug(task.path)
             r = requests.post(url,
                             data=data, files=files,
                             auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
@@ -195,16 +193,9 @@ def node_submit_task(task_id, node_id):
                             data=data,
                             auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
                             verify = False)
-        elif task.category == "pcap":
-            url = os.path.join(node.url, "tasks", "create", "file")
-            files = dict(file=open(task.path, "rb"))
-
-            r = requests.post(url,
-                            data=data, files=files,
-                            auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
-                            verify = False)
         else:
             log.debug("Target category is: {}".format(task.category))
+            db.close()
             return
 
         # encoding problem
@@ -562,7 +553,7 @@ class StatusThread(threading.Thread):
                             log.error(e)
                     tasks = db.query(Task).filter_by(main_task_id=t.id).all()
                     if not tasks:
-                        # Check if file exist, if no wipe from db and continue, rare cases
+                        # Check if file exist, if no wipe from db and continue, rare cases
                         if not os.path.exists(t.target):
                             main_db.delete_task(t.id)
                             log.info("Task id: {} - File doesn't exist: {}".format(t.id, t.target))
@@ -620,7 +611,6 @@ class StatusThread(threading.Thread):
                             # Submit appropriate tasks to node
                             if pend_tasks_num > 0:
                                 for task in q.limit(pend_tasks_num).all():
-                                    log.info(task.id)
                                     submitted = node_submit_task(task.id, node.id)
                                     if submitted:
                                         main_db.set_status(t.id, TASK_RUNNING)
@@ -943,9 +933,6 @@ def create_app(database_connection):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
     app.config['SQLALCHEMY_POOL_SIZE'] = int(reporting_conf.distributed.dist_threads) + 5
     app.config["SECRET_KEY"] = os.urandom(32)
-    #app.config["SQLALCHEMY_MAX_OVERFLOW"] = 100
-    #app.config["SQLALCHEMY_POOL_TIMEOUT"] = 200
-
     restapi = DistRestApi(app)
     restapi.add_resource(NodeRootApi, "/node")
     restapi.add_resource(NodeApi, "/node/<string:name>")
@@ -955,26 +942,24 @@ def create_app(database_connection):
     return app
 
 def init_logging(debug=False):
-    global log
     formatter = logging.Formatter("%(asctime)s %(levelname)s:%(module)s:%(threadName)s - %(message)s")
+    log = logging.getLogger()
+
     if not os.path.exists(os.path.join(CUCKOO_ROOT, "log")):
         os.makedirs(os.path.join(CUCKOO_ROOT, "log"))
     fh = handlers.TimedRotatingFileHandler(os.path.join(CUCKOO_ROOT, "log", "dist.log"), when="midnight", backupCount=10)
     fh.setFormatter(formatter)
+    log.addHandler(fh)
 
-
+    """
     handler_stdout = logging.StreamHandler(sys.stdout)
     handler_stdout.setFormatter(formatter)
     log.addHandler(handler_stdout)
-    log.addHandler(fh)
-
-
+    """
     if debug:
         log.setLevel(logging.DEBUG)
     else:
         log.setLevel(logging.INFO)
-
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     return log
 
