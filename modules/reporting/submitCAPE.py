@@ -39,11 +39,11 @@ report_key = reporting_conf.submitCAPE.keyword
 
 cape_package_list = [
         "Cerber", "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "Compression_js", "Compression_pdf", 
-        "DumpOnAPI", "Doppelganging", "EvilGrab", "Extraction", "Extraction_dll", "Extraction_regsvr", "Extraction_zip", 
-        "Extraction_ps1", "Extraction_jar", "Extraction_pdf", "Extraction_js", "Hancitor", "Hancitor_doc", "Injection", 
-        "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", "Injection_ps1", "Injection_js", "PlugX", 
-        "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "RegBinary", "Sedreco",
-        "Sedreco_dll", "Shellcode-Extraction", "Trace", "Trace_dll", "TrickBot", "TrickBot_doc", "UPX", "UPX_dll", "Ursnif"
+        "Debugger", "Debugger_dll", "Debugger_doc", "DumpOnAPI", "Doppelganging", "EvilGrab", "Extraction", "Extraction_dll", 
+        "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Extraction_jar", "Extraction_pdf", "Extraction_js", 
+        "Hancitor", "Hancitor_doc", "IcedID", "Injection", "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip", 
+        "Injection_ps1", "Injection_js", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "RegBinary", 
+        "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "TrickBot_doc", "UPX", "UPX_dll", "Ursnif"
     ];
 
 class SubmitCAPE(Report):
@@ -169,6 +169,9 @@ class SubmitCAPE(Report):
                         self.task_options_stack.remove(item)
                 self.task_options_stack.append("bp1={0}".format(decrypt_config))
                 detections.add('QakBot')
+
+        if cape_yara["name"] == "IcedID":
+            detections.add('IcedID')
 
     def submit_task(self, target, package, timeout, task_options, priority, machine, platform, memory, enforce_timeout, clock, tags, parent_id):
 
@@ -411,6 +414,9 @@ class SubmitCAPE(Report):
 
         if 'QakBot' in detections and parent_package=='exe':
             package = 'QakBot'	
+
+        if 'IcedID' in detections and parent_package=='exe':
+            package = 'IcedID'	
 
         #if 'RegBinary' in detections or 'CreatesLargeKey' in detections and parent_package=='exe':
         if 'RegBinary' in detections and parent_package=='exe':

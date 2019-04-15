@@ -79,6 +79,8 @@ HANCITOR_CONFIG         = 0x34
 HANCITOR_PAYLOAD        = 0x35
 QAKBOT_CONFIG           = 0x38
 QAKBOT_PAYLOAD          = 0x39
+ICEDID_LOADER           = 0x40
+ICEDID_BOT              = 0x41
 UPX                     = 0x1000
 
 log = logging.getLogger(__name__)
