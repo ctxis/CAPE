@@ -438,6 +438,7 @@ def index(request, resubmit_hash=False):
                         content = submit_utils.get_file_content(paths)
 
                     headers = {}
+                    params = {}
                     url = "https://www.virustotal.com/api/v3/files/{id}/download".format(id = h)
                     if settings.VTDL_PRIV_KEY:
                         headers = {'x-apikey': settings.VTDL_PRIV_KEY}
