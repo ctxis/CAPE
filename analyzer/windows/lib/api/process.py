@@ -413,9 +413,9 @@ class Process:
             # make sure process is aware of the termination
             KERNEL32.SetEvent(event_handle)
             if KERNEL32.WaitForSingleObject(event_handle, 5000) == 0x00000080:   #WAIT_ABANDONED
-                log.error("Wait for reply to terminare_event timed out for pid %d", self.pid)
+                log.error("Wait for reply to terminate_event timed out for pid %d", self.pid)
             else:
-                log.info("Successfully received reply to terminare_event, pid %d", self.pid)
+                log.info("Successfully received reply to terminate_event, pid %d", self.pid)
             KERNEL32.CloseHandle(event_handle)
         else:
             log.error("Failed to open terminate event for pid %d", self.pid)

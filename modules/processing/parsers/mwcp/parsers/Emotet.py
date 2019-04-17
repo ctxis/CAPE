@@ -100,7 +100,8 @@ class Emotet(Parser):
             c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0]
             if c2_list_va > 0x10000:
                 c2_list_va = c2_list_va & 0xffff
-            c2_list_rva = c2_list_va - image_base
+            else:
+                c2_list_rva = c2_list_va - image_base
             try:
                 c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
             except PEFormatError as err:
