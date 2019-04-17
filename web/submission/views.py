@@ -421,6 +421,7 @@ def index(request, resubmit_hash=False):
             else:
                 base_dir = tempfile.mkdtemp(prefix='cuckoovtdl', dir=settings.VTDL_PATH)
                 hashlist = []
+                params = {}
                 if "," in vtdl:
                     hashlist = vtdl.replace(" ", "").strip().split(",")
                 else:
