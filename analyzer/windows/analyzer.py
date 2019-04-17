@@ -706,18 +706,11 @@ class PipeHandler(Thread):
                                 filename = os.path.basename(filepath)
                                 if SERVICES_PID and process_id == SERVICES_PID:
                                     CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
-
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
-
-                                # We want to prevent multiple injection attempts if one is already underway
-                                PROCESS_LOCK.acquire()
-                                add_pids(process_id)
-                                PROCESS_LOCK.release()
-                                NUM_INJECTED += 1
-
                                 if not in_protected_path(filename):
                                     res = proc.inject(INJECT_QUEUEUSERAPC, interest)
                                     LASTINJECT_TIME = datetime.now()
+                                    NUM_INJECTED += 1
                                 proc.close()
                         else:
                             log.warning("Received request to inject Cuckoo "
