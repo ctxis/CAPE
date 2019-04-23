@@ -632,10 +632,16 @@ class CAPE(Processing):
                 self.upx_unpack(file_data, CAPE_output)
                 
             # Check for a payload or config hit
+            extraction_types = [
+                "payload",
+                "config",
+                "loader"
+                ]
             try:
-                if "payload" in hit["meta"]["cape_type"].lower() or "config" in hit["meta"]["cape_type"].lower():
-                    file_info["cape_type"] = hit["meta"]["cape_type"]                      
-                    cape_name = hit["name"]
+                for type in extraction_types:
+                    if type in hit["meta"]["cape_type"].lower():
+                        file_info["cape_type"] = hit["meta"]["cape_type"]
+                        cape_name = hit["name"].replace('_', ' ')
             except:
                 pass
             type_strings = file_info["type"].split()
