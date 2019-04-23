@@ -725,8 +725,8 @@ class CAPE(Processing):
                     del cape_config["cape_config"]
             
         if cape_name:
-            if "cape_config" in cape_config:
-                    cape_config["cape_name"] = format(cape_name)
+            if "cape_config" in cape_config and "cape_name" not in cape_config:
+                cape_config["cape_name"] = format(cape_name)
             if not "cape" in self.results:
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name
