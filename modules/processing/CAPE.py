@@ -659,7 +659,7 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"  
                         
-            suppress_parsing_list = ["Cerber", "Emotet", "Ursnif", "QakBot"];
+            suppress_parsing_list = ["Cerber", "Emotet_Payload", "Ursnif", "QakBot"];
 
             if hit["name"] in suppress_parsing_list:
                 continue
@@ -725,8 +725,8 @@ class CAPE(Processing):
                     del cape_config["cape_config"]
             
         if cape_name:
-            if "cape_config" in cape_config:
-                    cape_config["cape_name"] = format(cape_name)
+            if "cape_config" in cape_config and "cape_name" not in cape_config:
+                cape_config["cape_name"] = format(cape_name)
             if not "cape" in self.results:
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name
