@@ -296,7 +296,7 @@ def mongo_upgrade():
                                 username=user,
                                 password=password,
                                 authSource=database
-                                )
+                                )[database]
                 except pymongo.errors.ConnectionFailure:
                     print "Cannot connect to MongoDB"
                     sys.exit()
