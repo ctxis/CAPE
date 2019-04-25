@@ -46,6 +46,9 @@ WEB_AUTHENTICATION = False
 MONGO_HOST = cfg.mongodb.get("host", "127.0.0.1")
 MONGO_PORT = cfg.mongodb.get("port", 27017)
 MONGO_DB = cfg.mongodb.get("db", "cuckoo")
+MONGO_USER = cfg.mongodb.get("username", None)
+MONGO_PASS = cfg.mongodb.get("password", None)
+
 
 ELASTIC_HOST = cfg.elasticsearchdb.get("host", "127.0.0.1")
 ELASTIC_PORT = cfg.elasticsearchdb.get("port", 9200)

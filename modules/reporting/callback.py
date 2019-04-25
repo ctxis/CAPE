@@ -28,7 +28,12 @@ class CALLBACKHOME(Report):
         #mark as reported
         if HAVE_MONGO:
             try:
-                conn = MongoClient(reporting_conf.mongodb.host, reporting_conf.mongodb.port)
+                conn = pymongo.MongoClient( reporting_conf.mongodb.host,
+                                port=reporting_conf.mongodb.port,
+                                username=reporting_conf.mongodb.get("username", None),
+                                password=reporting_conf.mongodb.get("password", None),
+                                authSource=reporting_conf.mongodb.db
+                                )
                 mongo_db = conn[reporting_conf.mongodb.db]
                 # set complated_on time
                 main_db.set_status(task_id, TASK_COMPLETED)

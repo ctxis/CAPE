@@ -37,10 +37,12 @@ repconf = Config("reporting")
 FULL_DB = False
 if repconf.mongodb.enabled:
     import pymongo
-    results_db = pymongo.MongoClient(
-                     repconf.mongodb.host,
-                     repconf.mongodb.port
-                 )[repconf.mongodb.db]
+    results_db = pymongo.MongoClient( repconf.mongodb.host,
+                                port=repconf.mongodb.port,
+                                username=repconf.mongodb.get("username", None),
+                                password=repconf.mongodb.get("password", None),
+                                authSource=repconf.mongodb.db
+                                )[repconf.mongodb.db]
     FULL_DB = True
 
 # Increase request size limit

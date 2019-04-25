@@ -263,6 +263,8 @@ def mongo_upgrade():
         host = config.mongodb.get("host", "127.0.0.1")
         port = config.mongodb.get("port", 27017)
         database = config.mongodb.get("db", "cuckoo")
+        user = config.mongodb.get("user", None)
+        password = config.mongodb.get("password", None)
         print "Mongo reporting is enabled, strarting mongo data migration."
 
         if not port.isnumber():
@@ -289,7 +291,12 @@ def mongo_upgrade():
                 import pymongo
 
                 try:
-                    db = pymongo.MongoClient(host, port)[database]
+                    db = pymongo.MongoClient( host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=database
+                                )
                 except pymongo.errors.ConnectionFailure:
                     print "Cannot connect to MongoDB"
                     sys.exit()

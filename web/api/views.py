@@ -38,10 +38,13 @@ repconf = Config("reporting")
 
 if repconf.mongodb.enabled:
     import pymongo
-    results_db = pymongo.MongoClient(
-                     settings.MONGO_HOST,
-                     settings.MONGO_PORT
-                 )[settings.MONGO_DB]
+    results_db = pymongo.MongoClient( settings.MONGO_HOST,
+                                  port=settings.MONGO_PORT,
+                                  username=settings.MONGO_USER,
+                                  password=settings.MONGO_PASS,
+                                  authSource=settings.MONGO_DB)[settings.MONGO_DB]
+    #results_db = pymongo.MongoClient(settings.MONGO_HOST, settings.MONGO_PORT )[settings.MONGO_DB]
+
 
 es_as_db = False
 if repconf.elasticsearchdb.enabled and not repconf.elasticsearchdb.searchonly:
