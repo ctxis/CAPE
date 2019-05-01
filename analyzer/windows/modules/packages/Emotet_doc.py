@@ -22,6 +22,7 @@ class Emotet_doc(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
+        self.options["dll"] = "Extraction.dll"
         self.options["exclude-apis"] = "RegOpenKeyExA"
         
     def start(self, path):
