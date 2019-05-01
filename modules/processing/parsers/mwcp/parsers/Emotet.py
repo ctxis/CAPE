@@ -59,10 +59,11 @@ def yara_scan(raw_data, rule_name):
 # A big thank you to both.
 def extract_emotet_rsakey(filedata):
     pub_matches = re.findall('''\x30[\x00-\xff]{100}\x02\x03\x01\x00\x01\x00\x00''', filedata)
-    pub_key = pub_matches[0][0:106]
-    seq = asn1.DerSequence()
-    seq.decode(pub_key)
-    return RSA.construct((seq[0], seq[1]))
+    if pub_matches:
+        pub_key = pub_matches[0][0:106]
+        seq = asn1.DerSequence()
+        seq.decode(pub_key)
+        return RSA.construct((seq[0], seq[1]))
 
 class Emotet(Parser):
     def __init__(self, reporter=None):
