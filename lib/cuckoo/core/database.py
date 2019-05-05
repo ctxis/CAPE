@@ -30,7 +30,7 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-SCHEMA_VERSION = "3c8bf4133b44"
+SCHEMA_VERSION = "36926b59dfbb"
 TASK_PENDING = "pending"
 TASK_RUNNING = "running"
 TASK_COMPLETED = "completed"
@@ -180,6 +180,7 @@ class Sample(Base):
     sha256 = Column(String(64), nullable=False)
     sha512 = Column(String(128), nullable=False)
     ssdeep = Column(String(255), nullable=True)
+    parent = Column(Integer(), nullable=True)
     __table_args__ = Index("md5_index", "md5"), Index("sha1_index", "sha1"), Index("sha256_index", "sha256", unique=True),
 
     def __repr__(self):
@@ -201,7 +202,7 @@ class Sample(Base):
         return json.dumps(self.to_dict())
 
     def __init__(self, md5, crc32, sha1, sha256, sha512,
-                 file_size, file_type=None, ssdeep=None):
+                 file_size, file_type=None, ssdeep=None, parent=None):
         self.md5 = md5
         self.sha1 = sha1
         self.crc32 = crc32
@@ -212,6 +213,8 @@ class Sample(Base):
             self.file_type = file_type
         if ssdeep:
             self.ssdeep = ssdeep
+        if parent:
+            self.parent = parent
 
 class Error(Base):
     """Analysis errors."""
@@ -617,7 +620,6 @@ class Database(object):
                 row = session.query(Task).filter_by(status=TASK_PENDING).filter_by(machine=machine).order_by(text("priority desc, added_on")).first()
             else:
                 row = session.query(Task).filter_by(status=TASK_PENDING).order_by(text("priority desc, added_on")).first()
-
             if not row:
                 return None
 
@@ -877,11 +879,54 @@ class Database(object):
     # The following functions are mostly used by external utils.
 
     @classlock
+    def register_sample(self, obj):
+        sample_id = None
+        if isinstance(obj, File) or isinstance(obj, PCAP):
+            session = self.Session()
+            fileobj = File(obj.file_path)
+            file_type = fileobj.get_type()
+            file_md5 = fileobj.get_md5()
+            sample = Sample(md5=file_md5,
+                            crc32=fileobj.get_crc32(),
+                            sha1=fileobj.get_sha1(),
+                            sha256=fileobj.get_sha256(),
+                            sha512=fileobj.get_sha512(),
+                            file_size=fileobj.get_size(),
+                            file_type=file_type,
+                            ssdeep=fileobj.get_ssdeep())
+            session.add(sample)
+
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                try:
+                    sample = session.query(Sample).filter_by(md5=file_md5).first()
+                except SQLAlchemyError as e:
+                    log.debug("Error querying sample for hash: {0}".format(e))
+                    session.close()
+                    return None
+            except SQLAlchemyError as e:
+                log.debug("Database error adding task: {0}".format(e))
+                session.close()
+                return None
+            finally:
+                sample_id = sample.id
+                session.close()
+
+            return sample_id
+        else:
+            return None
+
+
+
+    @classlock
     def add(self, obj, timeout=0, package="", options="", priority=1,
             custom="", machine="", platform="", tags=None,
             memory=False, enforce_timeout=False, clock=None,
             shrike_url=None, shrike_msg=None,
-            shrike_sid = None, shrike_refer=None, parent_id=None):
+            shrike_sid=None, shrike_refer=None, parent_id=None,
+            sample_parent_id=None):
         """Add a task to database.
         @param obj: object to add (File or URL).
         @param timeout: selected timeout.
@@ -894,6 +939,8 @@ class Database(object):
         @param memory: toggle full memory dump.
         @param enforce_timeout: toggle full timeout execution.
         @param clock: virtual machine clock time
+        @param parent_id: parent task id
+        @param sample_parent_id: original sample in case of archive
         @return: cursor or None.
         """
         session = self.Session()
@@ -915,7 +962,8 @@ class Database(object):
                             sha512=fileobj.get_sha512(),
                             file_size=fileobj.get_size(),
                             file_type=file_type,
-                            ssdeep=fileobj.get_ssdeep())
+                            ssdeep=fileobj.get_ssdeep(),
+                            parent=sample_parent_id)
             session.add(sample)
 
             try:
@@ -981,12 +1029,6 @@ class Database(object):
 
             else:
                 task.clock = clock
-
-
-
-
-
-
         else:
             task.clock = datetime.utcfromtimestamp(0)
 
@@ -1007,7 +1049,8 @@ class Database(object):
     def add_path(self, file_path, timeout=0, package="", options="",
                  priority=1, custom="", machine="", platform="", tags=None,
                  memory=False, enforce_timeout=False, clock=None, shrike_url=None,
-                 shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None):
+                 shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None,
+                 sample_parent_id=None):
         """Add a task to database from file path.
         @param file_path: sample path.
         @param timeout: selected timeout.
@@ -1020,6 +1063,8 @@ class Database(object):
         @param memory: toggle full memory dump.
         @param enforce_timeout: toggle full timeout execution.
         @param clock: virtual machine clock time
+        @param parent_id: parent analysis id
+        @param sample_parent_id: sample parent id, if archive
         @return: cursor or None.
         """
         if not file_path or not os.path.exists(file_path):
@@ -1034,19 +1079,25 @@ class Database(object):
 
         return self.add(File(file_path), timeout, package, options, priority,
                         custom, machine, platform, tags, memory,
-                        enforce_timeout, clock, shrike_url, shrike_msg, shrike_sid, shrike_refer, parent_id)
+                        enforce_timeout, clock, shrike_url, shrike_msg, shrike_sid,
+                        shrike_refer, parent_id, sample_parent_id)
 
     def demux_sample_and_add_to_db(self, file_path, timeout=0, package="", options="", priority=1,
                                    custom="", machine="", platform="", tags=None,
                                    memory=False, enforce_timeout=False, clock=None,shrike_url=None,
-                                   shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None):
+                                   shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None,
+                                   sample_parent_id=None):
         """
         Handles ZIP file submissions, submitting each extracted file to the database
         Returns a list of added task IDs
         """
         task_ids = []
+        sample_parent_id = None
         # extract files from the (potential) ZIP
         extracted_files = demux_sample(file_path, package, options)
+        # check if len is 1 and the same file, if diff register file, and set parrent
+        if extracted_files and file_path not in extracted_files:
+            sample_parent_id = self.register_sample(File(file_path))
         # create tasks for each file in the ZIP
         for file in extracted_files:
             task_id = self.add_path(file_path=file,
@@ -1065,7 +1116,8 @@ class Database(object):
                                     shrike_msg=shrike_msg,
                                     shrike_sid=shrike_sid,
                                     shrike_refer=shrike_refer,
-                                    parent_id=parent_id)
+                                    parent_id=parent_id,
+                                    sample_parent_id=sample_parent_id)
             if task_id:
                 task_ids.append(task_id)
 
@@ -1356,11 +1408,12 @@ class Database(object):
         return sample
 
     @classlock
-    def find_sample(self, md5=None, sha1=None, sha256=None):
+    def find_sample(self, md5=None, sha1=None, sha256=None, parent=None):
         """Search samples by MD5, SHA1, or SHA256.
         @param md5: md5 string
         @param sha1: sha1 string
         @param sha256: sha256 string
+        @param parent: sample_id int
         @return: matches list
         """
         session = self.Session()
@@ -1371,12 +1424,14 @@ class Database(object):
                 sample = session.query(Sample).filter_by(sha1=sha1).first()
             elif sha256:
                 sample = session.query(Sample).filter_by(sha256=sha256).first()
+            elif parent:
+                sample = session.query(Sample).filter_by(parent=parent).all()
         except SQLAlchemyError as e:
             log.debug("Database error searching sample: {0}".format(e))
             return None
         else:
             if sample:
-                session.expunge(sample)
+                session.expunge_all()
         finally:
             session.close()
         return sample
@@ -1395,11 +1450,11 @@ class Database(object):
         }
         query_filter = sizes.get(len(sample_hash), "")
         sample = None
-        # check storage/binaries 
+        # check storage/binaries
         if query_filter:
             session = self.Session()
             try:
-                
+
                 db_sample = session.query(Sample).filter(query_filter == sample_hash).first()
                 if db_sample is not None:
                     path = os.path.join(CUCKOO_ROOT, "storage", "binaries", db_sample.sha256)

@@ -269,7 +269,7 @@ def tasks_create_file(request):
                             "error_value": "File size exceeds API limit"}
                     return jsonize(resp, response=True)
 
-                
+
                 tmp_path = store_temp_file(sample.read(), sample.name)
                 if pcap:
                     if sample.name.lower().endswith(".saz"):
@@ -279,7 +279,7 @@ def tasks_create_file(request):
                                 os.remove(tmp_path)
                             except:
                                 pass
-                            path = saz  
+                            path = saz
                         else:
                              resp = {"error": True,
                                      "error_value": "Failed to convert SAZ to PCAP"}
@@ -288,8 +288,8 @@ def tasks_create_file(request):
                         path = tmp_path
                     task_id = db.add_pcap(file_path=path)
                     task_ids.append(task_id)
-                    continue 
-            
+                    continue
+
                 if quarantine:
                     path = unquarantine(tmp_path)
                     try:
@@ -498,7 +498,7 @@ def tasks_create_url(request):
                 if request.POST.get("all_gw_in_group"):
                     tgateway = settings.GATEWAYS[gateway].split(",")
                     for e in tgateway:
-                        task_gateways.append(settings.GATEWAYS[e]) 
+                        task_gateways.append(settings.GATEWAYS[e])
                 else:
                     tgateway = random.choice(settings.GATEWAYS[gateway].split(","))
                     task_gateways.append(settings.GATEWAYS[tgateway])
@@ -532,7 +532,7 @@ def tasks_create_url(request):
                              )
                 if task_id:
                     task_ids.append(task_id)
-                 
+
         if len(task_ids):
             resp["data"] = {}
             resp["data"]["task_ids"] = task_ids
@@ -565,7 +565,7 @@ def tasks_vtdl(request):
             resp = {"error": True,
                     "error_value": "VTDL Create API is Disabled"}
             return jsonize(resp, response=True)
-        
+
         vtdl = request.POST.get("vtdl".strip(),None)
         resp["error"] = False
         # Parse potential POST options (see submission/views.py)
@@ -663,7 +663,7 @@ def tasks_vtdl(request):
             if not onesuccess:
                 resp = {"error": True, "error_value": "Provided hash(s) not found on VirusTotal {0}".format(hashlist)}
                 return jsonize(resp, response=True)
-         
+
         if len(task_ids) > 0:
             resp["data"] = {}
             resp["data"]["task_ids"] = task_ids
@@ -789,14 +789,19 @@ def tasks_search(request, md5=None, sha1=None, sha256=None):
 
             sample = db.find_sample(sha256=sha256)
         if sample:
-            sid = sample.to_dict()["id"]
+            samples = db.find_sample(parent=sample.id)
+            if samples:
+                sids = [tmp_sample.to_dict()["id"] for tmp_sample in samples]
+            else:
+                sids = [sample.to_dict()["id"]]
             resp["data"] = list()
-            tasks = db.list_tasks(sample_id=sid)
-            for task in tasks:
-                buf = task.to_dict()
-                # Remove path information, just grab the file name
-                buf["target"] = buf["target"].split("/")[-1]
-                resp["data"].append(buf)
+            for sid in sids:
+                tasks = db.list_tasks(sample_id=sid)
+                for task in tasks:
+                    buf = task.to_dict()
+                    # Remove path information, just grab the file name
+                    buf["target"] = buf["target"].split("/")[-1]
+                    resp["data"].append(buf)
         else:
             resp = {"data": [], "error": False}
 
@@ -1691,7 +1696,7 @@ if apiconf.rollingsuri.get("enabled"):
 
 @ratelimit(key="ip", rate=raterps, block=rateblock)
 @ratelimit(key="ip", rate=raterpm, block=rateblock)
-    
+
 def tasks_rollingsuri(request, window=60):
     window = int(window)
     if request.method != "GET":
@@ -1708,7 +1713,7 @@ def tasks_rollingsuri(request, window=60):
             resp = {"error": True,
                     "error_value": "The Window You Specified is greater than the configured maximum"}
             return jsonize(resp, response=True)
-         
+
     gen_time = datetime.now() - timedelta(minutes=window)
     dummy_id = ObjectId.from_datetime(gen_time)
     result = list(results_db.analysis.find({"suricata.alerts": {"$exists": True}, "_id": {"$gte": dummy_id}},{"suricata.alerts":1,"info.id":1}))
@@ -1746,9 +1751,9 @@ def tasks_rollingshrike(request, window=60, msgfilter=None):
 
     gen_time = datetime.now() - timedelta(minutes=window)
     dummy_id = ObjectId.from_datetime(gen_time)
-    if msgfilter: 
+    if msgfilter:
        result = results_db.analysis.find({"info.shrike_url": {"$exists": True, "$ne":None }, "_id": {"$gte": dummy_id},"info.shrike_msg": {"$regex" : msgfilter, "$options" : "-1"}},{"info.id":1,"info.shrike_msg":1,"info.shrike_sid":1,"info.shrike_url":1,"info.shrike_refer":1},sort=[("_id", pymongo.DESCENDING)])
-    else:   
+    else:
         result = results_db.analysis.find({"info.shrike_url": {"$exists": True, "$ne":None }, "_id": {"$gte": dummy_id}},{"info.id":1,"info.shrike_msg":1,"info.shrike_sid":1,"info.shrike_url":1,"info.shrike_refer":1},sort=[("_id", pymongo.DESCENDING)])
 
     resp=[]
