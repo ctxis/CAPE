@@ -69,34 +69,29 @@ class Retefe(Parser):
     def run(self):
         filebuf = self.reporter.data
         pe = pefile.PE(data=self.reporter.data, fast_load=False)
-        image_base = pe.OPTIONAL_HEADER.ImageBase
-
-        retefe_xor_seed = yara_scan(filebuf, '$retefe_xor_seed')
 
         # Offset to seed for xor
+        retefe_xor_seed = yara_scan(filebuf, '$retefe_xor_seed')
         if retefe_xor_seed:
             offset = int(retefe_xor_seed['$retefe_xor_seed'])
         else:
             return
 
-        xor_seed_2ndarg = yara_scan(filebuf, "$retefe_xor_seed_2ndarg")
-
         # Offset to value that will be used to take xor^value
+        xor_seed_2ndarg = yara_scan(filebuf, "$retefe_xor_seed_2ndarg")
         if xor_seed_2ndarg:
             offset2 = int(xor_seed_2ndarg['$retefe_xor_seed_2ndarg'])
         else:
             return
 
-        shift_and_subtract = yara_scan(filebuf, "$retefe_shift_and_sub_match")
-
         # Offset to values that will be used in part of subtraction and shifts of xor^value
+        shift_and_subtract = yara_scan(filebuf, "$retefe_shift_and_sub_match")
         if shift_and_subtract:
             offset3 = int(shift_and_subtract['$retefe_shift_and_sub_match'])
         else:
             return
 
         retefe_encoded_buffer = yara_scan(filebuf, "$retefe_encoded_buffer")
-
         if retefe_encoded_buffer:
             offset4 = int(retefe_encoded_buffer['$retefe_encoded_buffer'])
         else:
