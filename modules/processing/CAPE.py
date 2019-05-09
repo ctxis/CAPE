@@ -632,10 +632,16 @@ class CAPE(Processing):
                 self.upx_unpack(file_data, CAPE_output)
                 
             # Check for a payload or config hit
+            extraction_types = [
+                "payload",
+                "config",
+                "loader"
+                ]
             try:
-                if "payload" in hit["meta"]["cape_type"].lower() or "config" in hit["meta"]["cape_type"].lower():
-                    file_info["cape_type"] = hit["meta"]["cape_type"]                      
-                    cape_name = hit["name"]
+                for type in extraction_types:
+                    if type in hit["meta"]["cape_type"].lower():
+                        file_info["cape_type"] = hit["meta"]["cape_type"]
+                        cape_name = hit["name"].replace('_', ' ')
             except:
                 pass
             type_strings = file_info["type"].split()
@@ -653,7 +659,7 @@ class CAPE(Processing):
                     else:
                         file_info["cape_type"] += "executable"  
                         
-            suppress_parsing_list = ["Cerber", "Ursnif", "QakBot"];
+            suppress_parsing_list = ["Cerber", "Emotet_Payload", "Ursnif", "QakBot"];
 
             if hit["name"] in suppress_parsing_list:
                 continue
@@ -719,8 +725,8 @@ class CAPE(Processing):
                     del cape_config["cape_config"]
             
         if cape_name:
-            if "cape_config" in cape_config:
-                    cape_config["cape_name"] = format(cape_name)
+            if "cape_config" in cape_config and "cape_name" not in cape_config:
+                cape_config["cape_name"] = format(cape_name)
             if not "cape" in self.results:
                 if cape_name != "UPX":
                     self.results["cape"] = cape_name

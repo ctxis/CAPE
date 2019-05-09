@@ -1,5 +1,5 @@
-# Copyright (C) 2010-2015 Cuckoo Foundation, Optiv, Inc. (brad.spengler@optiv.com)
-# This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
+# CAPE - Config And Payload Extraction
+# Copyright(C) 2019 Kevin O'Reilly (kevoreilly@gmail.com)
 # See the file 'docs/LICENSE' for copying permission.
 
 import os
@@ -7,16 +7,16 @@ import shutil
 from subprocess import call
 from lib.common.abstracts import Package
 
-class Doppelganging(Package):
-    """Doppelganging package."""
+class Emotet(Package):
+    """Emotet analysis package."""
 
     def __init__(self, options={}, config=None):
         """@param options: options dict."""
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "Doppelganging.dll"
-        self.options["dll_64"] = "Doppelganging_x64.dll"
+        self.options["dll"] = "Extraction.dll"
+        self.options["exclude-apis"] = "RegOpenKeyExA"
 
     def start(self, path):
         args = self.options.get("arguments")
@@ -38,7 +38,4 @@ class Doppelganging(Package):
             newpath = os.path.join(basepath, os.path.basename(path))
             shutil.copy(path, newpath)
             path = newpath
-        if runasx86:
-            # ignore the return value, user must have CorFlags.exe installed in the guest VM
-            call(["CorFlags.exe", path, "/32bit+"])
         return self.execute(path, args, path)

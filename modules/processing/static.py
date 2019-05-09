@@ -4,11 +4,6 @@
 
 import json
 from lib.cuckoo.common.utils import store_temp_file
-import lib.cuckoo.common.decoders.darkcomet as darkcomet
-import lib.cuckoo.common.decoders.njrat as njrat
-import lib.cuckoo.common.decoders.nanocore as nanocore
-import lib.cuckoo.common.decoders.alienspy as alienspy
-import lib.cuckoo.common.decoders.qrat as qrat
 import logging
 import os
 import re
@@ -820,30 +815,6 @@ class PortableExecutable(object):
         peresults["guest_signers"] = self._get_guest_digital_signers()
         peresults["imported_dll_count"] = len([x for x in peresults["imports"] if x.get("dll")])
 
-        pretime = datetime.now()
-        ratname = None
-        ratconfig = None
-        darkcomet_config = darkcomet.extract_config(self.file_path, self.pe)
-        if darkcomet_config:
-            ratname = "DarkComet"
-            ratconfig = darkcomet_config
-        njrat_config = njrat.extract_config(self.file_path)
-        if njrat_config:
-            ratname = "njRAT"
-            ratconfig = njrat_config
-        nanocore_config = nanocore.extract_config(self.pe)
-        if nanocore_config:
-            ratname = "NanoCore"
-            ratconfig = nanocore_config
-        posttime = datetime.now()
-        timediff = posttime - pretime
-        self.add_statistic("config_decoder", "time", float("%d.%03d" % (timediff.seconds, timediff.microseconds / 1000)))
-
-        if ratname:
-            results["rat"] = { }
-            results["rat"]["name"] = ratname
-            results["rat"]["config"] = ratconfig
-
         return results
 
 class PDF(object):
@@ -1363,18 +1334,6 @@ class Java(object):
                 os.unlink(jar_file)
             except:
                 pass
-
-        alienspy_config = alienspy.extract_config(self.file_path)
-        if alienspy_config:
-            results["rat"] = { }
-            results["rat"]["name"] = "AlienSpy"
-            results["rat"]["config"] = alienspy_config
-
-        qrat_config = qrat.extract_config(self.file_path, self.decomp_jar)
-        if qrat_config:
-            results["rat"] = { }
-            results["rat"]["name"] = "QRat"
-            results["rat"]["config"] = qrat_config
 
         return results
 

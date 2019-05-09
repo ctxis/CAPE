@@ -622,6 +622,7 @@ class StatusThread(threading.Thread):
                             # Filter by available tags
                             q = q.filter(or_(*tags))
                             # Submit appropriate tasks to node
+
                             for task in q.limit(pend_tasks_num).all():
                                 submitted = node_submit_task(task.id, node.id)
                                 if submitted:

@@ -33,7 +33,7 @@ rule RCSession
 
 '''
 
-MAX_IP_STRING_SIZE = 16       # aaa.bbb.ccc.ddd\0
+MAX_STRING_SIZE = 32
 UINT_MAX = 0xffffffff
 
 def yara_scan(raw_data, rule_name):
@@ -98,11 +98,11 @@ class RCSession(Parser):
             
         config = decode(filebuf[config_offset:config_offset+size], size, key)
         
-        c2_address = str(config[156:156+MAX_IP_STRING_SIZE])
+        c2_address = str(config[156:156+MAX_STRING_SIZE])
         if c2_address != "":
             self.reporter.add_metadata('c2_address', c2_address)
         
-        c2_address = str(config[224:224+MAX_IP_STRING_SIZE])
+        c2_address = str(config[224:224+MAX_STRING_SIZE])
         if c2_address != "":
             self.reporter.add_metadata('c2_address', c2_address)
             

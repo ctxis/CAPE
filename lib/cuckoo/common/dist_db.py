@@ -1,6 +1,6 @@
 from datetime import datetime
 # http://pythoncentral.io/introductory-tutorial-python-sqlalchemy/
-from sqlalchemy import Column, ForeignKey, Integer, Text, String, Boolean, DateTime, or_, and_, desc
+from sqlalchemy import Index, Column, ForeignKey, Integer, Text, String, Boolean, DateTime, or_, and_, desc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
@@ -68,7 +68,8 @@ class Task(Base):
     retrieved = Column(Boolean, nullable=False, default=False)
     notificated = Column(Boolean, nullable=True, default=False)
     deleted = Column(Boolean, nullable=False, default=False)
-
+    __table_args__ = Index("node_id_index", "node_id"), Index("task_id_index", "task_id"), Index("main_task_id_index", "main_task_id", unique=False)
+    
     def __init__(self, path, category, package, timeout, priority, options, machine,
                  platform, tags, custom, memory, clock, enforce_timeout, main_task_id=None, retrieved=False):
         self.path = path
