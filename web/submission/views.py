@@ -215,6 +215,11 @@ def index(request, resubmit_hash=False):
                 options += ","
             options += "norefer=1"
 
+        if request.POST.get("oldloader"):
+            if options:
+                options += ","
+            options += "loader=oldloader.exe,loader_64=oldloader_x64.exe"
+
         orig_options = options
 
         if gateway and gateway.lower() == "all":

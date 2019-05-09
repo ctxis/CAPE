@@ -16,8 +16,6 @@ class IcedID(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "IcedID.dll"
-        self.options["loader"] = "newloader.exe"
-        self.options["loader_64"] = "newloader_x64.exe"
         self.options["dump-on-api"] = "RtlDecompressBuffer"
 
     def start(self, path):

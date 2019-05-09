@@ -17,8 +17,6 @@ class Debugger_doc(Package):
         self.pids = []
         self.options["dll"] = "Debugger.dll"
         self.options["dll_64"] = "Debugger_x64.dll"
-        self.options["loader"] = "newloader.exe"
-        self.options["loader_64"] = "newloader_x64.exe"
 
     PATHS = [
         ("ProgramFiles", "Microsoft Office", "WINWORD.EXE"),
