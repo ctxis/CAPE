@@ -485,7 +485,6 @@ class Curtain(Processing):
                         ALTMSG, MODFLAG = joinStrings(ALTMSG, MODFLAG)
 
                     while re.search("(\"|\')(\{[0-9]{1,2}\})+(\"|\')[ -fF].+?\'.+?\'\)(?!(\"|\'|;))", ALTMSG):
-                        print("noooo")
                         ALTMSG, MODFLAG = formatReplace(ALTMSG, MODFLAG)
 
                     # One run post formatReplace for new strings
