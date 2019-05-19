@@ -551,11 +551,6 @@ class Process:
                         "with pid %d, injection aborted.", dll, self.pid)
             return False
 
-        if thread_id or self.suspended:
-            log.debug("Using QueueUserAPC injection.")
-        else:
-            log.debug("Using CreateRemoteThread injection.")
-
         self.write_monitor_config(interest, nosleepskip)
 
         orig_bin_name = ""
@@ -587,81 +582,6 @@ class Process:
         else:
             log.error("Please ensure the %s loader is in analyzer/windows/bin in order to analyze %s binaries.", bit_str, bit_str)
             return False
-
-    def debug_inject(self, interest=None, childprocess=False, nosleepskip=False):
-        """CAPE DLL debugger injection.
-        @param dll: CAPE DLL debugger path.
-        @param interest: path to file of interest, handed to cuckoomon config
-        """
-        global LOGSERVER_POOL
-
-        if not self.pid:
-            return False
-
-        thread_id = 0
-        if self.thread_id:
-            thread_id = self.thread_id
-
-        if not self.is_alive():
-            log.warning("The process with pid %s is not alive, "
-                        "injection aborted", self.pid)
-            return False
-
-        is_64bit = self.is_64bit()
-
-        if is_64bit:
-            dll = CAPEMON64_NAME
-        else:
-            dll = CAPEMON32_NAME
-
-        dll = os.path.join(os.getcwd(), dll)
-
-        if not dll:
-            log.warning("No DLL specified to be injected in process "
-                        "with pid %d, injection aborted.", self.pid)
-            return False
-
-        if not os.path.exists(dll):
-            log.warning("Invalid path %s for monitor DLL to be injected in process "
-                        "with pid %d, injection aborted.", dll, self.pid)
-            return False
-
-        if thread_id or self.suspended:
-            log.debug("Using QueueUserAPC injection.")
-        else:
-            log.debug("Using CreateRemoteThread injection.")
-
-        self.write_monitor_config(interest, nosleepskip)
-
-        orig_bin_name = ""
-        bit_str = ""
-        if is_64bit:
-            orig_bin_name = LOADER64_NAME
-            bit_str = "64-bit"
-        else:
-            orig_bin_name = LOADER32_NAME
-            bit_str = "32-bit"
-
-        bin_name = os.path.join(os.getcwd(), orig_bin_name)
-
-        log.info("%s DLL to inject is %s, loader %s", bit_str, dll, bin_name)
-
-        if os.path.exists(bin_name) == False:
-            log.error("Please ensure the %s loader is in analyzer/windows/bin in order to analyze %s binaries.", bit_str, bit_str)
-            return False
-
-        if childprocess == False:
-            ret = subprocess.call([bin_name, "debug_load", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
-        else:
-            ret = subprocess.call([bin_name, "debug", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
-        if ret != 0:
-            if ret == 1:
-                log.info("Injected debugger DLL into suspended %s process with pid %d", bit_str, self.pid)
-            else:
-                log.error("Unable to inject debugger DLL into %s process with pid %d, error: %d", bit_str, self.pid, ret)
-            return False
-        else:
-            return True
 
     def upload_memdump(self):
         """Upload process memory dump.

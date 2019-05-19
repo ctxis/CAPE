@@ -19,9 +19,23 @@ class UPX(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "UPX.dll"
+        self.options["dll_64"] = "UPX_x64.dll"
 
     def start(self, path):
-        self.options["dll"] = "UPX.dll"
         arguments = self.options.get("arguments")
+        appdata = self.options.get("appdata")
+
+        # If the file doesn't have an extension, add .exe
+        if "." not in os.path.basename(path):
+            new_path = path + ".exe"
+            os.rename(path, new_path)
+            path = new_path
+
+        if appdata:
+            # run the executable from the APPDATA directory, required for some malware
+            basepath = os.getenv('APPDATA')
+            newpath = os.path.join(basepath, os.path.basename(path))
+            shutil.copy(path, newpath)
+            path = newpath
         
-        return self.debug(path, arguments, path)
+        return self.execute(path, arguments, path)
