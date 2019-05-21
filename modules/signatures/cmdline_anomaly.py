@@ -322,7 +322,7 @@ class CommandLineLongString(Signature):
     
 class CommandLineForFilesWildCard(Signature):
     name = "commandline_forfiles_wildcard"
-    description = "Possible use of forfiles utility with wildcard which can be used to launch program"
+    description = "Possible use of forfiles utility with wildcard to potentially launch a utility"
     severity = 3
     categories = ["commands"]
     authors = ["Kevin Ross"]
@@ -334,7 +334,7 @@ class CommandLineForFilesWildCard(Signature):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
         for cmdline in cmdlines:
-            if "forfiles" in cmdline.lower() and "*" in cmdline:
+            if "forfiles" in cmdline.lower() and "@file" in cmdline and "*" in cmdline:
                 ret = True
                 self.data.append({"command" : cmdline})
 
