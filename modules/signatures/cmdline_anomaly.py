@@ -320,7 +320,7 @@ class CommandLineLongString(Signature):
 
         return ret
     
-    class CommandLineForFilesWildCard(Signature):
+class CommandLineForFilesWildCard(Signature):
     name = "commandline_forfiles_wildcard"
     description = "Possible use of forfiles utility with wildcard which can be used to launch program"
     severity = 3
