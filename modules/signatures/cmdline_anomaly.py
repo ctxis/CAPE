@@ -334,7 +334,7 @@ class CommandLineForFilesWildCard(Signature):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
         for cmdline in cmdlines:
-            if "forfiles" in cmdline.lower() and "@file" in cmdline and "*" in cmdline:
+            if "forfiles" in cmdline.lower() and "@file" in cmdline.lower() and "*" in cmdline:
                 ret = True
                 self.data.append({"command" : cmdline})
 
