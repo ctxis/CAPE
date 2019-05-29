@@ -23,6 +23,7 @@ class ThemidaPacked(Signature):
     authors = ["KillerInstinct"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1045"]
 
     filter_apinames = set(["FindWindowA"])
 

@@ -236,7 +236,6 @@ class CommandLineHTTPLink(Signature):
 
         return ret
 
-    
 class CommandLineReversedHTTPLink(Signature):
     name = "cmdline_reversed_http_link"
     description = "A reversed HTTP/S link was seen in a script or command line"

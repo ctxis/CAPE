@@ -27,6 +27,7 @@ class MartiansIE(Signature):
     categories = ["martians"]
     authors = ["Will Metcalf"]
     minimum = "0.5"
+    ttp = ["T1059"]
 
     def go_deeper(self, pdict, result=None):
         if result is None:

@@ -36,7 +36,7 @@ class RTFEmbeddedContent(Signature):
                         size = block["size"]
                         self.data.append({"embedded content" : "Object %s index %s contains embedded object %s with size %s bytes" % (key,index,classname,size)})
                         ret = True
-                    
+
         return ret
 
 class RTFExploitStatic(Signature):
@@ -60,7 +60,7 @@ class RTFExploitStatic(Signature):
                         if cve:
                             self.data.append({"cve" : "Object %s index %s contains %s" % (key,index,cve)})
                             ret = True
-                    
+
         return ret
 
 class RTFEmbeddedOfficeFile(Signature):
@@ -83,7 +83,7 @@ class RTFEmbeddedOfficeFile(Signature):
                             index = block["index"]
                             self.data.append({"office file" : "Object %s index %s contains an embedded office document" % (key,index)})
                             ret = True
-                    
+
         return ret
 
 class RTFASLRBypass(Signature):
@@ -101,7 +101,7 @@ class RTFASLRBypass(Signature):
             "otkloadr.wrassembly.1",
             "otkloadr.wrloader.1",
         ]
-   
+
         ret = False
         if "static" in self.results and "office_rtf" in self.results["static"]:
             for key in self.results["static"]["office_rtf"]:
@@ -113,7 +113,7 @@ class RTFASLRBypass(Signature):
                             if bypass in classname.lower():
                                 self.data.append({"aslr bypass" : "Object %s index %s contains possible ASLR bypass %s" % (key,index,classname)})
                                 ret = True
-                    
+
         return ret
 
 class RTFAnomalyCharacterSet(Signature):

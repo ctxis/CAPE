@@ -75,6 +75,10 @@ class RansomwareFiles(Signature):
             (".*\\\\_README(\.hta|_.*_\.hta)$", ["Cerber"]),
             (".*\\\\DesktopOSIRIS\.(bmp|htm)$", ["Locky"]),
             (".*\\\\OSIRIS\-[a-f0-9]{4}\.htm$", ["Locky"]),
+            ("C:\\[a-z]{8}\.tsv$", ["MegaCortex"]),
+            ("C:\\!!!_READ_ME_!!!.txt$", ["MegaCortex"]),
+            (".*\\\\README_LOCKED\.txt$", ["LockerGoga"]),
+            (".*\\\\README-NOW.txt\.txt$", ["LockerGoga"]),
         ]
 
         for ioc in file_list:
