@@ -97,7 +97,7 @@ class AntiDBGWindows(Signature):
             "apispy32",
             "apimonitor",
             "Process Hacker",
-            "DbgView"
+            "DbgView",            
         ]
 
         for indicator in indicators:

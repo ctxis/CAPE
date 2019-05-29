@@ -716,53 +716,6 @@ class PipeHandler(Thread):
                             log.warning("Received request to inject Cuckoo "
                                         "process with pid %d, skip", process_id)
 
-                elif command.startswith("DEBUGGER:"):
-                    # We parse the process ID.
-                    data = command[9:]
-                    process_id = thread_id = None
-                    if "," not in data:
-                        if data.isdigit():
-                            process_id = int(data)
-                    elif data.count(",") == 1:
-                        process_id, param = data.split(",")
-                        thread_id = None
-                        if process_id.isdigit():
-                            process_id = int(process_id)
-                        else:
-                            process_id = None
-                        if param.isdigit():
-                            thread_id = int(param)
-
-                    if process_id:
-                        if process_id not in (PID, PPID):
-                            # We inject the process only if it's not being
-                            # monitored already, otherwise we would generate
-                            # polluted logs.
-                            if process_id not in PROCESS_LIST:
-                                # Open the process and inject the DLL.
-                                proc = Process(options=self.options,
-                                               config=self.config,
-                                               pid=process_id,
-                                               thread_id=thread_id,
-                                               suspended=suspended)
-
-                                interest = proc.get_filepath()
-                                is_64bit = proc.is_64bit()
-                                filename = os.path.basename(interest)
-                                if SERVICES_PID and process_id == SERVICES_PID:
-                                    CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
-
-                                log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
-
-                                if not in_protected_path(filename):
-                                    res = proc.debug_inject(interest, childprocess=True)
-                                    log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
-                                    LASTINJECT_TIME = datetime.now()
-                                proc.close()
-                        else:
-                            log.warning("Received request to inject Cuckoo "
-                                        "process with pid %d, skip", process_id)
-
                 # In case of FILE_NEW, the client is trying to notify the creation
                 # of a new file.
                 elif command.startswith("FILE_NEW:"):
