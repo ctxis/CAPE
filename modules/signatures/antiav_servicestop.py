@@ -17,6 +17,7 @@ class AntiAVServiceStop(Signature):
     authors = ["Optiv"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1031", "T1089"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

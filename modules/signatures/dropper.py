@@ -23,6 +23,7 @@ class Dropper(Signature):
     categories = ["dropper"]
     authors = ["Optiv"]
     minimum = "1.2"
+    ttp = ["T1129"]
 
     def run(self):
         is_dropper = False

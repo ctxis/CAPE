@@ -11,6 +11,7 @@ class ModifySecurityCenterWarnings(Signature):
     categories = ["stealth"]
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.2"
+    ttp = ["T1031", "T1089"]
 
     def run(self):
         indicators = [

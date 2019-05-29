@@ -17,6 +17,7 @@ class InstalledApps(Signature):
     authors = ["Optiv"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1012", "T1082"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

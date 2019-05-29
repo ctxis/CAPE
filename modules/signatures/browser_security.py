@@ -22,6 +22,7 @@ class BrowserSecurity(Signature):
     categories = ["browser", "clickfraud", "banker"]
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.2"
+    ttp = ["T1089"]
 
     def run(self):
         if self.results["info"]["package"] in ["pdf"]:

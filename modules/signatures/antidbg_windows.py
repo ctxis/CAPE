@@ -23,6 +23,7 @@ class AntiDBGWindows(Signature):
     authors = ["nex", "KillerInstinct", "Brad Spengler"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1057"]
 
     filter_categories = set(["windows"])
 
@@ -96,7 +97,7 @@ class AntiDBGWindows(Signature):
             "apispy32",
             "apimonitor",
             "Process Hacker",
-            "DbgView"            
+            "DbgView",            
         ]
 
         for indicator in indicators:

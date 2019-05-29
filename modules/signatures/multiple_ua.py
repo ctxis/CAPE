@@ -22,6 +22,8 @@ class Multiple_UA(Signature):
     categories = ["network"]
     authors = ["KillerInstinct"]
     minimum = "1.2"
+    ttp = ["T1071"]
+
     evented = True
 
     def __init__(self, *args, **kwargs):

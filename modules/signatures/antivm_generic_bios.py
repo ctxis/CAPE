@@ -22,6 +22,7 @@ class AntiVMBios(Signature):
     categories = ["anti-vm"]
     authors = ["nex", "Optiv"]
     minimum = "1.2"
+    ttp = ["T1057", "T1012"]
 
     def run(self):
         if self.check_read_key(pattern=".*\\\\HARDWARE\\\\DESCRIPTION\\\\System\\\\(SystemBiosVersion|VideoBiosVersion)$", regex=True):

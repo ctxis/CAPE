@@ -24,6 +24,7 @@ class CreatesLargeKey(Signature):
     authors = ["Optiv"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1112"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

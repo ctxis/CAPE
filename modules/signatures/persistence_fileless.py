@@ -22,6 +22,8 @@ class PersistenceRegistryScript(Signature):
     categories = ["persistence"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
+    ttp = ["T1112"]
+    
     evented = True
 
     def __init__(self, *args, **kwargs):
