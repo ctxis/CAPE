@@ -58,7 +58,7 @@ class AnalysisInfo(Processing):
                     pass
         return package
 
-    def get_options(self,optstring):
+    def get_options(self, optstring):
         """Get analysis options.
         @return: options dict.
         """
