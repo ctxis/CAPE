@@ -22,6 +22,7 @@ class ConfuserPacked(Signature):
     categories = ["packer"]
     authors = ["KillerInstinct"]
     minimum = "1.3"
+    ttp = ["T1045"]
 
     def run(self):
         if not "static" in self.results or not "dotnet" in self.results["static"]:

@@ -22,6 +22,7 @@ class DisableTaskMgr(Signature):
     categories = ["locker"]
     authors = ["Thomas Birn", "nex"]
     minimum = "1.2"
+    ttp = ["T1112"]
 
     def run(self):
         if self.check_write_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\System\\\\DisableTaskMgr$", regex=True):

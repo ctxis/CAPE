@@ -11,6 +11,7 @@ class BitcoinWallet(Signature):
     categories = ["infostealer"]
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.2"
+    ttp = ["T1005"]
 
     def run(self):
         indicators = [

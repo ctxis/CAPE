@@ -11,6 +11,7 @@ class AntiAnalysisDetectFile(Signature):
     categories = ["anti-analysis"]
     authors = ["KillerInstinct", "Brad Spengler"]
     minimum = "1.2"
+    ttp = ["T1063"]
 
     def run(self):
         file_indicators = [

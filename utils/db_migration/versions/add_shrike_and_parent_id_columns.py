@@ -35,7 +35,7 @@ except ImportError:
     sys.exit()
 
 curdir = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(os.path.join(curdir, "..", ".."))
+sys.path.append(os.path.join(curdir, "..", "..", ".."))
 
 import lib.cuckoo.core.database as db
 

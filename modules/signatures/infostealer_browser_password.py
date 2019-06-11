@@ -12,6 +12,7 @@ class InfostealerBrowserPassword(Signature):
     authors = ["KillerInstinct"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1081", "T1003", "T1005"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

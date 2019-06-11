@@ -23,6 +23,7 @@ class PersistenceBootexecute(Signature):
     authors = ["Brad Spengler"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1060"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

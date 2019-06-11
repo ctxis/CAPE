@@ -31,6 +31,8 @@ class Autorun(Signature):
     categories = ["persistence"]
     authors = ["Michael Boman", "nex", "securitykitten", "Optiv", "KillerInstinct"]
     minimum = "1.3"
+    ttp = ["T1060", "T1053"]
+
     evented = True
 
     def __init__(self, *args, **kwargs):

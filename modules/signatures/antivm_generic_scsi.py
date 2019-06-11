@@ -23,6 +23,7 @@ class AntiVMSCSI(Signature):
     authors = ["nex"]
     minimum = "1.0"
     evented = True
+    ttp = ["T1057", "T1012"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

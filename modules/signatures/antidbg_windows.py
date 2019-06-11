@@ -23,6 +23,7 @@ class AntiDBGWindows(Signature):
     authors = ["nex", "KillerInstinct", "Brad Spengler"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1057"]
 
     filter_categories = set(["windows"])
 
@@ -69,6 +70,34 @@ class AntiDBGWindows(Signature):
             "SmartSniff",
             "ConsoleWindowClass",
             "18467-41",
+            "Regshot",
+            "idag",
+            "idag64",
+            "IDA Pro",
+            "x32dbg",
+            "x64dbg",
+            "Ghidra",
+            "ImmunityDebugger",
+            "petools",
+            "Exeinfope",
+            "Detect It Easy",
+            "Fiddler",
+            "CaptureBAT",
+            "WinPcap",
+            "Sandboxie",
+            "SandboxieRpcSs",
+            "SandboxieDcomLaunch",
+            "SbieDll",
+            "SbieSvc",
+            "dbghelp",
+            "api_log",
+            "dir_watch",
+            "API Monitor",
+            "Rohitab",
+            "apispy32",
+            "apimonitor",
+            "Process Hacker",
+            "DbgView",            
         ]
 
         for indicator in indicators:

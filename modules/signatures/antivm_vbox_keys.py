@@ -22,6 +22,7 @@ class VBoxDetectKeys(Signature):
     categories = ["anti-vm"]
     authors = ["nex", "Brad Spengler"]
     minimum = "0.5"
+    ttp = ["T1057", "T1012"]
 
     def run(self):
         indicators = [

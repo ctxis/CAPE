@@ -27,7 +27,8 @@ class ADS(Signature):
     categories = ["persistence", "ads"]
     authors = ["nex", "Optiv"]
     minimum = "0.5"
-
+    ttp = ["T1096"]
+    
     def run(self):
         result = False
         for file_path in self.results["behavior"]["summary"]["files"]:
