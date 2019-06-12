@@ -1,4 +1,4 @@
-rule CobaltStrike
+rule CobaltStrikeBeacon
 {
     meta:
       author = "JPCERTCC"
