@@ -23,6 +23,7 @@ class InjectionCRT(Signature):
     authors = ["JoseMi Holguin", "nex", "Optiv", "KillerInstinct"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

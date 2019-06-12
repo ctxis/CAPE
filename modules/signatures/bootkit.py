@@ -12,6 +12,8 @@ class Bootkit(Signature):
     categories = ["rootkit"]
     authors = ["Optiv"]
     minimum = "1.2"
+    ttp = ["T1067"]
+
     evented = True
 
     BasicFileInformation = 4

@@ -11,6 +11,7 @@ class DisablesAppLaunch(Signature):
     categories = ["stealth"]
     authors = ["Kevin Ross"]
     minimum = "1.2"
+    ttp = ["T1112"]
 
     def run(self):
         if self.check_write_key(pattern=".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\DisallowRun$", regex=True):

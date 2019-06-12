@@ -22,6 +22,7 @@ class WineDetectReg(Signature):
     categories = ["anti-emulation"]
     authors = ["nex"]
     minimum = "0.5"
+    ttp = ["T1057"]
 
     def run(self):
         return self.check_key(pattern="HKEY_CURRENT_USER\\Software\\Wine")

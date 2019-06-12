@@ -11,6 +11,8 @@ class RemovesZoneIdADS(Signature):
     categories = ["generic"]
     authors = ["Optiv"]
     minimum = "1.0"
+    ttp = ["T1070", "T1096"]
+
     evented = True
 
     def __init__(self, *args, **kwargs):

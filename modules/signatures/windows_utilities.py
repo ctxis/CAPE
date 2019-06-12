@@ -12,6 +12,8 @@ class UsesWindowsUtilities(Signature):
     categories = ["commands", "lateral"]
     authors = ["Cuckoo Technologies", "Kevin Ross"]
     minimum = "1.3"
+    ttp = ["T1053"]
+
     evented = True
 
     def run(self):
@@ -115,7 +117,7 @@ class SuspiciousCommandTools(Signature):
             "dsquery",
             "icacls",
             "klist",
-            "psexec",        
+            "psexec",
             "psfile",
             "psgetsid",
             "psinfo",

@@ -236,7 +236,6 @@ class CommandLineHTTPLink(Signature):
 
         return ret
 
-    
 class CommandLineReversedHTTPLink(Signature):
     name = "cmdline_reversed_http_link"
     description = "A reversed HTTP/S link was seen in a script or command line"
@@ -319,3 +318,24 @@ class CommandLineLongString(Signature):
                             break
 
         return ret
+    
+class CommandLineForFilesWildCard(Signature):
+    name = "commandline_forfiles_wildcard"
+    description = "Possible use of forfiles utility with wildcard to potentially launch a utility"
+    severity = 3
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    references = "https://twitter.com/danielhbohannon/status/1130833190019653633"
+
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            if "forfiles" in cmdline.lower() and "@file" in cmdline.lower() and "*" in cmdline:
+                ret = True
+                self.data.append({"command" : cmdline})
+
+        return ret
+

@@ -33,7 +33,7 @@ class CriticalProcess(Signature):
 
     def on_call(self, call, process):
         infoclass = self.get_argument(call, "ProcessInformationClass")
-        
+
         if infoclass is not None:
             infoclass = int(infoclass)
         if call["return"] == 0 and infoclass == ProcessBreakOnTermination:

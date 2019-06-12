@@ -22,6 +22,8 @@ class PackerEntropy(Signature):
     categories = ["packer"]
     authors = ["Robby Zeitfuchs", "nex", "Optiv"]
     minimum = "1.3"
+    ttp = ["T1045"]
+
     references = ["http://www.forensickb.com/2013/03/file-entropy-explained.html", 
                   "http://virii.es/U/Using%20Entropy%20Analysis%20to%20Find%20Encrypted%20and%20Packed%20Malware.pdf"]
 
