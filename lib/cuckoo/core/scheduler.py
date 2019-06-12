@@ -528,18 +528,6 @@ class AnalysisManager(threading.Thread):
         elif self.route in vpns:
             self.interface = vpns[self.route].interface
             self.rt_table = vpns[self.route].rt_table
-            #startup the configured vpn
-            rooter("vpn_enable", self.route)
-            timeout = 0
-            while timeout < 30:
-                if not rooter("nic_available", self.interface):
-                    time.sleep(1)
-                    timeout += 1
-                    log.info("Waiting for VPN interface '%s' to be enabled.",
-                              self.interface)
-                else:
-                    log.info("Enabled VPN interface '%s'", self.interface)
-                    break
         else:
             log.warning("Unknown network routing destination specified, "
                         "ignoring routing for this analysis: %r", self.route)
