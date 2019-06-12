@@ -104,9 +104,12 @@ class AntiDBGWindows(Signature):
             "WinDump",
             "DumpIt",
             "Iris.exe",
-            "NetSniffer,
+            "NetSniffer",
             "WinAPIOverride",
-            "WinSpy"
+            "WinSpy",
+            "dnSpy",
+            "ILSpy"
+            
         ]
 
         for indicator in indicators:
