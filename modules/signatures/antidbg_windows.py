@@ -20,7 +20,7 @@ class AntiDBGWindows(Signature):
     description = "Checks for the presence of known windows from debuggers and forensic tools"
     severity = 3
     categories = ["anti-debug"]
-    authors = ["nex", "KillerInstinct", "Brad Spengler"]
+    authors = ["nex", "KillerInstinct", "Brad Spengler", "bartblaze"]
     minimum = "1.3"
     evented = True
     ttp = ["T1057"]
@@ -97,7 +97,20 @@ class AntiDBGWindows(Signature):
             "apispy32",
             "apimonitor",
             "Process Hacker",
-            "DbgView",            
+            "DbgView",
+            "idaq",
+            "idaq64",
+            "Syser",
+            "syser32",
+            "WinDump",
+            "DumpIt",
+            "Iris.exe",
+            "NetSniffer",
+            "WinAPIOverride",
+            "WinSpy",
+            "dnSpy",
+            "ILSpy"
+            
         ]
 
         for indicator in indicators:
