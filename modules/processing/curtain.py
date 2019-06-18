@@ -139,8 +139,8 @@ def formatReplace(inputString, MODFLAG):
     # OLD: ("{1}{0}{2}" -F"AMP","EX","LE")
     # NEW: "EXAMPLE"
     # Find group of obfuscated string
-    obfGroup = re.search("(\"|\')(\{[0-9]{1,2}\})+(\"|\')[ fF-].+?\'.+?\'\)(?!(\"|\'|;))",inputString).group()
-     # There are issues with multiple nested groupings that I haven't been able to solve yet, but doesn't change the final output of the PS script
+    obfGroup = re.search("(\"|\')(\{[0-9]{1,2}\})+(\"|\')[ -fF].+?\'.+?\'\)(?!(\"|\'|;))", inputString).group()
+    # There are issues with multiple nested groupings that I haven't been able to solve yet, but doesn't change the final output of the PS script
     #obfGroup = re.search("(\"|\')(\{[0-9]{1,2}\})+(\"|\')[ -fF]+?(\"|\').+?(\"|\')(?=\)([!.\"\';)( ]))", inputString).group()
 
     # Build index and string lists
@@ -484,7 +484,7 @@ class Curtain(Processing):
                     if re.search("(\"\+\"|\'\+\')", ALTMSG):
                         ALTMSG, MODFLAG = joinStrings(ALTMSG, MODFLAG)
 
-                    while re.search("(\"|\')(\{[0-9]{1,2}\})+(\"|\')[ -fF]+(\'.+?\'\))", ALTMSG):
+                    while re.search("(\"|\')(\{[0-9]{1,2}\})+(\"|\')[ -fF].+?\'.+?\'\)(?!(\"|\'|;))", ALTMSG):
                         ALTMSG, MODFLAG = formatReplace(ALTMSG, MODFLAG)
 
                     # One run post formatReplace for new strings

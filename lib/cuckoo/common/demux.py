@@ -371,9 +371,7 @@ def demux_sample(filename, package, options):
     """
 
     # if a package was specified, then don't do anything special
-    # this will allow for the ZIP package to be used to analyze binaries with included DLL dependencies
-    # do the same if file= is specified in the options
-    if package or "file=" in options:
+    if package:
         return [filename]
 
     # don't try to extract from office docs
