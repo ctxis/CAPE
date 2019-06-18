@@ -13,7 +13,7 @@ from lib.cuckoo.common.exceptions import CuckooDatabaseError
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.exceptions import CuckooDependencyError
 from lib.cuckoo.common.objects import File, URL, PCAP
-from lib.cuckoo.common.utils import create_folder, Singleton, classlock, SuperLock
+from lib.cuckoo.common.utils import create_folder, Singleton, classlock, SuperLock, get_options
 from lib.cuckoo.common.demux import demux_sample
 
 try:
@@ -1084,8 +1084,8 @@ class Database(object):
 
     def demux_sample_and_add_to_db(self, file_path, timeout=0, package="", options="", priority=1,
                                    custom="", machine="", platform="", tags=None,
-                                   memory=False, enforce_timeout=False, clock=None,shrike_url=None,
-                                   shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None,
+                                   memory=False, enforce_timeout=False, clock=None, shrike_url=None,
+                                   shrike_msg=None, shrike_sid=None, shrike_refer=None, parent_id=None,
                                    sample_parent_id=None):
         """
         Handles ZIP file submissions, submitting each extracted file to the database
@@ -1093,12 +1093,20 @@ class Database(object):
         """
         task_ids = []
         sample_parent_id = None
-        # extract files from the (potential) ZIP
+        # extract files from the (potential) archive
         extracted_files = demux_sample(file_path, package, options)
-        # check if len is 1 and the same file, if diff register file, and set parrent
+        # check if len is 1 and the same file, if diff register file, and set parent
         if extracted_files and file_path not in extracted_files:
             sample_parent_id = self.register_sample(File(file_path))
-        # create tasks for each file in the ZIP
+
+        # Check for 'file' option indicating supporting files needed for upload; otherwise create task for each file
+        opts = get_options(options)
+        if "file" in opts:
+            for xfile in extracted_files:
+                if opts["file"].lower() in xfile.lower():
+                    extracted_files = [xfile]
+                    break
+
         for file in extracted_files:
             task_id = self.add_path(file_path=file,
                                     timeout=timeout,

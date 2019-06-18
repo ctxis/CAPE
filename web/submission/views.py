@@ -26,7 +26,7 @@ from lib.cuckoo.common.quarantine import unquarantine
 from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.core.database import Database
-from lib.cuckoo.core.rooter import vpns
+from lib.cuckoo.core.rooter import vpns, socks5s
 from utils import submit_utils
 
 # this required for hash searches
@@ -41,7 +41,7 @@ if repconf.distributed.enabled:
         HAVE_DIST = True
     except Exception as e:
         print(e)
-       
+
 
 if repconf.mongodb.enabled:
     import pymongo
@@ -547,6 +547,7 @@ def index(request, resubmit_hash=False):
                                   {"packages": sorted(packages),
                                    "machines": machines,
                                    "vpns": vpns.values(),
+                                   "socks5s": socks5s.values(),
                                    "route": cfg.routing.route,
                                    "internet": cfg.routing.internet,
                                    "inetsim": cfg.routing.inetsim,

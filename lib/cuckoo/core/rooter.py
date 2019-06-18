@@ -18,6 +18,7 @@ unixpath = tempfile.mktemp()
 lock = threading.Lock()
 
 vpns = {}
+socks5s = {}
 
 def rooter(command, *args, **kwargs):
     if not os.path.exists(cfg.cuckoo.rooter):

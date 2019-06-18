@@ -28,7 +28,7 @@ from lib.cuckoo.common.utils import create_folders, store_temp_file, delete_fold
 from lib.cuckoo.core.database import Database, Task, TASK_RUNNING, TASK_PENDING, TASK_FAILED_ANALYSIS, TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING, TASK_RECOVERED, TASK_REPORTED
 from lib.cuckoo.core.plugins import import_plugin, import_package, list_plugins
 import socket
-from lib.cuckoo.core.rooter import rooter, vpns
+from lib.cuckoo.core.rooter import rooter, vpns, socks5s
 
 log = logging.getLogger()
 
@@ -151,7 +151,7 @@ def init_logging():
     dh = DatabaseHandler()
     dh.setLevel(logging.ERROR)
     log.addHandler(dh)
-    
+
     log.setLevel(logging.INFO)
 
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -365,7 +365,7 @@ def cuckoo_clean():
                 log.warning("Error removing file %s: %s", path, e)
 
 def cuckoo_clean_failed_tasks():
-    """Clean up failed tasks 
+    """Clean up failed tasks
     It deletes all stored data from file system and configured databases (SQL
     and MongoDB for failed tasks.
     """
@@ -389,7 +389,7 @@ def cuckoo_clean_failed_tasks():
             results_db = MongoClient(host, port)[mdb]
         except:
             log.warning("Unable to connect to MongoDB database: %s", mdb)
-            return 
+            return
 
         failed_tasks_a = db.list_tasks(status=TASK_FAILED_ANALYSIS)
         failed_tasks_p = db.list_tasks(status=TASK_FAILED_PROCESSING)
@@ -443,7 +443,7 @@ def cuckoo_clean_bson_suri_logs():
                             print "failed to remove sorted_pcap from disk %s" % (Err)
 
 def cuckoo_clean_failed_url_tasks():
-    """Clean up failed tasks 
+    """Clean up failed tasks
     It deletes all stored data from file system and configured databases (SQL
     and MongoDB for failed tasks.
     """
@@ -488,10 +488,10 @@ def cuckoo_clean_failed_url_tasks():
                     else:
                         done = True
             else:
-                done = True 
+                done = True
 
 def cuckoo_clean_before_day(args):
-    """Clean up failed tasks 
+    """Clean up failed tasks
     It deletes all stored data from file system and configured databases (SQL
     and MongoDB for tasks completed before now - days.
     """
@@ -554,7 +554,7 @@ def cuckoo_clean_before_day(args):
         print "number of matching records %s" % len(id_arr)
         for e in id_arr:
             try:
-                print "removing %s from analysis db" % (e)  
+                print "removing %s from analysis db" % (e)
                 results_db.analysis.remove({"info.id": e})
             except:
                 print "failed to remove analysis info (may not exist) %s" % (e)
@@ -565,7 +565,7 @@ def cuckoo_clean_before_day(args):
                 print "failed to remove faile task %s from DB" % (e)
 
 def cuckoo_clean_sorted_pcap_dump():
-    """Clean up failed tasks 
+    """Clean up failed tasks
     It deletes all stored data from file system and configured databases (SQL
     and MongoDB for failed tasks.
     """
@@ -602,7 +602,7 @@ def cuckoo_clean_sorted_pcap_dump():
                             results_db.analysis.update({"info.id": int(e["info"]["id"])},{ "$unset": { "network.sorted_pcap_id": ""}})
                         except:
                             print "failed to remove sorted pcap from db for id %s" % (e["info"]["id"])
-                        try:      
+                        try:
                             path = os.path.join(CUCKOO_ROOT, "storage", "analyses","%s" % (e["info"]["id"]), "dump_sorted.pcap")
                             os.remove(path)
                         except Exception as e:
@@ -613,7 +613,7 @@ def cuckoo_clean_sorted_pcap_dump():
                 done = True
 
 def cuckoo_clean_pending_tasks():
-    """Clean up pending tasks 
+    """Clean up pending tasks
     It deletes all stored data from file system and configured databases (SQL
     and MongoDB for pending tasks.
     """
@@ -637,7 +637,7 @@ def cuckoo_clean_pending_tasks():
             results_db = MongoClient(host, port)[mdb]
         except:
             log.warning("Unable to connect to MongoDB database: %s", mdb)
-            return 
+            return
 
         pending_tasks = db.list_tasks(status=TASK_PENDING)
         for e in pending_tasks:
@@ -704,7 +704,21 @@ def init_routing():
     """Initialize and check whether the routing information is correct."""
     cuckoo = Config()
     vpn = Config("vpn")
+    socks5 = Config("socks5")
 
+    if socks5.socks5.enabled:
+        for name in socks5.socks5.proxies.split(","):
+            name = name.strip()
+            if not name:
+                continue
+
+            if not hasattr(socks5, name):
+                raise CuckooStartupError(
+                    "Could not find socks5 configuration for %s" % name
+                )
+
+            entry = socks5.get(name)
+            socks5s[entry.name] = entry
     # Check whether all VPNs exist if configured and make their configuration
     # available through the vpns variable. Also enable NAT on each interface.
     if vpn.vpn.enabled:
