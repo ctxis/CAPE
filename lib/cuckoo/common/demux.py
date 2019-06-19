@@ -104,10 +104,10 @@ def demux_office(filename, password):
     return retlist
 
 
-def is_valid_type(child):
+def is_valid_type(magic):
     # check for valid file types and don't rely just on file extentsion
     for ftype in VALID_TYPES:
-        if ftype in child.magic:
+        if ftype in magic:
             return True
     return False
 
@@ -127,7 +127,7 @@ def demux_sflock(filename, options):
             for sf_child in unpacked.children:
                 base, ext = os.path.splitext(sf_child.filename)
                 ext = ext.lower()
-                if ext in demux_extensions_list or is_valid_type(sf_child):
+                if ext in demux_extensions_list or is_valid_type(sf_child.magic):
                     tmp_path = cuckoo_conf.cuckoo.get("tmppath", "/tmp")
                     target_path = os.path.join(tmp_path, "cuckoo-sflock")
                     if not os.path.exists(target_path):
