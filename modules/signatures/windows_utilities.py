@@ -312,7 +312,7 @@ class SuspiciousCertutilUse(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
-	references = ["https://www.sentinelone.com/blog/malware-living-off-land-with-certutil/"]
+    references = ["https://www.sentinelone.com/blog/malware-living-off-land-with-certutil/"]
     ttp = ["T1140", "T1130", "T1105"]
 	
     def run(self):
