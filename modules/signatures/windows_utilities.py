@@ -302,3 +302,27 @@ class AltersWindowsUtility(Signature):
 
     def on_complete(self):
         return self.ret
+
+class SuspiciousCertutilUse(Signature):
+    name = "suspicious_certutil_use"
+    description = "Suspicious use of certutil was detected"
+    severity = 3
+    confidence = 100
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+	references = ["https://www.sentinelone.com/blog/malware-living-off-land-with-certutil/"]
+    ttp = ["T1140", "T1130", "T1105"]
+	
+    def run(self):
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "certutil" in lower and ("urlcache" in lower or "encode" in lower or "decode" in lower or "addstore" in lower):
+                ret = True
+                self.data.append({"command" : cmdline})
+
+        return ret
