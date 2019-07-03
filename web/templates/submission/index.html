@@ -213,6 +213,9 @@ $(document).ready( function() {
                                         {% for vpn in vpns %}
                                             <option value="{{ vpn.name }}"{% if route == vpn.name %} selected{% endif %}>{{ vpn.description }} (VPN, {{ vpn.interface }})</option>
                                         {% endfor %}
+                                        {% for socks5 in socks5s %}
+                                            <option value="{{ socks5.name }}"{% if route == socks5.name %} selected{% endif %}>{{ socks5.description }} (socks5)</option>
+                                        {% endfor %}
                                         <option value="none" >Drop all VM traffic</option>
                                     </select>
                                 </div>
@@ -404,7 +407,7 @@ $(document).ready( function() {
                                 <label>
                                     <input type="checkbox" name="free" /> No Injection <span class="text-muted"><small>(disable behavioral analysis)</small></span>
                                 </label>
-                            </div>                            
+                            </div>
                             <div class="checkbox">
                                 <label>
                                     <input type="checkbox" name="disable_cape" /> No CAPE submissions <span class="text-muted"><small>(disable automatic job submission)</small></span>
@@ -441,6 +444,11 @@ $(document).ready( function() {
                                 </label>
                             </div>
                             {% endif %}
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" name="oldloader" /> Old loader <span class="text-muted"><small>(Use legacy (spender) loader)</small></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -20,9 +20,10 @@ class AntiDBGWindows(Signature):
     description = "Checks for the presence of known windows from debuggers and forensic tools"
     severity = 3
     categories = ["anti-debug"]
-    authors = ["nex", "KillerInstinct", "Brad Spengler"]
+    authors = ["nex", "KillerInstinct", "Brad Spengler", "bartblaze"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1057"]
 
     filter_categories = set(["windows"])
 
@@ -69,6 +70,47 @@ class AntiDBGWindows(Signature):
             "SmartSniff",
             "ConsoleWindowClass",
             "18467-41",
+            "Regshot",
+            "idag",
+            "idag64",
+            "IDA Pro",
+            "x32dbg",
+            "x64dbg",
+            "Ghidra",
+            "ImmunityDebugger",
+            "petools",
+            "Exeinfope",
+            "Detect It Easy",
+            "Fiddler",
+            "CaptureBAT",
+            "WinPcap",
+            "Sandboxie",
+            "SandboxieRpcSs",
+            "SandboxieDcomLaunch",
+            "SbieDll",
+            "SbieSvc",
+            "dbghelp",
+            "api_log",
+            "dir_watch",
+            "API Monitor",
+            "Rohitab",
+            "apispy32",
+            "apimonitor",
+            "Process Hacker",
+            "DbgView",
+            "idaq",
+            "idaq64",
+            "Syser",
+            "syser32",
+            "WinDump",
+            "DumpIt",
+            "Iris.exe",
+            "NetSniffer",
+            "WinAPIOverride",
+            "WinSpy",
+            "dnSpy",
+            "ILSpy"
+            
         ]
 
         for indicator in indicators:

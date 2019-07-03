@@ -12,6 +12,8 @@ class UsesWindowsUtilities(Signature):
     categories = ["commands", "lateral"]
     authors = ["Cuckoo Technologies", "Kevin Ross"]
     minimum = "1.3"
+    ttp = ["T1053"]
+
     evented = True
 
     def run(self):
@@ -108,13 +110,14 @@ class SuspiciousCommandTools(Signature):
             "bitsadmin",
             "bginfo",
             "cacls",
+            "certutil",
             "csvde",
             "del ",
             "del.exe",
             "dsquery",
             "icacls",
             "klist",
-            "psexec",        
+            "psexec",
             "psfile",
             "psgetsid",
             "psinfo",
@@ -249,3 +252,53 @@ class WMICCommandSuspicious(Signature):
                         self.data.append({"command" : cmdline})
 
         return ret
+
+class AltersWindowsUtility(Signature):
+    name = "alters_windows_utility"
+    description = "Attempts to move, copy or rename a command line or scripting utility likely for evasion"
+    severity = 3
+    categories = ["commands", "stealth", "evasion"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.ret = False
+        self.utilities = [
+            "at.exe",
+            "bcdedit.exe",
+            "bitsadmin.exe",
+            "cmd.exe",
+            "cscript.exe",
+            "dir.exe",
+            "nbtstat.exe",
+            "net.exe",
+            "netsh.exe",
+            "nslookup.exe",
+            "powershell.exe",
+            "regsrv32.exe",
+            "sc.exe",
+            "schtasks.exe",
+            "systeminfo.exe",
+            "tasklist.exe",
+            "vssadmin.exe",
+            "wevutil.exe",
+            "wmic.exe",
+            "wscript.exe",
+            ]
+
+    filter_apinames = set(["CopyFileExA","CopyFileExW","MoveFileWithProgressW","MoveFileWithProgressTransactedW"])
+
+    def on_call(self, call, process):
+        self.ret = False
+        origfile = self.get_argument(call, "ExistingFileName")
+        destfile = self.get_argument(call, "NewFileName")
+        for utility in self.utilities:
+            lower = origfile.lower()
+            if lower.endswith(utility):
+                self.ret = True
+                self.data.append({"utility" : "source file %s destination file %s" % (origfile,destfile)})
+
+    def on_complete(self):
+        return self.ret

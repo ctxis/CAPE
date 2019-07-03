@@ -23,7 +23,7 @@ class AvastDetectLibs(Signature):
     authors = ["Optiv"]
     minimum = "1.2"
     evented = True
-
+    ttp = ["T1063"]
     filter_apinames = set(["LdrLoadDll", "LdrGetDllHandle"])
 
     def on_call(self, call, process):

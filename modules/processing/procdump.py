@@ -40,16 +40,12 @@ class ProcDump(Processing):
             type_strings = file_info["type"].split()
             if type_strings[0] == ("PE32+"):
                 file_info["cape_type"] += ": 64-bit "
-                if type_strings[2] == ("(DLL)"):
-                    file_info["cape_type"] += "DLL"
-                else:
-                    file_info["cape_type"] += "executable"
-            if type_strings[0] == ("PE32"):
+            elif type_strings[2] == ("PE32"):
                 file_info["cape_type"] += ": 32-bit "
-                if type_strings[2] == ("(DLL)"):
-                    file_info["cape_type"] += "DLL"
-                else:
-                    file_info["cape_type"] += "executable"
+            if type_strings[2] == ("(DLL)"):
+                file_info["cape_type"] += "DLL"
+            else:
+                file_info["cape_type"] += "executable"
             texttypes = [
                 "ASCII",
                 "Windows Registry text",

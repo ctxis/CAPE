@@ -8,7 +8,7 @@ from subprocess import call
 from lib.common.abstracts import Package
 
 class Doppelganging(Package):
-    """Dump-on-API package."""
+    """Doppelganging package."""
 
     def __init__(self, options={}, config=None):
         """@param options: options dict."""

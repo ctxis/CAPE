@@ -11,6 +11,7 @@ class KeyLogger(Signature):
     authors = ["Optiv"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1081", "T1003", "T1005"]
 
     filter_apinames = set(["SetWindowsHookExA","SetWindowsHookExW","GetAsyncKeyState"])
 

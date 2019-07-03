@@ -23,6 +23,7 @@ class AntiVMDiskReg(Signature):
     categories = ["anti-vm"]
     authors = ["nex"]
     minimum = "0.5"
+    ttp = ["T1057", "T1012"]
 
     def run(self):
         indicators = [

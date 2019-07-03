@@ -22,6 +22,7 @@ class UPXCompressed(Signature):
     categories = ["packer"]
     authors = ["Michael Boman", "nex", "Optiv"]
     minimum = "1.3"
+    ttp = ["T1045"]
 
     def run(self):
         if "static" in self.results and "pe" in self.results["static"]:

@@ -24,7 +24,8 @@ class SquiblydooBypass(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
-
+    ttp = ["T1086", "T1117"]
+    
     def run(self):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
@@ -44,6 +45,7 @@ class RegSrv32SquiblydooDLLLoad(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1086", "T1117"]
 
     filter_apinames = set(["LdrLoadDll"])
 
@@ -63,6 +65,7 @@ class SquiblytwoBypass(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1086", "T1117"]
 
     def run(self):
         ret = False
@@ -84,6 +87,7 @@ class OdbcconfBypass(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1086", "T1117"]
 
     def run(self):
         ret = False

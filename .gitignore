@@ -35,3 +35,9 @@ cuckoo.v12.suo
 data/yara/index_*.yar
 UpgradeLog.htm
 
+# Ignore virtualenvs
+venv/
+.venv/
+virtualenv/
+.virtualenv/
+

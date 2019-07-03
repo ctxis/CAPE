@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2015 Will Metcalf william.metcalf@gmail.com 
+# Copyright (C) 2014-2015 Will Metcalf william.metcalf@gmail.com
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -14,7 +14,6 @@
 
 import os
 import logging
-import pprint
 
 try:
     import re2 as re
@@ -63,7 +62,7 @@ class ReSubmitExtractedEXE(Report):
             self.task_options=','.join(self.task_options_stack)
 
         report = dict(results)
-        for dropped in report["dropped"]:
+        for dropped in report.get("dropped", []):
             if self.resubcnt >= self.resublimit:
                 break
             if os.path.isfile(dropped["path"]):
@@ -84,7 +83,7 @@ class ReSubmitExtractedEXE(Report):
                         except:
                             filesdict[dropped['sha256']] = dropped['path']
                             self.resubcnt += 1
-            
+
         if report.has_key("suricata") and report["suricata"]:
             if report["suricata"].has_key("files") and report["suricata"]["files"]:
                 for suricata_file_e in results["suricata"]["files"]:

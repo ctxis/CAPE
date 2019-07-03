@@ -8,10 +8,7 @@ rule JavaDropper
         cape_type = "JavaDropper Payload"
 
     strings:
-	    $jar = "META-INF/MANIFEST.MF"
-
-	    $a1 = "ePK"
-	    $a2 = "kPK"
+	$jar = "META-INF/MANIFEST.MF"
 
         $b1 = "config.ini"
         $b2 = "password.ini"
@@ -21,5 +18,5 @@ rule JavaDropper
         $d1 = "c.dat"
 
     condition:
-        $jar and (all of ($a*) or all of ($b*) or all of ($c*) or all of ($d*))
+        $jar and (all of ($b*) or all of ($c*) or all of ($d*))
 }

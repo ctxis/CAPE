@@ -25,7 +25,7 @@ python-whois
 bs4
 pefile2==1.2.11
 git+https://github.com/crackinglandia/pype32.git
-git+https://github.com/jsocol/django-ratelimit
+django-ratelimit==2.0.0
 git+https://github.com/kbandla/pydeep.git
 pyvmomi>=6.0
 imagehash
@@ -48,4 +48,6 @@ statistics==1.0.3.5
 xmltodict
 pyyaml
 pyelftools
+gunicorn
+suricata-update
 sflock

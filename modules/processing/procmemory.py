@@ -37,6 +37,9 @@ class ProcessMemory(Processing):
                     continue
 
                 dmp_path = os.path.join(self.pmemory_path, dmp)
+                if os.path.getsize(dmp_path) == 0:
+                    continue
+
                 dmp_file = File(dmp_path)
                 process_name = ""
                 process_path = ""

@@ -13,6 +13,7 @@ class VolMalfind1(Signature):
     categories = ["generic"]
     authors = ["Thorsten Sick"]
     minimum = "0.5"
+    ttp = ["T1055"]
 
     def run(self):
         if ("volatility" in self.results and
@@ -34,6 +35,7 @@ class VolMalfind2(Signature):
     authors = ["Thorsten Sick"]
     minimum = "0.5"
     families = ["ZBot", "Paelvo", "Sinowal"]
+    ttp = ["T1055"]
 
     def run(self):
         pids = set()
@@ -135,6 +137,7 @@ class VolSvcscan1(Signature):
     authors = ["Thorsten Sick"]
     families = ["Zero access"]
     minimum = "0.5"
+    ttp = ["T1031"]
 
     def run(self):
         res = False
@@ -158,6 +161,7 @@ class VolSvcscan2(Signature):
     authors = ["Thorsten Sick"]
     families = ["Zero access"]
     minimum = "0.5"
+    ttp = ["T1031", "T1089"]
 
     def run(self):
         res = False
@@ -181,6 +185,7 @@ class VolSvcscan3(Signature):
     authors = ["Thorsten Sick"]
     families = ["Zero access"]
     minimum = "0.5"
+    ttp = ["T1031"]
 
     def run(self):
         res = False
@@ -225,6 +230,7 @@ class VolHandles1(Signature):
     categories = ["generic"]
     authors = ["Thorsten Sick"]
     minimum = "0.5"
+    ttp = ["T1055"]
 
     def run(self):
         threads = set()

@@ -22,6 +22,7 @@ class VBoxDetectDevices(Signature):
     categories = ["anti-vm"]
     authors = ["nex"]
     minimum = "1.2"
+    ttp = ["T1057", "T1012"]
 
     def run(self):
         indicators = [

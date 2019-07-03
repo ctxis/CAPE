@@ -16,7 +16,7 @@ from lib.cuckoo.common.constants import CUCKOO_GUEST_PORT, CUCKOO_GUEST_INIT
 from lib.cuckoo.common.constants import CUCKOO_GUEST_COMPLETED
 from lib.cuckoo.common.constants import CUCKOO_GUEST_FAILED
 from lib.cuckoo.common.exceptions import CuckooGuestError
-from lib.cuckoo.common.utils import TimeoutServer, sanitize_filename
+from lib.cuckoo.common.utils import TimeoutServer, sanitize_filename, get_options
 from lib.cuckoo.core.resultserver import ResultServer
 
 log = logging.getLogger(__name__)
@@ -116,6 +116,33 @@ class GuestManager:
                                    "to upload agent, check networking or try "
                                    "to increase timeout".format(self.id))
 
+    def upload_support_files(self, options):
+        """ Upload supporting files from zip temp directory if they exist
+        :param options: options
+        :return:
+        """
+        log.info("Uploading support files to guest (id=%s, ip=%s)", self.id, self.ip)
+        basedir = os.path.dirname(options["target"])
+
+        for dirpath, _, files in os.walk(basedir):
+            for xf in files:
+                target = os.path.join(dirpath, xf)
+                # Copy all files except for the original target
+                if not target == options["target"]:
+                    try:
+                        file_data = open(target, "rb").read()
+                    except (IOError, OSError) as e:
+                        raise CuckooGuestError("Unable to read {}, error: {}".format(target, e))
+
+                    data = xmlrpclib.Binary(file_data)
+
+                    try:
+                        self.server.add_malware(data, xf)
+                    except Exception as e:
+                        raise CuckooGuestError("{}: unable to upload support file to "
+                                               "analysis machine: {}".format(self.id, e))
+        return
+
     def start_analysis(self, options):
         """Start analysis.
         @param options: options.
@@ -168,6 +195,9 @@ class GuestManager:
                 except Exception as e:
                     raise CuckooGuestError("{0}: unable to upload malware to "
                                            "analysis machine: {1}".format(self.id, e))
+
+                # check for support files and upload them to guest.
+                self.upload_support_files(options)
 
             # Debug analyzer.py in vm
             if "CUCKOO_DBG" in os.environ:

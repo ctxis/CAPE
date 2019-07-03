@@ -11,6 +11,7 @@ class StealthHideNotifications(Signature):
     categories = ["stealth"]
     authors = ["Kevin Ross"]
     minimum = "1.2"
+    ttp = ["T1054"]
 
     def run(self):
         reg_indicators = [

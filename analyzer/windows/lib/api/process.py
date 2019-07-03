@@ -412,8 +412,13 @@ class Process:
         if event_handle:
             # make sure process is aware of the termination
             KERNEL32.SetEvent(event_handle)
+            if KERNEL32.WaitForSingleObject(event_handle, 5000) == 0x00000080:   #WAIT_ABANDONED
+                log.error("Wait for reply to terminate_event timed out for pid %d", self.pid)
+            else:
+                log.info("Successfully received reply to terminate_event, pid %d", self.pid)
             KERNEL32.CloseHandle(event_handle)
-            KERNEL32.Sleep(500)
+        else:
+            log.error("Failed to open terminate event for pid %d", self.pid)
 
     def terminate(self):
         """Terminate process.
@@ -492,65 +497,20 @@ class Process:
 
             if "norefer" not in self.options and "referrer" not in self.options:
                 config.write("referrer={0}\n".format(get_referrer_url(interest)))
-
-            simple_optnames = [
-                "force-sleepskip",
-                "full-logs",
-                "force-flush",
-                "no-stealth",
-                "buffer-max",
-                "large-buffer-max",
-                "referrer",
-                "serial",
-                "sysvol_ctimelow",
-                "sysvol_ctimehigh",
-                "sys32_ctimelow",
-                "sys32_ctimehigh",
-                "debug",
-                "disable_hook_content",
-                "hook-type",
-                "base-on-api",
-                "exclude-apis",
-                "exclude-dlls",
-                "dump-on-api",
-                "bp0",
-                "bp1",
-                "bp2",
-                "bp3",
-                "depth",
-                "count",
-                "action0",
-                "action1",
-                "action2",
-                "action3",
-                "instruction0",
-                "instruction1",
-                "instruction2",
-                "instruction3",
-                "break-on-return"
-                ]
             
-            for optname in simple_optnames:
-                if optname in self.options:
-                    config.write("{0}={1}\n".format(optname, self.options[optname]))
-                    log.info("Option '%s' with value '%s' sent to monitor", optname, self.options[optname])
+            server_options = [
+                "disable_cape",
+                "dll",
+                "dll_64",
+                "loader",
+                "loader_64",
+                "route"
+                ]
 
-            if "procdump" in self.options:
-                config.write("procdump={0}\n".format(self.options["procdump"]))
-            else:
-                config.write("procdump=1\n")    # Default will be overridden by some packages
-            if "procmemdump" in self.options:
-                config.write("procmemdump={0}\n".format(self.options["procmemdump"]))
-            if "import_reconstruction" in self.options:
-                config.write("import_reconstruction={0}\n".format(self.options["import_reconstruction"]))
-            if "CAPE_var1" in self.options:
-                config.write("CAPE_var1={0}\n".format(self.options["CAPE_var1"]))
-            if "CAPE_var2" in self.options:
-                config.write("CAPE_var2={0}\n".format(self.options["CAPE_var2"]))
-            if "CAPE_var3" in self.options:
-                config.write("CAPE_var3={0}\n".format(self.options["CAPE_var3"]))
-            if "CAPE_var4" in self.options:
-                config.write("CAPE_var4={0}\n".format(self.options["CAPE_var4"]))
+            for optname, option in self.options.items():
+                if optname not in server_options:
+                    config.write("{0}={1}\n".format(optname, option))
+                    log.info("Option '%s' with value '%s' sent to monitor", optname, option)
 
     def inject(self, injectmode=INJECT_QUEUEUSERAPC, interest=None, nosleepskip=False):
         """Cuckoo DLL injection.
@@ -591,11 +551,6 @@ class Process:
                         "with pid %d, injection aborted.", dll, self.pid)
             return False
 
-        if thread_id or self.suspended:
-            log.debug("Using QueueUserAPC injection.")
-        else:
-            log.debug("Using CreateRemoteThread injection.")
-
         self.write_monitor_config(interest, nosleepskip)
 
         orig_bin_name = ""
@@ -627,81 +582,6 @@ class Process:
         else:
             log.error("Please ensure the %s loader is in analyzer/windows/bin in order to analyze %s binaries.", bit_str, bit_str)
             return False
-
-    def debug_inject(self, interest=None, childprocess=False, nosleepskip=False):
-        """CAPE DLL debugger injection.
-        @param dll: CAPE DLL debugger path.
-        @param interest: path to file of interest, handed to cuckoomon config
-        """
-        global LOGSERVER_POOL
-
-        if not self.pid:
-            return False
-
-        thread_id = 0
-        if self.thread_id:
-            thread_id = self.thread_id
-
-        if not self.is_alive():
-            log.warning("The process with pid %s is not alive, "
-                        "injection aborted", self.pid)
-            return False
-
-        is_64bit = self.is_64bit()
-
-        if is_64bit:
-            dll = CAPEMON64_NAME
-        else:
-            dll = CAPEMON32_NAME
-
-        dll = os.path.join(os.getcwd(), dll)
-
-        if not dll:
-            log.warning("No DLL specified to be injected in process "
-                        "with pid %d, injection aborted.", self.pid)
-            return False
-
-        if not os.path.exists(dll):
-            log.warning("Invalid path %s for monitor DLL to be injected in process "
-                        "with pid %d, injection aborted.", dll, self.pid)
-            return False
-
-        if thread_id or self.suspended:
-            log.debug("Using QueueUserAPC injection.")
-        else:
-            log.debug("Using CreateRemoteThread injection.")
-
-        self.write_monitor_config(interest, nosleepskip)
-
-        orig_bin_name = ""
-        bit_str = ""
-        if is_64bit:
-            orig_bin_name = LOADER64_NAME
-            bit_str = "64-bit"
-        else:
-            orig_bin_name = LOADER32_NAME
-            bit_str = "32-bit"
-
-        bin_name = os.path.join(os.getcwd(), orig_bin_name)
-
-        log.info("%s DLL to inject is %s, loader %s", bit_str, dll, bin_name)
-
-        if os.path.exists(bin_name) == False:
-            log.error("Please ensure the %s loader is in analyzer/windows/bin in order to analyze %s binaries.", bit_str, bit_str)
-            return False
-
-        if childprocess == False:
-            ret = subprocess.call([bin_name, "debug_load", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
-        else:
-            ret = subprocess.call([bin_name, "debug", str(self.pid), str(thread_id), str(self.h_process), str(self.h_thread), dll])
-        if ret != 0:
-            if ret == 1:
-                log.info("Injected debugger DLL into suspended %s process with pid %d", bit_str, self.pid)
-            else:
-                log.error("Unable to inject debugger DLL into %s process with pid %d, error: %d", bit_str, self.pid, ret)
-            return False
-        else:
-            return True
 
     def upload_memdump(self):
         """Upload process memory dump.

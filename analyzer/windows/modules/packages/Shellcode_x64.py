@@ -18,7 +18,7 @@ class Shellcode_x64(Package):
 
     def start(self, path):
         loaderpath = "bin\\loader_x64.exe"
-        arguments = "plugx " + path
+        arguments = "shellcode " + path
         
         # we need to move out of the analyzer directory
         # due to a check in monitor dll

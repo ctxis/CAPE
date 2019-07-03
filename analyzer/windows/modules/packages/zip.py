@@ -25,6 +25,7 @@ class Zip(Package):
              ("SystemRoot", "system32", "wscript.exe"),
              ("SystemRoot", "system32", "rundll32.exe"),
              ("SystemRoot", "sysnative", "WindowsPowerShell", "v1.0", "powershell.exe"),
+             ("SystemRoot", "system32", "xpsrchvw.exe"),
             ]
     def extract_zip(self, zip_path, extract_path, password, recursion_depth):
         """Extracts a nested ZIP file.

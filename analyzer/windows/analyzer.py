@@ -325,6 +325,30 @@ def dump_files():
     for file_path in FILES_LIST:
         dump_file(file_path)
 
+def upload_debugger_logs():
+    """Create a copy of the given file path."""
+    log_folder = PATHS["root"] + "\\debugger"
+    try:
+        if os.path.exists(log_folder):
+            log.info("Uploading debugger log at path \"%s\" ", log_folder.encode("utf-8", "replace"))
+        else:
+            log.warning("File at path \"%s\" does not exist, skip.",
+                        log_folder.encode("utf-8", "replace"))
+            return
+    except IOError as e:
+        log.warning("Unable to access file at path \"%s\": %s", log_folder.encode("utf-8", "replace"), e)
+        return
+
+    for root, dirs, files in os.walk(log_folder):
+        for file in files:
+            file_path = os.path.join(root, file)
+            upload_path = os.path.join("debugger", file)
+            try:
+                upload_to_host(file_path, upload_path, False)
+            except (IOError, socket.error) as e:
+                log.error("Unable to upload dropped file at path \"%s\": %s",
+                          file_path.encode("utf-8", "replace"), e)
+
 class PipeHandler(Thread):
     """Pipe Handler.
 
@@ -682,65 +706,11 @@ class PipeHandler(Thread):
                                 filename = os.path.basename(filepath)
                                 if SERVICES_PID and process_id == SERVICES_PID:
                                     CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
-
                                 log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
-
-                                # We want to prevent multiple injection attempts if one is already underway
-                                PROCESS_LOCK.acquire()
-                                add_pids(process_id)
-                                PROCESS_LOCK.release()
-                                NUM_INJECTED += 1
-
                                 if not in_protected_path(filename):
                                     res = proc.inject(INJECT_QUEUEUSERAPC, interest)
                                     LASTINJECT_TIME = datetime.now()
-                                proc.close()
-                        else:
-                            log.warning("Received request to inject Cuckoo "
-                                        "process with pid %d, skip", process_id)
-
-                elif command.startswith("DEBUGGER:"):
-                    # We parse the process ID.
-                    data = command[9:]
-                    process_id = thread_id = None
-                    if "," not in data:
-                        if data.isdigit():
-                            process_id = int(data)
-                    elif data.count(",") == 1:
-                        process_id, param = data.split(",")
-                        thread_id = None
-                        if process_id.isdigit():
-                            process_id = int(process_id)
-                        else:
-                            process_id = None
-                        if param.isdigit():
-                            thread_id = int(param)
-
-                    if process_id:
-                        if process_id not in (PID, PPID):
-                            # We inject the process only if it's not being
-                            # monitored already, otherwise we would generate
-                            # polluted logs.
-                            if process_id not in PROCESS_LIST:
-                                # Open the process and inject the DLL.
-                                proc = Process(options=self.options,
-                                               config=self.config,
-                                               pid=process_id,
-                                               thread_id=thread_id,
-                                               suspended=suspended)
-
-                                interest = proc.get_filepath()
-                                is_64bit = proc.is_64bit()
-                                filename = os.path.basename(interest)
-                                if SERVICES_PID and process_id == SERVICES_PID:
-                                    CRITICAL_PROCESS_LIST.append(int(SERVICES_PID))
-
-                                log.info("Announced %s process name: %s pid: %d", "64-bit" if is_64bit else "32-bit", filename, process_id)
-
-                                if not in_protected_path(filename):
-                                    res = proc.debug_inject(interest, childprocess=True)
-                                    log.info("Injected 32-bit process %s with 32-bit debugger dll: %s", filename, dll)
-                                    LASTINJECT_TIME = datetime.now()
+                                    NUM_INJECTED += 1
                                 proc.close()
                         else:
                             log.warning("Received request to inject Cuckoo "
@@ -1000,6 +970,9 @@ class Analyzer:
 
         # Dump all the notified files.
         dump_files()
+
+        # Copy the debugger log.
+        upload_debugger_logs()
 
         # Hell yeah.
         log.info("Analysis completed.")
