@@ -5,7 +5,6 @@
 # See the file 'docs/LICENSE' for copying permission.
 # ToDo
 # https://github.com/cuckoosandbox/cuckoo/pull/1694/files
-
 import os
 import sys
 import time
@@ -553,11 +552,10 @@ class StatusThread(threading.Thread):
                 log.debug("going to upload {} tasks to node id {}".format(pend_tasks_num, node_id))
                 limit = 0
                 for t in main_db_tasks:
-
+                    options = dict((value.strip() for value in option.split("=", 1)) for option in t.options.split(",") if option and '=' in option)
                     # convert the options string to a dict, e.g. {'opt1': 'val1', 'opt2': 'val2', 'opt3': 'val3'}
                     if "node=" in t.options:
                         try:
-                            options = dict((value.strip() for value in option.split("=", 1)) for option in t.options.split(","))
                             if options.get("node", node.name) != node.name:
                                 # skip task
                                 continue
@@ -576,6 +574,8 @@ class StatusThread(threading.Thread):
                         if tags: tags += ','
                         if "msoffice-crypt-tmp" in t.target and "password=" in t.options:
                             t.options = t.options.replace("password=", "pwd=")
+                        if "timeout=" in t.options:
+                            t.timeout = options["timeout"]
                         args = dict(package=t.package, category = t.category, timeout=t.timeout, priority=t.priority,
                                     options=t.options+",main_task_id={}".format(t.id), machine=t.machine, platform=t.platform,
                                     tags=tags, custom=t.custom, memory=t.memory, clock=t.clock,
@@ -622,7 +622,6 @@ class StatusThread(threading.Thread):
                             # Filter by available tags
                             q = q.filter(or_(*tags))
                             # Submit appropriate tasks to node
-
                             for task in q.limit(pend_tasks_num).all():
                                 submitted = node_submit_task(task.id, node.id)
                                 if submitted:
@@ -750,6 +749,7 @@ class NodeRootApi(NodeBaseApi):
                 name=node.name,
                 url=node.url,
                 machines=machines,
+                enabled=node.enabled,
             )
         db.close()
         return dict(nodes=nodes)
