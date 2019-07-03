@@ -10,7 +10,6 @@ chardet
 pygal
 clamd
 pycrypto
-rarfile
 jsbeautifier
 dpkt
 nose
@@ -51,3 +50,4 @@ pyyaml
 pyelftools
 gunicorn
 suricata-update
+sflock
