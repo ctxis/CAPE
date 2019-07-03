@@ -1,7 +1,33 @@
 <section id="static_strings">
-    <div class="well" style="font-family: monospace;">
-        {% for string in analysis.strings %}
-            <div>{{string}}</div>
-        {% endfor %}
+    <div class="{% if well %}well{% endif %}" style="font-family: monospace;">
+        {% if analysis.strings.flossed %}
+            <div class="panel-group" id="strings_accordion">
+                {% for category, strings in analysis.strings.items %}
+                    {% if not category == 'flossed' %}
+                        <div class="panel panel-default ">
+                        <div class="panel-heading accordion-toggle collapsed" data-toggle="collapse"
+                             data-parent="#strings_accordion" data-target="#strings_{{ category }}_{% firstof id_prefix analysis.target.md5 %}">
+                            <h4 class="panel-title">
+                                <a href="javascript:void(0)" class="ing"><i class="glyphicon glyphicon-chevron-down glyphicon-align-center"></i> {{ category }}</a>
+                            </h4>
+                        </div>
+                        <div id="strings_{{ category }}_{% firstof id_prefix analysis.target.md5 %}" class="panel-collapse collapse" style="height: 0px;">
+                            <div class="panel-body col-count-4 mh-300">
+                                {% for string in strings %}
+                                    <div>{{ string }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="mh-300 col-count-4">
+                {% for string in analysis.strings %}
+                    <div>{{ string }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 </section>

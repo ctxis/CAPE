@@ -215,6 +215,16 @@
                     <td colspan="2"><pre>{{file.data}}</pre></td>
                 </tr>
                 {% endif %}
+                {%  if file.strings and file.strings.flossed and file.strings|length > 1 or file.strings and not file.strings.flossed and file.strings|length %}
+                    <tr>
+                        <th>Strings</th>
+                        <td>
+                            {% with analysis=file id_prefix=file.md5 %}
+                                {% include "analysis/static/_strings.html" %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                {% endif %}
             </table>
         </div>
         {% endif %}        
