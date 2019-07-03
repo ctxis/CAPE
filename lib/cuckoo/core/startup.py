@@ -288,8 +288,15 @@ def cuckoo_clean():
         host = cfg.mongodb.get("host", "127.0.0.1")
         port = cfg.mongodb.get("port", 27017)
         mdb = cfg.mongodb.get("db", "cuckoo")
+        user = cfg.mongodb.get("username", None)
+        password = cfg.mongodb.get("password", None)
         try:
-            conn = MongoClient(host, port)
+            conn = MongoClient( cfg.mongodb.host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=mdb
+                                )
             conn.drop_database(mdb)
             conn.close()
         except:
@@ -385,8 +392,15 @@ def cuckoo_clean_failed_tasks():
         host = cfg.mongodb.get("host", "127.0.0.1")
         port = cfg.mongodb.get("port", 27017)
         mdb = cfg.mongodb.get("db", "cuckoo")
+        user = cfg.mongodb.get("username", None)
+        password = cfg.mongodb.get("password", None)
         try:
-            results_db = MongoClient(host, port)[mdb]
+            results_db = MongoClient( cfg.mongodb.host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=mdb
+                                )[mdb]
         except:
             log.warning("Unable to connect to MongoDB database: %s", mdb)
             return
@@ -463,8 +477,15 @@ def cuckoo_clean_failed_url_tasks():
         host = cfg.mongodb.get("host", "127.0.0.1")
         port = cfg.mongodb.get("port", 27017)
         mdb = cfg.mongodb.get("db", "cuckoo")
+        user = cfg.mongodb.get("username", None)
+        password = cfg.mongodb.get("password", None)
         try:
-            results_db = MongoClient(host, port)[mdb]
+            results_db = MongoClient( cfg.mongodb.host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=mdb
+                                )[mdb]
         except:
             log.warning("Unable to connect MongoDB database: %s", mdb)
             return
@@ -517,8 +538,15 @@ def cuckoo_clean_before_day(args):
         host = cfg.mongodb.get("host", "127.0.0.1")
         port = cfg.mongodb.get("port", 27017)
         mdb = cfg.mongodb.get("db", "cuckoo")
+        user = cfg.mongodb.get("username", None)
+        password = cfg.mongodb.get("password", None)
         try:
-            results_db = MongoClient(host, port)[mdb]
+            results_db = MongoClient( cfg.mongodb.host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=mdb
+                                )[mdb]
         except:
             log.warning("Unable to connect to MongoDB database: %s", mdb)
             return
@@ -585,8 +613,15 @@ def cuckoo_clean_sorted_pcap_dump():
         host = cfg.mongodb.get("host", "127.0.0.1")
         port = cfg.mongodb.get("port", 27017)
         mdb = cfg.mongodb.get("db", "cuckoo")
+        user = cfg.mongodb.get("username", None)
+        password = cfg.mongodb.get("password", None)
         try:
-            results_db = MongoClient(host, port)[mdb]
+            results_db = MongoClient( cfg.mongodb.host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=mdb
+                                )[mdb]
         except:
             log.warning("Unable to connect MongoDB database: %s", mdb)
             return
@@ -633,8 +668,15 @@ def cuckoo_clean_pending_tasks():
         host = cfg.mongodb.get("host", "127.0.0.1")
         port = cfg.mongodb.get("port", 27017)
         mdb = cfg.mongodb.get("db", "cuckoo")
+        user = cfg.mongodb.get("username", None)
+        password = cfg.mongodb.get("password", None)
         try:
-            results_db = MongoClient(host, port)[mdb]
+            results_db = MongoClient( cfg.mongodb.host,
+                                port=port,
+                                username=user,
+                                password=password,
+                                authSource=mdb
+                                )[mdb]
         except:
             log.warning("Unable to connect to MongoDB database: %s", mdb)
             return

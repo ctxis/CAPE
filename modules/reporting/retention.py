@@ -31,7 +31,12 @@ if cfg.mongodb and cfg.mongodb.enabled:
     port = cfg.mongodb.get("port", 27017)
     mdb = cfg.mongodb.get("db", "cuckoo")
     try:
-        results_db = MongoClient(host, port)[mdb]
+        results_db = MongoClient(   host,
+                                    port=port,
+                                    username=cfg.mongodb.get("username", None),
+                                    password=cfg.mongodb.get("password", None),
+                                    authSource=mdb
+                                    )[mdb]
     except Exception as e:
         log.warning("Unable to connect to MongoDB: %s", str(e))
 
