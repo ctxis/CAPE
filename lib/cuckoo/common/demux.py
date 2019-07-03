@@ -41,6 +41,10 @@ demux_extensions_list = [
         ".ppt", ".pot", ".pps", ".pptx", ".pptm", ".potx", ".potm", ".ppam", ".ppsx", ".ppsm", ".sldx", ".sldm", ".wsf",
 ]
 
+# list of valid file types to extract - TODO: add more types
+VALID_TYPES = ["PE32", "Java Jar", "Outlook", "Message"]
+
+
 def options2passwd(options):
     password = False
     if "password=" in options:
@@ -100,6 +104,14 @@ def demux_office(filename, password):
     return retlist
 
 
+def is_valid_type(magic):
+    # check for valid file types and don't rely just on file extentsion
+    for ftype in VALID_TYPES:
+        if ftype in magic:
+            return True
+    return False
+
+
 def demux_sflock(filename, options):
     retlist = []
 
@@ -113,12 +125,9 @@ def demux_sflock(filename, options):
         if unpacked.children:
             cuckoo_conf = Config()
             for sf_child in unpacked.children:
-
                 base, ext = os.path.splitext(sf_child.filename)
-                basename = os.path.basename(sf_child.filename)
                 ext = ext.lower()
-                if ext in demux_extensions_list:
-
+                if ext in demux_extensions_list or is_valid_type(sf_child.magic):
                     tmp_path = cuckoo_conf.cuckoo.get("tmppath", "/tmp")
                     target_path = os.path.join(tmp_path, "cuckoo-sflock")
                     if not os.path.exists(target_path):
@@ -378,7 +387,7 @@ def demux_sample(filename, package, options):
     magic = File(filename).get_type()
     # if file is an Office doc and password is supplied, try to decrypt the doc
     if "Microsoft" in magic:
-        if "Outlook" or "Message" in magic:
+        if "Outlook" in magic or "Message" in magic:
             pass
         elif "Composite Document File" in magic or "CDFV2 Encrypted" in magic:
             password = False
