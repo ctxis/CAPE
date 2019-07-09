@@ -693,7 +693,7 @@ class PipeHandler(Thread):
                                                thread_id=thread_id,
                                                suspended=suspended)
 
-                                filepath = proc.get_filepath()
+                                filepath = proc.get_filepath().encode('utf8', 'replace')
                                 # if it's a URL analysis, provide the URL to all processes as
                                 # the "interest" -- this will allow cuckoomon to see in the
                                 # child browser process that a URL analysis is occurring
