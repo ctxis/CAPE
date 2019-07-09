@@ -155,7 +155,8 @@ def demux_sample(filename, package, options):
         return [filename]
     if "PE32" in magic or "MS-DOS executable" in magic:
         return [filename]
-
+    
+    retlist = list()
     if HAS_SFLOCK:
         # all in one unarchiver
         retlist = demux_sflock(filename, options)
