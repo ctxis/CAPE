@@ -52,6 +52,7 @@ CAPE_DUMPED_LIST = []
 PROC_DUMPED_LIST = []
 UPLOADPATH_LIST = []
 PROCESS_LIST = []
+INJECT_LIST = []
 CRITICAL_PROCESS_LIST = []
 PROTECTED_PATH_LIST = []
 AUX_ENABLED = []
@@ -652,6 +653,8 @@ class PipeHandler(Thread):
                     process_id = int(command[7:])
                     if process_id not in PROCESS_LIST:
                         add_pids(process_id)
+                    if process_id in INJECT_LIST:
+                        INJECT_LIST.remove(int(process_id))
                     PROCESS_LOCK.release()
                     NUM_INJECTED += 1
                     log.info("Monitor successfully loaded in process with pid %u.", process_id)
@@ -688,6 +691,8 @@ class PipeHandler(Thread):
                             # monitored already, otherwise we would generate
                             # polluted logs.
                             if process_id not in PROCESS_LIST:
+                                if process_id not in INJECT_LIST:
+                                    INJECT_LIST.append(int(process_id))
                                 # Open the process and inject the DLL.
                                 proc = Process(options=self.options,
                                                config=self.config,
@@ -958,8 +963,7 @@ class Analyzer:
         # We update the target according to its category. If it's a file, then
         # we store the path.
         if self.config.category == "file":
-            self.target = os.path.join(os.environ["TEMP"] + os.sep,
-                                       str(self.config.file_name))
+            self.target = os.path.join(os.environ["TEMP"] + os.sep, str(self.config.file_name))
         # If it's a URL, well.. we store the URL.
         else:
             self.target = self.config.target
@@ -975,6 +979,10 @@ class Analyzer:
 
         # Copy the debugger log.
         upload_debugger_logs()
+
+        # Report missed injections
+        for pid in INJECT_LIST:
+            log.warning("Monitor injection attempted but failed for process %d.", pid)
 
         # Hell yeah.
         log.info("Analysis completed.")
@@ -1240,11 +1248,12 @@ class Analyzer:
             for pid in PROCESS_LIST:
                 proc = Process(pid=pid)
                 if proc.is_alive() and not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
-                    log.info("Setting terminate event for process %d.", proc.pid)
                     try:
                         proc.set_terminate_event()
                     except:
+                        log.error("Unable to set terminate event for process %d.", proc.pid)
                         continue
+                    log.info("Terminate event set for process %d.", proc.pid)
                 if self.config.terminate_processes:
                     # Try to terminate remaining active processes.
                     # (This setting may render full system memory dumps less useful.)
