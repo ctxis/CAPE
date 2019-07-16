@@ -103,7 +103,9 @@ def demux_sflock(filename, options):
             password = tmp_pass
 
         unpacked = unpack(filename, password=password)
-        if unpacked.children and unpacked.package not in whitelist_extensions:
+        if unpacked.package in whitelist_extensions:
+            return [filename]
+        if unpacked.children:
             cuckoo_conf = Config()
             for sf_child in unpacked.children:
                 base, ext = os.path.splitext(sf_child.filename)
