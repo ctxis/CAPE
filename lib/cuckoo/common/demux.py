@@ -5,7 +5,6 @@
 import os
 import tempfile
 import logging
-import subprocess
 
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
@@ -30,6 +29,10 @@ demux_extensions_list = [
         ".xls", ".xlt", ".xlm", ".xlsx", ".xltx", ".xlsm", ".xltm", ".xlsb", ".xla", ".xlam", ".xll", ".xlw",
         ".ppt", ".pot", ".pps", ".pptx", ".pptm", ".potx", ".potm", ".ppam", ".ppsx", ".ppsm", ".sldx", ".sldm", ".wsf",
 ]
+
+whitelist_extensions = (
+    "doc", "xls", "ppt", "pub"
+)
 
 # list of valid file types to extract - TODO: add more types
 VALID_TYPES = ["PE32", "Java Jar", "Outlook", "Message"]
@@ -87,7 +90,6 @@ def is_valid_type(magic):
             return True
     return False
 
-
 def demux_sflock(filename, options):
     retlist = []
     # only extract from files with no extension or with .bin (downloaded from us) or .zip extensions
@@ -101,6 +103,8 @@ def demux_sflock(filename, options):
             password = tmp_pass
 
         unpacked = unpack(filename, password=password)
+        if unpacked.package in whitelist_extensions:
+            return [filename]
         if unpacked.children:
             cuckoo_conf = Config()
             for sf_child in unpacked.children:
@@ -155,7 +159,7 @@ def demux_sample(filename, package, options):
         return [filename]
     if "PE32" in magic or "MS-DOS executable" in magic:
         return [filename]
-    
+
     retlist = list()
     if HAS_SFLOCK:
         # all in one unarchiver
