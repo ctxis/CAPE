@@ -1476,8 +1476,7 @@ class Database(object):
                     db_sample = session.query(Task).filter(
                         query_filter == sample_hash).filter(Sample.id == Task.sample_id).all()
                     if db_sample is not None:
-                        samples = filter(None, [sample.to_dict().get(
-                            "target", "") for sample in db_sample])
+                        samples = filter(None, [tmp_sample.to_dict().get("target", "") for tmp_sample in db_sample])
                         #hash validation and if exist
                         samples = [
                             path for path in samples if os.path.exists(path)]
@@ -1488,14 +1487,13 @@ class Database(object):
                                 break
                             f.close()
             except AttributeError:
-                return None
+                pass
             except SQLAlchemyError as e:
                 log.debug("Database error viewing task: {0}".format(e))
-                return None
+                pass
             finally:
                 session.close()
-        else:
-            return None
+
         return sample
 
     @classlock
