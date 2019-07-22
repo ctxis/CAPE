@@ -272,17 +272,18 @@ def index(request, resubmit_hash=False):
         if "hash" in request.POST and request.POST.get("hash", False) and request.POST.get("hash")[0] != '':
             resubmission_hash = request.POST.get("hash").strip()
             paths = db.sample_path_by_hash(resubmission_hash)
-            paths = filter(None, [path if os.path.exists(path) else False for path in paths])
-            if not paths and FULL_DB:
-                tasks = results_db.analysis.find({"dropped.sha256": resubmission_hash})
-                if tasks:
-                    for task in tasks:
-                        # grab task id and replace in path aka distributed cuckoo hack
-                        path = os.path.join(settings.CUCKOO_PATH, "storage", "analyses", str(task["info"]["id"]), "files", resubmission_hash)
-                        if os.path.exists(path):
-                            paths = [path]
-                            break
-            if paths:
+            if paths is not None and paths:
+                paths = filter(None, [path if os.path.exists(path) else False for path in paths])
+                if not paths and FULL_DB:
+                    tasks = results_db.analysis.find({"dropped.sha256": resubmission_hash})
+                    if tasks:
+                        for task in tasks:
+                            # grab task id and replace in path aka distributed cuckoo hack
+                            path = os.path.join(settings.CUCKOO_PATH, "storage", "analyses", str(task["info"]["id"]), "files", resubmission_hash)
+                            if os.path.exists(path):
+                                paths = [path]
+                                break
+            if paths is not None and paths:
                 content = ""
                 content = submit_utils.get_file_content(paths)
                 if content is False:
