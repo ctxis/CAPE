@@ -23,6 +23,7 @@ except ImportError:
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), ".."))
 
 from lib.cuckoo.common.config import Config
+from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.constants import CUCKOO_VERSION, CUCKOO_ROOT
 from lib.cuckoo.common.utils import store_temp_file, delete_folder
 from lib.cuckoo.common.email_utils import find_attachments_in_email
@@ -83,6 +84,7 @@ def tasks_create_file():
     response = {}
 
     data = request.files.file
+    pcap = request.POST.get("pcap", "")
     package = request.forms.get("package", "")
     timeout = request.forms.get("timeout", "")
     priority = request.forms.get("priority", 1)
@@ -114,12 +116,32 @@ def tasks_create_file():
         enforce_timeout = True
 
     temp_file_path = store_temp_file(data.file.read(), data.filename)
-    try:
-        task_ids = db.demux_sample_and_add_to_db(file_path=temp_file_path, package=package, timeout=timeout, options=options, priority=priority,
-                machine=machine, platform=platform, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock,
-                shrike_url=shrike_url, shrike_msg=shrike_msg, shrike_sid=shrike_sid, shrike_refer=shrike_refer)
-    except CuckooDemuxError as e:
-        return HTTPError(500, e)
+
+    if pcap:
+        if data.filename.lower().endswith(".saz"):
+            saz = saz_to_pcap(temp_file_path)
+            if saz:
+                path = saz
+                try:
+                    os.remove(temp_file_path)
+                except:
+                    pass
+            else:
+                resp = {"error": True,
+                        "error_value": "Failed to convert PCAP to SAZ"}
+                return jsonize(resp, response=True)
+        else:
+            path = temp_file_path
+        task_id = db.add_pcap(file_path=path)
+        task_ids = [task_id]
+    else:
+
+        try:
+            task_ids = db.demux_sample_and_add_to_db(file_path=temp_file_path, package=package, timeout=timeout, options=options, priority=priority,
+                    machine=machine, platform=platform, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock,
+                    shrike_url=shrike_url, shrike_msg=shrike_msg, shrike_sid=shrike_sid, shrike_refer=shrike_refer)
+        except CuckooDemuxError as e:
+            return HTTPError(500, e)
 
     response["task_ids"] = task_ids
     return jsonize(response)
