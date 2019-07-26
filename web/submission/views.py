@@ -107,7 +107,8 @@ def load_vms_tags():
 
 def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines):
     onesuccess = False
-    if content is False:
+
+    if not content:
         try:
             r = requests.get(url, params=params, headers=headers, verify=False)
         except requests.exceptions.RequestException as e:
@@ -118,7 +119,7 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
         elif r.status_code == 403:
             return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
 
-    if content and len(content) == 0:
+    if not content:
         return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
 
     try:
@@ -462,12 +463,16 @@ def index(request, resubmit_hash=False):
                     elif settings.VTDL_INTEL_KEY:
                         headers = {'x-apikey': settings.VTDL_INTEL_KEY}
 
-                    if content is False:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "VirusTotal", filename, package, timeout, options, priority, machine, gateway,
-                                                         clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+                    if not content:
+                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers,
+                                                         "VirusTotal", filename, package, timeout, options, priority,
+                                                         machine, gateway, clock, custom, memory, enforce_timeout,
+                                                         referrer, tags, orig_options, task_gateways, task_machines)
                     else:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
-                                                         clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local",
+                                                         filename, package, timeout, options, priority, machine,
+                                                         gateway, clock, custom, memory, enforce_timeout, referrer,
+                                                         tags, orig_options, task_gateways, task_machines)
                 if status != "ok":
                     failed_hashes.append(h)
 
