@@ -107,7 +107,8 @@ def load_vms_tags():
 
 def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines):
     onesuccess = False
-    if content is False:
+
+    if not content:
         try:
             r = requests.get(url, params=params, headers=headers, verify=False)
         except requests.exceptions.RequestException as e:
@@ -118,7 +119,7 @@ def download_file(content, request, db, task_ids, url, params, headers, service,
         elif r.status_code == 403:
             return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
 
-    if content and len(content) == 0:
+    if not content:
         return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
 
     try:
@@ -272,17 +273,18 @@ def index(request, resubmit_hash=False):
         if "hash" in request.POST and request.POST.get("hash", False) and request.POST.get("hash")[0] != '':
             resubmission_hash = request.POST.get("hash").strip()
             paths = db.sample_path_by_hash(resubmission_hash)
-            paths = filter(None, [path if os.path.exists(path) else False for path in paths])
-            if not paths and FULL_DB:
-                tasks = results_db.analysis.find({"dropped.sha256": resubmission_hash})
-                if tasks:
-                    for task in tasks:
-                        # grab task id and replace in path aka distributed cuckoo hack
-                        path = os.path.join(settings.CUCKOO_PATH, "storage", "analyses", str(task["info"]["id"]), "files", resubmission_hash)
-                        if os.path.exists(path):
-                            paths = [path]
-                            break
-            if paths:
+            if paths is not None and paths:
+                paths = filter(None, [path if os.path.exists(path) else False for path in paths])
+                if not paths and FULL_DB:
+                    tasks = results_db.analysis.find({"dropped.sha256": resubmission_hash})
+                    if tasks:
+                        for task in tasks:
+                            # grab task id and replace in path aka distributed cuckoo hack
+                            path = os.path.join(settings.CUCKOO_PATH, "storage", "analyses", str(task["info"]["id"]), "files", resubmission_hash)
+                            if os.path.exists(path):
+                                paths = [path]
+                                break
+            if paths is not None and paths:
                 content = ""
                 content = submit_utils.get_file_content(paths)
                 if content is False:
@@ -461,12 +463,16 @@ def index(request, resubmit_hash=False):
                     elif settings.VTDL_INTEL_KEY:
                         headers = {'x-apikey': settings.VTDL_INTEL_KEY}
 
-                    if content is False:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "VirusTotal", filename, package, timeout, options, priority, machine, gateway,
-                                                         clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+                    if not content:
+                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers,
+                                                         "VirusTotal", filename, package, timeout, options, priority,
+                                                         machine, gateway, clock, custom, memory, enforce_timeout,
+                                                         referrer, tags, orig_options, task_gateways, task_machines)
                     else:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority, machine, gateway,
-                                                         clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines)
+                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local",
+                                                         filename, package, timeout, options, priority, machine,
+                                                         gateway, clock, custom, memory, enforce_timeout, referrer,
+                                                         tags, orig_options, task_gateways, task_machines)
                 if status != "ok":
                     failed_hashes.append(h)
 

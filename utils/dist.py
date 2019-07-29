@@ -3,8 +3,6 @@
 # Copyright (C) 2010-2015 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
-# ToDo
-# https://github.com/cuckoosandbox/cuckoo/pull/1694/files
 import os
 import sys
 import time
@@ -95,7 +93,7 @@ def node_status(url, name, ht_user, ht_pass):
     try:
         r = requests.get(os.path.join(url, "cuckoo", "status"),
                         auth = HTTPBasicAuth(ht_user, ht_pass),
-                        verify = False, timeout = 200)
+                        verify = False, timeout=200)
         return r.json()["tasks"]
     except Exception as e:
         log.critical("Possible invalid Cuckoo node (%s): %s",
@@ -106,11 +104,11 @@ def node_fetch_tasks(status, url, ht_user, ht_pass, action="fetch", since=0):
     try:
         url = os.path.join(url, "tasks", "list")
         params = dict(status=status, ids=True)
-        if action=="fetch":
+        if action == "fetch":
             params["completed_after"] = since
-        r = requests.get(url, params = params,
-                        auth = HTTPBasicAuth(ht_user, ht_pass),
-                        verify = False)
+        r = requests.get(url, params=params,
+                        auth=HTTPBasicAuth(ht_user, ht_pass),
+                        verify=False)
         return r.json()["tasks"]
     except Exception as e:
         log.critical("Error listing completed tasks (node %s): %s", url, e)
@@ -125,8 +123,8 @@ def node_list_machines(url, ht_user, ht_pass):
 
         for machine in r.json()["machines"]:
             yield Machine(name=machine["name"],
-                             platform=machine["platform"],
-                             tags=machine["tags"])
+                          platform=machine["platform"],
+                          tags=machine["tags"])
     except Exception as e:
         abort(404,
             message="Invalid Cuckoo node (%s): %s" % (url, e))
@@ -134,13 +132,13 @@ def node_list_machines(url, ht_user, ht_pass):
 def node_get_report(task_id, fmt, url, ht_user, ht_pass, stream=False):
     try:
         url = os.path.join(url, "tasks", "report", "%d" % task_id, fmt)
-        return requests.get(url, stream = stream,
-                            auth = HTTPBasicAuth(ht_user, ht_pass),
-                            verify = False,
+        return requests.get(url, stream=stream,
+                            auth=HTTPBasicAuth(ht_user, ht_pass),
+                            verify=False,
                             timeout=300)
     except Exception as e:
         log.critical("Error fetching report (task #%d, node %s): %s",
-                        task_id, url, e)
+            task_id, url, e)
 
 def node_submit_task(task_id, node_id):
     db = session()
@@ -153,22 +151,27 @@ def node_submit_task(task_id, node_id):
 
         # Remove the earlier appended comma
         if task.tags:
-            if task.tags[-1] == ',': task.tags = task.tags[:-1]
-        data = dict(
-            package=task.package,
-            timeout=task.timeout,
-            priority=task.priority,
-            options=task.options,
-            machine=task.machine,
-            platform=task.platform,
-            tags=task.tags,
-            custom=task.custom,
-            memory=task.memory,
-            #clock=task.clock,
-            enforce_timeout=task.enforce_timeout,
-        )
+            if task.tags[-1] == ',':
+                task.tags = task.tags[:-1]
 
         if task.category in ("file", "pcap"):
+            if task.category == "pcap":
+                data = {"pcap":  1}
+            else:
+                data = dict(
+                    package=task.package,
+                    timeout=task.timeout,
+                    priority=task.priority,
+                    options=task.options,
+                    machine=task.machine,
+                    platform=task.platform,
+                    tags=task.tags,
+                    custom=task.custom,
+                    clock=task.clock,
+                    memory=task.memory,
+                    enforce_timeout=task.enforce_timeout,
+                )
+
             url = os.path.join(node.url, "tasks", "create", "file")
             # If the file does not exist anymore, ignore it and move on
             # to the next file.
@@ -185,15 +188,14 @@ def node_submit_task(task_id, node_id):
             files = dict(file=open(task.path, "rb"))
             r = requests.post(url,
                             data=data, files=files,
-                            auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
-                            verify = False)
+                            auth=HTTPBasicAuth(node.ht_user, node.ht_pass),
+                            verify=False)
         elif task.category == "url":
             url = os.path.join(node.url, "tasks", "create", "url")
-            data["url"] = task.path
             r = requests.post(url,
-                            data=data,
-                            auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
-                            verify = False)
+                            data={"url": task.path, "options": task.options},
+                            auth=HTTPBasicAuth(node.ht_user, node.ht_pass),
+                            verify=False)
         else:
             log.debug("Target category is: {}".format(task.category))
             db.close()
@@ -203,11 +205,12 @@ def node_submit_task(task_id, node_id):
         if r.status_code == 500 and task.category == "file":
             r = requests.post(url,
                             data=data, files={"file": ("file", open(task.path, "rb").read())},
-                            auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
-                            verify = False)
+                            auth=HTTPBasicAuth(node.ht_user, node.ht_pass),
+                            verify=False)
 
         # Zip files preprocessed, so only one id
         if r and r.status_code == 200:
+            log.info(str(r.json()))
             if "task_ids" in r.json() and len(r.json()["task_ids"]) > 0:
                 task.task_id = r.json()["task_ids"][0]
             elif "task_id" in r.json() and r.json()["task_id"] > 0 and r.json()["task_id"] is not None:
@@ -540,8 +543,7 @@ class Retriever(threading.Thread):
 
 class StatusThread(threading.Thread):
 
-    def submit_tasks(self, node_id, pend_tasks_num):
-
+    def submit_tasks(self, node_id, pend_tasks_num, STATUSES):
         db = session()
         node = db.query(Node).filter_by(id = node_id).first()
         if node.name != "master":
@@ -552,19 +554,23 @@ class StatusThread(threading.Thread):
                 log.debug("going to upload {} tasks to node id {}".format(pend_tasks_num, node_id))
                 limit = 0
                 for t in main_db_tasks:
-                    options = dict((value.strip() for value in option.split("=", 1)) for option in t.options.split(",") if option and '=' in option)
-                    # convert the options string to a dict, e.g. {'opt1': 'val1', 'opt2': 'val2', 'opt3': 'val3'}
-                    if "node=" in t.options:
-                        try:
-                            if options.get("node", node.name) != node.name:
-                                # skip task
-                                continue
-                        except Exception as e:
-                            log.error(e)
+                    try:
+                        # convert the options string to a dict, e.g. {'opt1': 'val1', 'opt2': 'val2', 'opt3': 'val3'}
+                        options = dict((value.strip() for value in option.split("=", 1)) for option in t.options.split(",") if option and '=' in option)
+                        if "node=" in t.options and options.get("node", node.name) != node.name and options.get("node") in STATUSES:
+                            # check if node exist and its correct
+                                node = db.query(Node).filter_by(name = options.get("node", node.name)).first()
+                                ##or options.get("node") not in STATUSES
+                                #log.debug("Skipping task: {}. node: {} - dest node: {}".format(t.id, node.name, options.get("node")))
+                                #continue
+                        if "timeout=" in t.options:
+                            t.timeout = options["timeout"]
+                    except Exception as e:
+                        log.error(e)
                     tasks = db.query(Task).filter_by(main_task_id=t.id).all()
                     if not tasks:
                         # Check if file exist, if no wipe from db and continue, rare cases
-                        if not os.path.exists(t.target):
+                        if t.category in ("file", "pcap") and not os.path.exists(t.target):
                             main_db.delete_task(t.id)
                             log.info("Task id: {} - File doesn't exist: {}".format(t.id, t.target))
                             continue
@@ -574,9 +580,7 @@ class StatusThread(threading.Thread):
                         if tags: tags += ','
                         if "msoffice-crypt-tmp" in t.target and "password=" in t.options:
                             t.options = t.options.replace("password=", "pwd=")
-                        if "timeout=" in t.options:
-                            t.timeout = options["timeout"]
-                        args = dict(package=t.package, category = t.category, timeout=t.timeout, priority=t.priority,
+                        args = dict(package=t.package, category=t.category, timeout=t.timeout, priority=t.priority,
                                     options=t.options+",main_task_id={}".format(t.id), machine=t.machine, platform=t.platform,
                                     tags=tags, custom=t.custom, memory=t.memory, clock=t.clock,
                                     enforce_timeout=t.enforce_timeout, main_task_id=t.id)
@@ -610,7 +614,7 @@ class StatusThread(threading.Thread):
                             tags = [getattr(Task, "tags") == ""]
                             for tg in ta:
                                 if len(tg.split(',')) == 1:
-                                    tags.append(getattr(Task, "tags")==(tg+','))
+                                    tags.append(getattr(Task, "tags") == (tg+','))
                                 else:
                                     tg = tg.split(',')
                                     # ie. LIKE '%,%,%,'
@@ -691,11 +695,12 @@ class StatusThread(threading.Thread):
                 log.info("Status.. %s -> %s", node.name, status)
                 statuses[node.name] = status
                 STATUSES = statuses
-                #print(STATUSES)
+
                 node_name = min(STATUSES, key=lambda k: STATUSES[k]["completed"]+STATUSES[k]["pending"])
 
                 if node_name != node.name:
                     node = db.query(Node).filter_by(name=node_name).first()
+
                 try:
                     pend_tasks_num = MINIMUMQUEUE[node.name] - STATUSES[node.name]["pending"]
                 except KeyError:
@@ -708,9 +713,9 @@ class StatusThread(threading.Thread):
                 # elif -  master also analyze samples, check master queue
                 # send tasks to slaves if master queue has extra tasks(pending)
                 if master_storage_only:
-                    self.submit_tasks(node.id, pend_tasks_num)
+                    self.submit_tasks(node.id, pend_tasks_num, STATUSES)
                 elif statuses.get("master", {}).get("pending", 0) > MINIMUMQUEUE.get("master", 0) and status["pending"] < MINIMUMQUEUE[node.name]:
-                    self.submit_tasks(node.id, pend_tasks_num)
+                    self.submit_tasks(node.id, pend_tasks_num, STATUSES)
             db.close()
             time.sleep(INTERVAL)
 
@@ -930,8 +935,8 @@ def cron_cleaner():
                 try:
                     url = os.path.join(node.url, "tasks", "delete", "%d" % task.task_id)
                     log.info("Removing task id: {0} - from node: {1}".format(task.task_id, node.name))
-                    res = requests.get(url,auth = HTTPBasicAuth(node.ht_user, node.ht_pass),
-                                        verify = False)
+                    res = requests.get(url, auth=HTTPBasicAuth(node.ht_user, node.ht_pass),
+                                        verify=False)
                     if res and res.status_code != 200:
                         log.info("{} - {}".format(res.status_code, res.content))
                     else:
@@ -969,11 +974,10 @@ def init_logging(debug=False):
     fh.setFormatter(formatter)
     log.addHandler(fh)
 
-    """
     handler_stdout = logging.StreamHandler(sys.stdout)
     handler_stdout.setFormatter(formatter)
     log.addHandler(handler_stdout)
-    """
+
     if debug:
         log.setLevel(logging.DEBUG)
     else:

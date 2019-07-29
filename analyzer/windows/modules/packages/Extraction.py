@@ -19,7 +19,7 @@ class Extraction(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "Extraction.dll"
-        #self.options["dll_64"] = "Extraction_x64.dll"
+        self.options["dll_64"] = "Extraction_x64.dll"
 
     def start(self, path):
         arguments = self.options.get("arguments")
