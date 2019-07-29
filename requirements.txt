@@ -51,3 +51,4 @@ pyelftools
 gunicorn
 suricata-update
 sflock
+sock5man
