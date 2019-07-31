@@ -50,5 +50,5 @@ pyyaml
 pyelftools
 gunicorn
 suricata-update
-sflock
+git+https://github.com/doomedraven/sflock.git
 git+https://github.com/doomedraven/socks5man.git
