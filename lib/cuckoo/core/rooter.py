@@ -12,13 +12,42 @@ import threading
 
 from lib.cuckoo.common.config import Config
 
+try:
+    from socks5man.manager import Manager
+    HAVE_SOCKS5MANAGER = True
+except ImportError:
+    HAVE_SOCKS5MANAGER = False
+
 cfg = Config()
 log = logging.getLogger(__name__)
 unixpath = tempfile.mktemp()
 lock = threading.Lock()
 
 vpns = {}
-socks5s = {}
+
+
+def _load_socks5_operational():
+
+    socks5s = dict()
+
+    if not HAVE_SOCKS5MANAGER:
+        return socks5s
+
+    for socks5 in Manager().list_socks5(operational=True):
+        if not hasattr(socks5, "description"):
+            continue
+
+        name = socks5.description
+        if not name:
+            continue
+
+        socks5s[name] = socks5.to_dict()
+
+    return socks5s
+
+
+socks5s = _load_socks5_operational()
+
 
 def rooter(command, *args, **kwargs):
     if not os.path.exists(cfg.cuckoo.rooter):

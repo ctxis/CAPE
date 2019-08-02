@@ -298,7 +298,7 @@ class SubmitCAPE(Report):
         package = None
 
         # allow custom extractors
-        if report_key in results or "_test00" in results.get("target", {}).get("file", {}).get("name", "").lower():
+        if report_key in results:
             return
 
         self.task_options = self.task["options"]
@@ -413,8 +413,7 @@ class SubmitCAPE(Report):
 
         parent_id = int(results["info"]["id"])
         if results.get("info", {}).get("options", {}).get("main_task_id", ""):
-            parent_id = int(results.get("info", {}).get(
-                "options", {}).get("main_task_id", ""))
+            parent_id = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
 
         if package and package != parent_package:
             self.task_custom = "Parent_Task_ID:%s" % results["info"]["id"]
@@ -462,4 +461,3 @@ class SubmitCAPE(Report):
                     None,
                     parent_id,
                 )
-        return

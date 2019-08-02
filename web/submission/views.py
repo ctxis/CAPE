@@ -26,7 +26,7 @@ from lib.cuckoo.common.quarantine import unquarantine
 from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.core.database import Database
-from lib.cuckoo.core.rooter import vpns, socks5s
+from lib.cuckoo.core.rooter import vpns, _load_socks5_operational
 from utils import submit_utils
 
 # this required for hash searches
@@ -551,6 +551,7 @@ def index(request, resubmit_hash=False):
         machines.insert(0, ("", "First available"))
         machines.insert(1, ("all", "All"))
 
+        socks5s = _load_socks5_operational()
         return render(request, "submission/index.html",
                                   {"packages": sorted(packages),
                                    "machines": machines,
