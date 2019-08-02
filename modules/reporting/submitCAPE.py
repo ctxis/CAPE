@@ -437,7 +437,11 @@ class SubmitCAPE(Report):
             self.task_options = self.task_options.replace(u"procdump=1", u"procdump=0", 1)
         if self.task_options_stack:
             self.task_options=','.join(self.task_options_stack)            
-            
+        
+        parent_id = int(report["info"]["id"])
+        if results.get("info", {}).get("options", {}).get("main_task_id", ""):
+            parent_id = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
+
         if package and package != parent_package:
             self.task_custom="Parent_Task_ID:%s" % report["info"]["id"]
             if report["info"].has_key("custom") and report["info"]["custom"]:
@@ -455,7 +459,7 @@ class SubmitCAPE(Report):
                 self.task["enforce_timeout"],
                 None,
                 None,
-                int(report["info"]["id"])
+                parent_id,
             )
             
         else: # nothing submitted, only 'dumpers' left
@@ -479,6 +483,6 @@ class SubmitCAPE(Report):
                     self.task["enforce_timeout"],
                     None,
                     None,
-                    int(report["info"]["id"])
+                    parent_id,
             )
         return
