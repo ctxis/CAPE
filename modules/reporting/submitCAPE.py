@@ -243,18 +243,18 @@ class SubmitCAPE(Report):
                     log.error(e)
             else:
                 task_id = db.add_path(
-                            file_path=target,
-                            package=package,
-                            timeout=timeout,
-                            options=task_options,
-                            priority=priority,   # increase priority to expedite related submission
-                            machine=machine,
-                            platform=platform,
-                            memory=memory,
-                            enforce_timeout=enforce_timeout,
-                            clock=None,
-                            tags=None,
-                            parent_id=parent_id,
+                    file_path=target,
+                    package=package,
+                    timeout=timeout,
+                    options=task_options,
+                    priority=priority,   # increase priority to expedite related submission
+                    machine=machine,
+                    platform=platform,
+                    memory=memory,
+                    enforce_timeout=enforce_timeout,
+                    clock=None,
+                    tags=None,
+                    parent_id=parent_id,
                 )
             if task_id:
                 log.info(u"CAPE detection on file \"{0}\": {1} - added as CAPE task with ID {2}".format(target, package, task_id))
@@ -285,24 +285,19 @@ class SubmitCAPE(Report):
 
         parent_package = results["info"].get("package")
 
-        ##### Initial static hits from CAPE's yara signatures
-        #####
+        # Initial static hits from CAPE's yara signatures
         if "target" in results:
             target = results["target"]
-            if "file" in target:
-                file = target["file"]
-                if "cape_yara" in file:
-                    for entry in file["cape_yara"]:
-                        self.process_cape_yara(entry, detections)
+            if "file" in target and "cape_yara" in target["file"]:
+                for entry in target["file"]["cape_yara"]:
+                    self.process_cape_yara(entry, detections)
 
         for pattern in ("procdump", "CAPE", "dropped"):
-            if pattern in results:
-                if results[pattern] is not None:
-                    for file in results[pattern]:
-                        if "cape_yara" in file:
-                            for entry in file["cape_yara"]:
-                                self.process_cape_yara(entry, detections)
-
+            if pattern in results and results[pattern]:
+                for file in results[pattern]:
+                    if "cape_yara" in file:
+                        for entry in file["cape_yara"]:
+                            self.process_cape_yara(entry, detections)
 
         # Dynamic CAPE hits
         # Packers, injection or other generic dumping
