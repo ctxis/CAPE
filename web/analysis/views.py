@@ -755,7 +755,7 @@ def report(request, task_id):
                                   {"error": "The specified analysis does not exist"})
 
     # If compressed, decompress CAPE data
-    if "CAPE" in report:
+    if "CAPE" in report and report["CAPE"]:
         try:
             report["CAPE"] = json.loads(zlib.decompress(report["CAPE"]))
         except:
