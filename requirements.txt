@@ -51,4 +51,4 @@ pyelftools
 gunicorn
 suricata-update
 git+https://github.com/doomedraven/sflock.git
-git+https://github.com/doomedraven/socks5man.git
+socks5man
