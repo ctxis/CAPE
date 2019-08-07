@@ -763,8 +763,8 @@ def report(request, task_id):
             pass
 
     children = 0
-    if "CAPE_childrens" in report:
-        children = report["CAPE_childrens"]
+    if "CAPE_children" in report:
+        children = report["CAPE_children"]
 
     # If compressed, decompress procdump, behaviour analysis (enhanced & summary)
     if "procdump" in report:

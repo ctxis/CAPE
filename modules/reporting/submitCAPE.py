@@ -207,8 +207,7 @@ class SubmitCAPE(Report):
                 detections.add('QakBot')
             decrypt_config = cape_yara["addresses"].get("decrypt_config1")
             if decrypt_config:
-                decrypt_config = decrypt_config + \
-                    16  # Offset of "CALL" (decrypt)
+                decrypt_config = decrypt_config +  16  # Offset of "CALL" (decrypt)
                 for item in self.task_options_stack:
                     if 'bp1' in item:
                         self.task_options_stack.remove(item)
@@ -217,8 +216,7 @@ class SubmitCAPE(Report):
                 detections.add('QakBot')
             decrypt_config = cape_yara["addresses"].get("decrypt_config2")
             if decrypt_config:
-                decrypt_config = decrypt_config + \
-                    30  # Offset of "CALL" (decrypt)
+                decrypt_config = decrypt_config +  30  # Offset of "CALL" (decrypt)
                 for item in self.task_options_stack:
                     if 'bp1' in item:
                         self.task_options_stack.remove(item)
@@ -291,7 +289,7 @@ class SubmitCAPE(Report):
         self.task_options = None
         self.task_custom = None
         detections = set()
-        childrens = []
+        children = []
 
         # We only want to submit a single job if we have a
         # malware detection. A given package should do
@@ -334,7 +332,7 @@ class SubmitCAPE(Report):
 
                     elif entry["name"] == "Extraction":
                         if parent_package == 'doc':
-                            #    detections.add('Extraction_doc')
+                            # detections.add('Extraction_doc')
                             # Word triggers this so removed
                             continue
 
@@ -435,7 +433,7 @@ class SubmitCAPE(Report):
                 parent_id,
             )
             if task_id:
-                childrens.append([task_id, package])
+                children.append([task_id, package])
 
         else:  # nothing submitted, only 'dumpers' left
             if parent_package in cape_package_list:
@@ -463,9 +461,9 @@ class SubmitCAPE(Report):
                     parent_id,
                 )
                 if task_id:
-                    childrens.append([task_id, dumper])
+                    children.append([task_id, dumper])
 
-        if childrens:
-            results["CAPE_childrens"] = childrens
+        if children:
+            results["CAPE_children"] = children
 
         return
