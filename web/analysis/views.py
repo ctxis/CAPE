@@ -754,16 +754,17 @@ def report(request, task_id):
         return render(request, "error.html",
                                   {"error": "The specified analysis does not exist"})
 
-    children = 0
     # If compressed, decompress CAPE data
-    if "CAPE" in report:
+    if "CAPE" in report and report["CAPE"]:
         try:
             report["CAPE"] = json.loads(zlib.decompress(report["CAPE"]))
         except:
             # In case compressresults processing module is not enabled
             pass
-        session = db.Session()
-        children = [c for c in session.query(Task.id,Task.package).filter(Task.parent_id == task_id)]
+
+    children = 0
+    if "CAPE_childrens" in report:
+        children = report["CAPE_childrens"]
 
     # If compressed, decompress procdump, behaviour analysis (enhanced & summary)
     if "procdump" in report:
