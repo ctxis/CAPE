@@ -140,12 +140,12 @@ class Zip(Package):
             rundll32 = self.get_path_app_in_path("rundll32.exe")
             function = self.options.get("function", "#1")
             arguments = self.options.get("arguments")
-            loadername = self.options.get("loader")
+            dllloader = self.options.get("dllloader")
             dll_args = "\"{0}\",{1}".format(file_path, function)
             if arguments:
                 dll_args += " {0}".format(arguments)
-            if loadername:
-                newname = os.path.join(os.path.dirname(rundll32), loadername)
+            if dllloader:
+                newname = os.path.join(os.path.dirname(rundll32), dllloader)
                 shutil.copy(rundll32, newname)
                 rundll32 = newname
             return self.execute(rundll32, dll_args, file_path)

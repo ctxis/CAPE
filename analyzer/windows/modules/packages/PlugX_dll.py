@@ -23,7 +23,7 @@ class PlugX_dll(Package):
         rundll32 = self.get_path("rundll32.exe")
         function = self.options.get("function", "#1")
         arguments = self.options.get("arguments")
-        loadername = self.options.get("loader")
+        dllloader = self.options.get("dllloader")
         self.options["dll"] = "PlugX.dll"
 
         # Check file extension.
@@ -40,8 +40,8 @@ class PlugX_dll(Package):
         if arguments:
             args += " {0}".format(arguments)
 
-        if loadername:
-            newname = os.path.join(os.path.dirname(rundll32), loadername)
+        if dllloader:
+            newname = os.path.join(os.path.dirname(rundll32), dllloader)
             shutil.copy(rundll32, newname)
             rundll32 = newname
 
