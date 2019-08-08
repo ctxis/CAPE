@@ -23,7 +23,7 @@ class Cuckoomon_dll(Package):
         rundll32 = self.get_path("rundll32.exe")
         function = self.options.get("function", "#1")
         arguments = self.options.get("arguments")
-        loadername = self.options.get("loader")
+        dllloader = self.options.get("dllloader")
 
         # Check file extension.
         ext = os.path.splitext(path)[-1].lower()
@@ -39,8 +39,8 @@ class Cuckoomon_dll(Package):
         if arguments:
             args += " {0}".format(arguments)
 
-        if loadername:
-            newname = os.path.join(os.path.dirname(rundll32), loadername)
+        if dllloader:
+            newname = os.path.join(os.path.dirname(rundll32), dllloader)
             shutil.copy(rundll32, newname)
             rundll32 = newname
 
