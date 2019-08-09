@@ -442,19 +442,19 @@ class CAPE_PlugX(Signature):
 
         if call["api"] == "memcpy":
             count = self.get_raw_argument(call, "count")
-            if (count == 0xae4)  or \ #2788
-               (count == 0xbe4)  or \ #3044
-               (count == 0x150c) or \ #5388
-               (count == 0x1510) or \ #5392
-               (count == 0x1516) or \ #5398
-               (count == 0x170c) or \ #5900
-               (count == 0x1b18) or \ #6936
-               (count == 0x1d18) or \ #7448
-               (count == 0x2540) or \ #9536
-               (count == 0x254c) or \ #9548
-               (count == 0x2d58) or \ #11608
-               (count == 0x36a4) or \ #13988
-               (count == 0x4ea4):     #20132
+            if (count == 0xae4)  or \
+               (count == 0xbe4)  or \
+               (count == 0x150c) or \
+               (count == 0x1510) or \
+               (count == 0x1516) or \
+               (count == 0x170c) or \
+               (count == 0x1b18) or \
+               (count == 0x1d18) or \
+               (count == 0x2540) or \
+               (count == 0x254c) or \
+               (count == 0x2d58) or \
+               (count == 0x36a4) or \
+               (count == 0x4ea4):
                 self.config_copy = True
 
     def on_complete(self):
