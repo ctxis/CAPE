@@ -1003,7 +1003,7 @@ class VolatilityManager(object):
 
     def run(self, manager=None, vm=None):
         results = {}
-
+        self.key = "memory"
         # Exit if options were not loaded.
         if not self.voptions:
             return
@@ -1147,7 +1147,7 @@ class Memory(Processing):
         self.voptions = Config("memory")
 
         results = {}
-        if "machine" not in self.task or not self.task["machine"] or not self.task["memory"]:
+        if "machine" not in self.task or not self.task["machine"]:
             log.warn("Volatility startup: machine not in task list and no memory task specified.")
             return results
 
