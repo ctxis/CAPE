@@ -50,6 +50,7 @@ def main():
     parser.add_argument("--pattern", type=str, action="store", default=None, help="Pattern of files to submit", required=False)
     parser.add_argument("--shuffle", action="store_true", default=False, help="Shuffle samples before submitting them", required=False)
     parser.add_argument("--unique", action="store_true", default=False, help="Only submit new samples, ignore duplicates", required=False)
+    parser.add_argument("--delete", action="store_true", default=False, help="Only submit new samples, ignore duplicates and delete binary", required=False)
     parser.add_argument("--quiet", action="store_true", default=False, help="Only print text on failure", required=False)
     parser.add_argument("--gateway",type=str, action="store", default=None, help= "Set the default gateway for the task", required=False)
     try:
@@ -81,12 +82,12 @@ def main():
         if "," in gateways[args.gateway]:
             tgateway = random.choice(gateways[args.gateway].split(","))
             ngateway = gateways[tgateway]
-        else: 
+        else:
             ngateway = gateways[args.gateway]
         if args.options:
             args.options += ","
         args.options += "setgw=%s" % (ngateway)
-        
+
     if args.url:
         if args.remote:
             if not HAVE_REQUESTS:
@@ -260,6 +261,8 @@ def main():
                         msg = ": Sample {0} (skipping file)".format(file_path)
                         if not args.quiet:
                             print(bold(yellow("Duplicate")) + msg)
+                        if args.delete:
+                            os.remove(file_path)
                         continue
 
                 try:
