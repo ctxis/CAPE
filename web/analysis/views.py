@@ -1280,7 +1280,6 @@ def search(request):
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def remove(request, task_id):
     """Remove an analysis.
-    @todo: remove folder from storage.
     """
     if enabledconf["mongodb"]:
         analyses = results_db.analysis.find({"info.id": int(task_id)})
@@ -1299,6 +1298,9 @@ def remove(request, task_id):
                         results_db.calls.remove({"_id": ObjectId(call)})
                 # Delete analysis data.
                 results_db.analysis.remove({"_id": ObjectId(analysis["_id"])})
+            analyses_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id)
+            if os.path.exist(analyses_path):
+                os.remove(analyses_path)
         else:
             return render(request, "error.html",
                                       {"error": "The specified analysis does not exist"})
