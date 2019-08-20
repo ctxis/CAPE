@@ -106,7 +106,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Clear Logs"] = [["GlobalSession.ClearLog"]]
 
-    behaviorCol["Modifies Windows Defender"] = [["DisableBehaviorMonitoring"],["DisableBlockAtFirstSeen"],["DisableIntrusionPreventionSystem"],["DisableIOAVProtection"],["DisablePrivacyMode"],["DisableRealtimeMonitoring"],["DisableScriptScanning"],["LowThreatDefaultAction"],["ModerateThreatDefaultAction"],["SevereThreatDefaultAction]"]]
+    behaviorCol["Disables Windows Defender"] = [["DisableBehaviorMonitoring"],["DisableBlockAtFirstSeen"],["DisableIntrusionPreventionSystem"],["DisableIOAVProtection"],["DisablePrivacyMode"],["DisableRealtimeMonitoring"],["DisableScriptScanning"],["LowThreatDefaultAction"],["ModerateThreatDefaultAction"],["SevereThreatDefaultAction]"]]
 
     for event in entry:
         for message in entry[event]:
