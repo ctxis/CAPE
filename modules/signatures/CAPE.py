@@ -105,7 +105,7 @@ class CAPE_Compression(Signature):
 class CAPE_RegBinary(Signature):
     name = "RegBinary"
     description = "Behavioural detection: PE binary written to registry."
-    severity = 1
+    severity = 3
     categories = ["malware"]
     authors = ["kevoreilly"]
     minimum = "1.3"
