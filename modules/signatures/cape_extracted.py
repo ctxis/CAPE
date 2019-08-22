@@ -26,7 +26,7 @@ class CAPEExtractedContent(Signature):
 
     def run(self):
         ret = False
-        if "CAPE in self.results:
+        if "CAPE" in self.results:
             for cape in self.results["CAPE"]:
                 capetype = cape["cape_type"]
                 yara = cape["cape_yara"]
