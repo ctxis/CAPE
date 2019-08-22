@@ -146,5 +146,6 @@ def logo():
     print
     print(" CAPE: Config and Payload Extraction")
     print(" github.com/ctxis/CAPE")
+    print(" 2015-2019")
     print
     sys.stdout.flush()
