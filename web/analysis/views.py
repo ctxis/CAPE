@@ -910,7 +910,7 @@ def file(request, category, task_id, dlfile):
         elif category.startswith("CAPE"):
             buf = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "CAPE", file_name)
             if os.path.isdir(buf):
-                path = os.path.join(buf, dfile)
+                path = os.path.join(buf, dlfile)
             else:
                 path = buf
         TMPDIR = "/tmp"
@@ -952,14 +952,14 @@ def file(request, category, task_id, dlfile):
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "files", file_name)
         if os.path.isdir(buf):
-            path = os.path.join(buf, dfile)
+            path = os.path.join(buf, dlfile)
         else:
             path = buf
     elif category == "procdump":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "procdump", file_name)
         if os.path.isdir(buf):
-            path = os.path.join(buf, dfile)
+            path = os.path.join(buf, dlfile)
         else:
             path = buf
     # Just for suricata dropped files currently
