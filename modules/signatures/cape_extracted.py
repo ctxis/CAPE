@@ -19,7 +19,7 @@ class CAPEExtractedContent(Signature):
     name = "cape_extracted_content"
     description = "CAPE extracted potentially suspicious content"
     severity = 2
-    categories = ["commands"]
+    categories = ["generic"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
