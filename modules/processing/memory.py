@@ -14,6 +14,7 @@ except ImportError:
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.constants import CUCKOO_ROOT
+from lib.cuckoo.common.exceptions import CuckooProcessingError
 
 try:
     import volatility.conf as conf
@@ -1002,7 +1003,7 @@ class VolatilityManager(object):
 
     def run(self, manager=None, vm=None):
         results = {}
-
+        self.key = "memory"
         # Exit if options were not loaded.
         if not self.voptions:
             return
@@ -1103,10 +1104,11 @@ class VolatilityManager(object):
         """Delete the memory dump (if configured to do so)."""
 
         if self.voptions.basic.delete_memdump:
-            try:
-                os.remove(self.memfile)
-            except OSError:
-                log.error("Unable to delete memory dump file at path \"%s\" ", self.memfile)
+            for memfile in (self.memfile, self.memfile+".zip"):
+                try:
+                    os.remove(memfile)
+                except OSError:
+                    log.error("Unable to delete memory dump file at path \"%s\" ", memfile)
 
     def do_strings(self):
         strings_path = None
@@ -1145,7 +1147,7 @@ class Memory(Processing):
         self.voptions = Config("memory")
 
         results = {}
-        if "machine" not in self.task or not self.task["machine"] or not self.task["memory"]:
+        if "machine" not in self.task or not self.task["machine"]:
             log.warn("Volatility startup: machine not in task list and no memory task specified.")
             return results
 

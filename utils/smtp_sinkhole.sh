@@ -5,7 +5,7 @@ sudo iptables -t nat -A PREROUTING -i virbr0 -p tcp -m tcp --dport 25 -j REDIREC
 sudo iptables -t nat -A PREROUTING -i virbr0 -p tcp -m tcp --sport 25 -j REDIRECT --to-ports 1025
 # tls + ssl
 sudo iptables -t nat -A PREROUTING -i virbr0 -p tcp -m tcp --dport 465 -j REDIRECT --to-ports 1025
-
+sudo iptables -t nat -A PREROUTING -i virbr0 -p tcp -m tcp --dport 587 -j REDIRECT --to-ports 1025
 
 cd /opt/CAPE/utils
 if [ ! -f "/opt/CAPE/utils/smtp_sinkhole.py" ]; then

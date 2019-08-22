@@ -105,6 +105,56 @@ class CAPE_Compression(Signature):
 class CAPE_RegBinary(Signature):
     name = "RegBinary"
     description = "Behavioural detection: PE binary written to registry."
+    severity = 3
+    categories = ["malware"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    filter_apinames = set(["RegSetValueExA", "RegSetValueExW", "RegCreateKeyExA", "RegCreateKeyExW"])
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.reg_binary = False
+
+    def on_call(self, call, process):
+        if call["api"] == "RegSetValueExA" or call["api"] == "RegSetValueExW":
+            buf = self.get_raw_argument(call, "Buffer")
+            size = self.get_raw_argument(call, "BufferLength")
+            self.reg_binary = IsPEImage(buf, size)
+
+    def on_complete(self):
+        if self.reg_binary == True:
+            return True
+
+class CAPE_Decryption(Signature):
+    name = "Decryption"
+    description = "Behavioural detection: Decryption of executable module(s)."
+    severity = 1
+    categories = ["malware"]
+    authors = ["kevoreilly"]
+    minimum = "1.3"
+    evented = True
+
+    filter_apinames = set(["CryptDecrypt"])
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.encrypted_binary = False
+
+    def on_call(self, call, process):
+        if call["api"] == "CryptDecrypt":
+            buf = self.get_raw_argument(call, "Buffer")
+            size = self.get_raw_argument(call, "Length")
+            self.encrypted_binary = IsPEImage(buf, size)
+
+    def on_complete(self):
+        if self.encrypted_binary == True:
+            return True
+
+class CAPE_RegBinary(Signature):
+    name = "RegBinary"
+    description = "Behavioural detection: PE binary written to registry."
     severity = 1
     categories = ["malware"]
     authors = ["kevoreilly"]

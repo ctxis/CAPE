@@ -504,6 +504,7 @@ class Process:
                 "dll_64",
                 "loader",
                 "loader_64",
+                "nohuman",
                 "route"
                 ]
 
