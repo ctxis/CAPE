@@ -1299,7 +1299,7 @@ def remove(request, task_id):
                 # Delete analysis data.
                 results_db.analysis.remove({"_id": ObjectId(analysis["_id"])})
             analyses_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id)
-            if os.path.exist(analyses_path):
+            if os.path.exists(analyses_path):
                 os.remove(analyses_path)
         else:
             return render(request, "error.html",
