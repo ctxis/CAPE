@@ -26,7 +26,7 @@ class RemcosFiles(Signature):
 
     def run(self):
         remcos_files = False
-        
+
         indicators = [
             ".*\\\\AppData\\\\Roaming\\\\remcos\\\\",
             ".*\\\\AppData\\\\Roaming\\\\remcos\\\\logs\.dat$",
@@ -39,4 +39,50 @@ class RemcosFiles(Signature):
                     self.data.append({"file": match})
                 remcos_files = True
 
-        return remcos_files
+        return remcos_files 
+
+
+class RemcosMutexes(Signature):
+    name = "remcos_mutexes"
+    description = "Creates known Remcos mutexes"
+    severity = 3
+    categories = ["RAT"]
+    families = ["Remcos"]
+    authors = ["ditekshen"]
+    minimum = "0.5"
+
+    def run(self):
+        indicators = [
+            "Remcos_Mutex_Inj",
+            "Remcos-[A-Z0-9]{6}$",
+        ]
+
+        for indicator in indicators:
+            if self.check_mutex(pattern=indicator, regex=True):
+                return True
+
+        return False
+
+class RemcosRegkeys(Signature):
+    name = "remcos_regkeys"
+    description = "Creates known Remcos registry keys"
+    severity = 3
+    categories = ["RAT"]
+    families = ["Remcos"]
+    authors = ["ditekshen"]
+    minimum = "0.5"
+
+    def run(self):
+        remcos_keys = False
+
+        indicators = [
+            ".*\\\\Software\\\\Remcos-[A-Z0-9]{6}.*",
+        ]
+
+        for indicator in indicators:
+            match = self.check_key(pattern=indicator, regex=True)
+            if match:
+                self.data.append({"Key": match})
+                remcos_keys = True
+
+        return remcos_keys 
