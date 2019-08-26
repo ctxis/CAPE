@@ -7,6 +7,7 @@ This script creates fancy VBA call graphs from olevba output.
 
 Run Examples:
     $ python vba2graph.py -i [your_olevba_output] -o [output_dir]
+    $ python vba2graph.py -f [office_file_with_macro] -o [output_dir]
     $ olevba [malicous_doc_with_macro] | python vba2graph.py
 
 Dependencies:
@@ -29,6 +30,7 @@ import sys
 import errno
 import argparse
 import regex as re
+import StringIO
 from subprocess import Popen
 
 # ****************************************************************************
@@ -154,28 +156,33 @@ lst_autorun = [
     'App_WorkbookOpen', 'App_NewWorkbook', 'App_WorkbookBeforeClose', 'Workbook_BeforeClose',
     'FileSave', 'CloseWithoutSaving', 'FileOpen', 'FileClose', 'FileExit',
     'Workbook_SheetSelectionChange', 'Workbook_BeforeSave', 'FileTemplates',
-    'ViewVBCode', 'ToolsMacro', 'FormatStyle', 'OpenMyMacro', 'HelpAbout'
+    'ViewVBCode', 'ToolsMacro', 'FormatStyle', 'OpenMyMacro', 'HelpAbout',
+    u'\w+_Layout', u'\w+_Painting',
+    u'\w+_BeforeNavigate2', u'\w+_BeforeScriptExecute', u'\w+_DocumentComplete', u'\w+_DownloadBegin',
+    u'\w+_DownloadComplete', u'\w+_FileDownload', u'\w+_NavigateComplete2', u'\w+_NavigateError',
+    u'\w+_ProgressChange', u'\w+_PropertyChange', u'\w+_PropertyChange', u'\w+_StatusTextChange',
+    u'\w+_TitleChange', u'\w+_MouseMove', u'\w+_MouseEnter', u'\w+_MouseLeave', u'\w+_Activate'
 ]
 
 # Recognize keywords of possible malicious intent
 lst_mal_case_sensetive = [
-    "Environ", "Open", 'Write', 'Put', 'Output', 'Print #', 'Binary', 'FileCopy',
+    "Open", 'Write', 'Put', 'Output', 'Print #', 'Binary', 'FileCopy',
     'CopyFile', 'Kill', 'CreateTextFile', 'ADODB.Stream', 'WriteText',
-    'SaveToFile', 'Shell', 'vbNormal', 'vbNormalFocus', 'vbHide',
+    'SaveToFile', 'vbNormal', 'vbNormalFocus', 'vbHide',
     'vbMinimizedFocus', 'vbMaximizedFocus', 'vbNormalNoFocus',
-    'vbMinimizedNoFocus', 'WScript.Shell', u'\w+\.Run', 'ShellExecute', 'MacScript',
+    'vbMinimizedNoFocus', u'\w+\.Run', 'MacScript',
     'popen', r'exec[lv][ep]?', 'noexit',
     'ExecutionPolicy', 'noprofile', 'command', 'EncodedCommand',
     'invoke-command', 'scriptblock', 'Invoke-Expression',
     'AuthorizationManager', 'Start-Process', 'Application\.Visible',
     'ShowWindow', 'SW_HIDE', 'MkDir', 'ActiveWorkbook.SaveAs',
     'Application.AltStartupPath', 'CreateObject', 'New-Object',
-    'Shell\.Application', 'Windows', 'FindWindow', 'libc\.dylib', 'dylib',
+    'Windows', 'FindWindow', 'libc\.dylib', 'dylib',
     'CreateThread', 'VirtualAlloc', 'VirtualAllocEx', 'RtlMoveMemory',
     'EnumSystemLanguageGroupsW?', u'EnumDateFormats(?:W|(?:Ex){1,2})?',
-    'URLDownloadToFileA', 'Msxml2\.XMLHTTP', 'Microsoft\.XMLHTTP', 'User-Agent',
-    'Net\.WebClient', 'DownloadFile', 'DownloadString', 'MSXML2\.ServerXMLHTTP',
-    'SendKeys', 'AppActivate', 'CallByName', 
+    'URLDownloadToFileA',  'User-Agent',
+    'Net\.WebClient', 'DownloadFile', 'DownloadString', 
+    'SendKeys', 'AppActivate', 'CallByName',
     'RegOpenKeyExAs', 'RegOpenKeyEx', 'RegCloseKey',
     'RegQueryValueExA', 'RegQueryValueEx', 'RegRead',
     'GetVolumeInformationA', 'GetVolumeInformation', '1824245000',
@@ -187,21 +194,26 @@ lst_mal_case_sensetive = [
     'VBProject', 'VBComponents', 'CodeModule', 'AddFromString', 'Call', 'GetObject',
     'ExecQuery', 'GetStringValue', 'GetDWORDValue', u'ActiveDocument\.\w+', 'DOMDocument',
     'IXMLDOMElement', 'ComputerName', 'Domain', 'RegRead', 'RegWrite', '#If Mac',
-    'appdata', u'WordBasic\.\w+', 'WriteLine', 'Exec',
+    'appdata', u'WordBasic\.\w+', 'WriteLine',
     'Cells', u'Application\.\w+', 'Sleep', 'Process', u'NormalTemplate\.\w+',
     u'\w+\.Application', 'CommandBars', u'System\.\w+', "setRequestHeader", "Send", "setOption",
     "RecentFiles", "Mozilla", "UserName", "DeleteFile", "Delete", "\.Execute", "\.Content",
-    "MsgBox", "\.Quit",  'Run', 'Now', 'Comments',
-    'CopyFolder', 'http', 'winmgmts', 'bin\.base64', '\.Create'
+    "MsgBox", "\.Quit",  'Run', 'Now', 'Comments', 'PROCESSOR_ARCHITECTURE',
+    'CopyFolder', 'winmgmts', 'bin\.base64', '\.CreateKey', '\.Create',
+    '\.SpawnInstance_', 'Selection\.WholeStory', '\.CreateShortcut', '\.CreateFolder',
+    '\.DynamicInvoke', '\.CreateInstance', '\.MSFConnect', '\.RegisterTaskDefinition',
+    'Shell\.Application|ShellExecute|WScript\.Shell|Shell', '\.Load', '\.transformNode',
+    'ExecuteExcel4Macro', '.\Show'
 ]
 
 # Recognize attempts to hide values in form controls and properties
-lst_mal_case_sensetive += [u"\.caption", u"\.text", u"\.value", u"\.ControlTipText", u"\.tag",
-    u"\.CustomDocumentProperties"
+lst_mal_case_sensetive += ["\.caption", "\.text", "\.value", "\.ControlTipText", "\.tag",
+    "\.CustomDocumentProperties", "\.AlternativeText"
 ]
 
 lst_obfuscation_keywords = ['Asc', 'Mid', 'Left', 'Right', 'Tan', 'StrReverse', 'Xor',
-    'Chr', 'ChrB', 'ChrW', 'CStr', 'StrConv', 'Replace', 'Int'
+    'ChrB', 'ChrW', 'Chr', 'CStr', 'StrConv', 'Replace', 'Int', 'Hex', 'Sqr', 'CByte',
+    'Log', 'Rnd'
 ]
 
 lst_mal_case_sensetive += lst_obfuscation_keywords
@@ -210,9 +222,10 @@ lst_mal_case_insensetive = [
     r'SYSTEM\\ControlSet001\\Services\\Disk\\Enum', 'VIRTUAL', 'VMWARE', 'VBOX',
     u'"[\w-_\\/]+\.(?:EXE|PIF|GADGET|MSI|MSP|MSC|VBS|VBE|VB|JSE|JS|WSF|WSC|WSH|WS|BAT|CMD|DLL|SCR|HTA|CPL|CLASS|JAR|PS1XML|PS1|PS2XML|PS2|PSC1|PSC2|SCF|LNK|INF|REG)"',
     'FileSystemObject', 'GetSpecialFolder', 'PowerShell', u'SELECT \* FROM \w+', 'deletefolder',
-    'Environ\(\"ALLUSERSPROFILE\"\)'
+    'regsvr\.32', 'scrobj\.dll', 'cmd\.exe',
+    'Environ\(\"ALLUSERSPROFILE\"\)|Environ\(\"TEMP\"\)|Environ\(\"TMP\"\)|Environ',
+    'Msxml2\.XMLHTTP|Microsoft\.XMLHTTP|MSXML2\.ServerXMLHTTP|microsoft\.xmlhttp|http'
 ]
-
 
 # ****************************************************************************
 # *                             Helper Functions                             *
@@ -333,7 +346,7 @@ def handle_olevba_input(file_content):
     input_vba_content = ""
     inside_data = False
     inside_code = False
-    logger.info("Reading as olevba file")
+    logger.info("Parsing olevba content")
 
     content_lines = file_content.split(LINE_SEP)
 
@@ -585,6 +598,7 @@ def vba_extract_properties(vba_content_lines):
     Returns:
         dict[property_name]=property_code: Dictionary of VBA Properties found
     """
+
     vba_prop_dict = {}
     inside_property = False
     prop_name = ""
@@ -655,7 +669,7 @@ def create_call_graph(vba_func_dict):
 
         func_code = vba_func_dict[func_name]
         # split function code into tokens
-        func_code_tokens = filter(None, re.split('[\"(, \-!?:\r\n)&=.]+',
+        func_code_tokens = filter(None, re.split('[\"(, \-!?:\r\n)&=.><]+',
                                                  func_code))
         # inside each function's code, we are looking for a function name
         for func_name1 in vba_func_dict:
@@ -828,9 +842,54 @@ def design_graph_dot(DG):
     return DG
 
 
-# ****************************************************************************
-# *                               Main Function                              *
-# ****************************************************************************
+def fix_dot_output(str_dot):
+    """ Make changes to NX write_dot output
+    Args:
+        str_dot (string): output of NX write_dot function
+    """
+
+    # change function names that collide with protected DOT keywords
+    # reference: https://www.graphviz.org/doc/info/lang.html
+    dot_keywords = ["node", "edge", "graph", "digraph", "subgraph", "strict"]
+
+    str_dot_lines = str_dot.split("\n")
+
+    new_str_dot = ""
+    # iterate over all the dot file lines and change function names which
+    # are reserved DOT keywords
+    for cur_line in str_dot_lines:
+        new_str_dot_line = cur_line
+
+        pass_line = False
+        # check if we are in the first disgraph declaration line
+        # example: strict digraph  {
+        if "digraph  " in cur_line:
+            pass_line = True
+
+        # check if we are in a graph declaration line
+        # example: graph [bgcolor="#6075AF"];
+        if "bgcolor=" in cur_line:
+            pass_line = True
+
+        # check if we are in a generic edge declaration line
+        # example: edge [color=white, fontcolor=white];
+        if "edge" in cur_line and "keywords" not in cur_line and "count" not in cur_line:
+            pass_line = True
+
+        # if we are not in a reserved keyword line, and
+        # if we find a reserved keyword in cur line -> add underscore to this function name
+        if not pass_line:
+            for dot_keyword in dot_keywords:
+                re_result = re.search("(?i)" + dot_keyword + " ", cur_line)
+                if re_result:
+                    found_keyword_with_space = re_result.group()
+                    found_keyword = found_keyword_with_space[:-1]
+                    replace_keyword_with = found_keyword + "_" + " "
+                    new_str_dot_line = new_str_dot_line.replace(found_keyword_with_space, replace_keyword_with)
+
+        new_str_dot += new_str_dot_line + "\n"
+
+    return new_str_dot
 
 
 def vba2graph_from_vba_object(filepath):
@@ -838,6 +897,7 @@ def vba2graph_from_vba_object(filepath):
     Args:
         filepath (string): path to file
     """
+    logger.info("Extracting macros from file")
     if HAVE_OLETOOLS:
         try:
             vba = VBA_Parser(filepath)
@@ -855,7 +915,7 @@ def vba2graph_from_vba_object(filepath):
 
     return False
 
-def vba2graph_gen(input_vba_content, output_folder, input_file_name="vba2graph", color_scheme=color_scheme):
+def vba2graph_gen(input_vba_content, output_folder="output", input_file_name="vba2graph", color_scheme=color_scheme):
 
     """ Generage graph from processed vba macros
     Args:
@@ -879,6 +939,7 @@ def vba2graph_gen(input_vba_content, output_folder, input_file_name="vba2graph",
 
     # treat properties like functions and merge both dictionaries
     vba_func_dict = dict(vba_func_dict.items() + vba_prop_dict.items())
+
     ##############################################################################
     # at this point, vba_func_dict should contain the code of functions and
     # properties, without comments or whitespaces.
@@ -903,61 +964,69 @@ def vba2graph_gen(input_vba_content, output_folder, input_file_name="vba2graph",
     # Generate functions listing for debugging #
     ############################################
 
+    bas_folder = output_folder + os.sep + "bas"
     try:
-        bas_folder = output_folder + os.sep + "bas"
-        try:
-            os.makedirs(bas_folder)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                logger.error("Error creating debugging output folder")
-        code_output_path = bas_folder + os.sep + input_file_name + '.bas'
-        create_functions_listing(vba_func_dict, code_output_path)
+        os.makedirs(bas_folder)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            logger.error("Error creating debugging output folder")
+    code_output_path = bas_folder + os.sep + input_file_name + '.bas'
+    create_functions_listing(vba_func_dict, code_output_path)
 
-        ################################
-        # Generate DOT file from graph #
-        ################################
-        dot_folder = output_folder + os.sep + "dot"
-        try:
-            os.makedirs(dot_folder)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                logger.error("Error creating DOT output folder")
-        dot_output_path = dot_folder + os.sep + input_file_name + '.dot'
-        write_dot(DG, dot_output_path)
+    ################################
+    # Generate DOT file from graph #
+    ################################
+    dot_folder = output_folder + os.sep + "dot"
+    try:
+        os.makedirs(dot_folder)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            logger.error("Error creating DOT output folder")
+    dot_output_path = dot_folder + os.sep + input_file_name + '.dot'
 
-        ##############################
-        # Generate PNG file from DOT #
-        ##############################
-        png_folder = output_folder + os.sep + "png"
-        try:
-            os.makedirs(png_folder)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                logger.error("Error creating PNG output folder")
-        png_output_path = png_folder + os.sep + input_file_name + '.png'
-        process = Popen(['dot', '-Tpng', dot_output_path, '-o', png_output_path])
-        process.wait()
+    # redirect NetworkX write_dot output to StringIO for further manipulation
+    str_io_dot = StringIO.StringIO()
+    write_dot(DG, str_io_dot)
+    str_dot = str_io_dot.getvalue()
+    str_io_dot.close()
 
-        ##############################
-        # Generate SVG file from DOT #
-        ##############################
-        svg_folder = output_folder + os.sep + "svg"
-        try:
-            os.makedirs(svg_folder)
-        except OSError as exc:
-            if exc.errno != errno.EEXIST:
-                logger.error("Error creating PNG output folder")
-        svg_output_path = svg_folder + os.sep + input_file_name + '.svg'
-        process = Popen(['dot', '-Tsvg', dot_output_path, '-o', svg_output_path])
-        process.wait()
-    except Exception as e:
-        logger.info("Make sure what graphviz is installed")
-        logger.error(e)
+    # check if our DOT file is broken (one of the funciton names was reserved keyword)
+    str_dot = fix_dot_output(str_dot)
+
+    with open(dot_output_path, 'w') as the_file:
+        the_file.write(str_dot.encode("utf-8", errors="ignore"))
+
+    ##############################
+    # Generate PNG file from DOT #
+    ##############################
+    png_folder = output_folder + os.sep + "png"
+    try:
+        os.makedirs(png_folder)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            logger.error("Error creating PNG output folder")
+    png_output_path = png_folder + os.sep + input_file_name + '.png'
+    process = Popen(['dot', '-Tpng', dot_output_path, '-o', png_output_path])
+    process.wait()
+
+    ##############################
+    # Generate SVG file from DOT #
+    ##############################
+    svg_folder = output_folder + os.sep + "svg"
+    try:
+        os.makedirs(svg_folder)
+    except OSError as exc:
+        if exc.errno != errno.EEXIST:
+            logger.error("Error creating PNG output folder")
+    svg_output_path = svg_folder + os.sep + input_file_name + '.svg'
+    process = Popen(['dot', '-Tsvg', dot_output_path, '-o', svg_output_path])
+    process.wait()
 
 def main():
     global color_scheme
     # set default output folder
     output_folder = "output"
+    input_file_name = "vba2graph"
 
     # ****************************************************************************
     # *                              Argument Parser                             *
@@ -983,22 +1052,34 @@ def main():
         cmd_args = vars(ap.parse_args())
 
     else:
-        ap.add_argument(
-            "-i", "--input", required=False, help="olevba generated file or .bas file")
+        input_group = ap.add_mutually_exclusive_group(required=True)
+        input_group.add_argument(
+            "-i", "--input", required=False, default=False, help="olevba generated file or .bas file")
+        input_group.add_argument(
+            "-f", "--file", required=False, default=False, help="Office file with macros")
 
         cmd_args = vars(ap.parse_args())
 
-        input_path = cmd_args["input"]
-        input_file_name = os.path.basename(input_path)
+        macro_file = False
+        if cmd_args.get("input", False):
+            file_path = cmd_args.get("input", False)
+        elif cmd_args.get("file", False):
+            file_path = cmd_args.get("file", False)
+            macro_file = True
 
         # handle files
-        if os.path.isfile(input_path):
-            input_vba_content = handle_input(input_path, is_piped=False)
+        if os.path.isfile(file_path):
+            if macro_file is False:
+                input_vba_content = handle_input(file_path, is_piped=False)
+            else:
+                input_vba_content = vba2graph_from_vba_object(file_path)
 
         # handle wrong input
         else:
             logger.error("Invalid input path")
             sys.exit(1)
+
+        input_file_name = os.path.basename(file_path)
 
     # set selected color scheme
     selected_color_scheme = cmd_args["colors"]
@@ -1010,7 +1091,7 @@ def main():
     if selected_output_folder is not None:
         output_folder = cmd_args["output"]
 
-    vba2graph_gen(input_vba_content, input_file_name, output_folder, color_scheme)
+    vba2graph_gen(input_vba_content, output_folder, input_file_name, color_scheme)
 
 if __name__ == '__main__' and __package__ is None:
     logging.basicConfig(level=logging.INFO)
