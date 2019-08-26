@@ -22,11 +22,6 @@ class Package(object):
         self.options = options
         self.pids = []
         # Fetch the current working directory, defaults to $TEMP.
-        if "curdir" in options:
-            log.info(options["curdir"])
-            self.curdir = os.path.expandvars(options["curdir"])
-        else:
-            self.curdir = os.getenv("TEMP")
 
     def set_pids(self, pids):
         """Update list of monitored PIDs in the package context.
@@ -209,8 +204,11 @@ class Package(object):
         @param filepath: the file to be moved
         @return: the new filepath
         """
+        if "curdir" in self.options:
+            self.curdir = os.path.expandvars(self.options["curdir"])
+        else:
+            self.curdir = os.getenv("TEMP")
         outpath = os.path.join(self.curdir, os.path.basename(filepath))
-        log.info(outpath)
         os.rename(filepath, outpath)
         return outpath
 
