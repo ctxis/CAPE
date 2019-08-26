@@ -64,3 +64,60 @@ class Bootkit(Signature):
                 return True
         
         return None
+    
+    class DirectHDDAccess(Signature):
+    name = "direct_hdd_access"
+    description = "Attempted to write to a harddisk volume"
+    severity = 2
+    categories = ["bootkit", "rootkit"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1014", "T1067"]
+
+    def run(self):
+        ret = False
+        match = self.check_write_file(pattern="^\\\\Device\\\\HarddiskVolume.*", regex=True)
+        if match and "\\Device\\Harddisk0\\DR0" not in match:
+            self.data.append({"file" : match})
+            ret = True
+
+        return ret
+
+class AccessesPrimaryPartition(Signature):
+    name = "accesses_primary_patition"
+    description = "Attempted to write to the primary disk partition"
+    severity = 3
+    categories = ["bootkit", "rootkit"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1014", "T1067"]
+
+    def run(self):
+        ret = False
+        match = self.check_write_file(pattern="^\\\\Device\\\\HarddiskVolume0\\\\DR0$", regex=True)
+        if match:
+            self.data.append({"file" : match})
+            ret = True
+
+        return ret
+
+class PhysicalDriveAccess(Signature):
+    name = "physical_drive_access"
+    description = "Attempted to write directly to a physical drive"
+    severity = 3
+    categories = ["bootkit", "rootkit"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1014", "T1067"]
+
+    def run(self):
+        ret = False
+        match = self.check_write_file(pattern="^\\\\\?\?\\\\PhysicalDrive.*", regex=True)
+        if match:
+            self.data.append({"physical drive access" : match})
+            ret = True
+
+        return ret
