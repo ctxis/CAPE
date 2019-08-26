@@ -25,11 +25,9 @@ class EnigmaPacked(Signature):
     ttp = ["T1045"]
 
     def run(self):
-        if "static" in self.results and "pe" in self.results["static"]:
-            if "sections" in self.results["static"]["pe"]:
-                for section in self.results["static"]["pe"]["sections"]:
-                    if section["name"].lower().startswith(".enigma"):
-                        self.data.append({"section" : section})
-                        return True
+        for section in self.results.get("static", {}).get("pe", {}).get("sections", []):
+            if section["name"].lower().startswith(".enigma"):
+                self.data.append({"section" : section})
+                return True
 
         return False
