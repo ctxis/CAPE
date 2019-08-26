@@ -65,7 +65,7 @@ class Bootkit(Signature):
         
         return None
     
-    class DirectHDDAccess(Signature):
+class DirectHDDAccess(Signature):
     name = "direct_hdd_access"
     description = "Attempted to write to a harddisk volume"
     severity = 2
