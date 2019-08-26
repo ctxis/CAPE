@@ -1057,6 +1057,13 @@ class Analyzer:
         # Initialize the analysis package.
         pack = package_class(self.options, self.config)
 
+        # Move the sample to the current working directory as provided by the
+        # task - one is able to override the starting path of the sample.
+        # E.g., for some samples it might be useful to run from %APPDATA%
+        # instead of %TEMP%.
+        if self.config.category == "file":
+            self.target = pack.move_curdir(self.target)
+
         # Initialize Auxiliary modules
         Auxiliary()
         prefix = auxiliary.__name__ + "."
