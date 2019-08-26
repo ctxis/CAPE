@@ -78,7 +78,7 @@ class Bootkit(Signature):
     def run(self):
         ret = False
         match = self.check_write_file(pattern="^\\\\Device\\\\HarddiskVolume.*", regex=True)
-        if match and "\\Device\\Harddisk0\\DR0" not in match:
+        if match:
             self.data.append({"file" : match})
             ret = True
 
