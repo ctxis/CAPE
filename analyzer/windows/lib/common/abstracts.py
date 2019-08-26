@@ -23,7 +23,6 @@ class Package(object):
         self.pids = []
         # Fetch the current working directory, defaults to $TEMP.
         if "curdir" in options:
-            log.info(options["curdir"])
             self.curdir = os.path.expandvars(options["curdir"])
         else:
             self.curdir = os.getenv("TEMP")
@@ -210,7 +209,6 @@ class Package(object):
         @return: the new filepath
         """
         outpath = os.path.join(self.curdir, os.path.basename(filepath))
-        log.info(outpath)
         os.rename(filepath, outpath)
         return outpath
 
