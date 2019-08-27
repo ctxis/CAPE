@@ -17,7 +17,7 @@ from lib.cuckoo.common.abstracts import Signature
 
 class WMICreateProcess(Signature):
     name = "wmi_create_process"
-    description = "Attempted to create a process using Windows Management Instrumentation (WMI)"
+    description = "Windows Management Instrumentation (WMI) attempted to create a process"
     severity = 3
     confidence = 50
     categories = ["martians"]
