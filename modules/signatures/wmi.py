@@ -40,3 +40,43 @@ class WMICreateProcess(Signature):
 
     def on_complete(self):
         return self.ret
+    
+class WMIScriptProcess(Signature):
+    name = "wmi_script_process"
+    description = "Windows Management Instrumentation (WMI) attempted to execute a command or scripting utility"
+    severity = 3
+    confidence = 100
+    categories = ["martians"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1047"]
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.ret = False
+        self.utilities = [
+            "cmd ",
+            "cmd.exe",
+            "cscript",
+            "jscript",
+            "mshta",
+            "powershell",
+            "vbscript",
+            "wscript",
+        ]
+
+    filter_apinames = set(["CreateProcessInternalW"])
+
+    def on_call(self, call, process):
+        pname = process["process_name"]
+        if "wmiprvse" in pname.lower():
+            cmdline = self.get_argument(call, "CommandLine")
+            for utility in self.utilities:
+                if utility in cmdline.lower():           
+                    self.ret = True
+                    self.data.append({"cmdline" : cmdline})
+                    break
+
+    def on_complete(self):
+        return self.ret
