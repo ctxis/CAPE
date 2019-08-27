@@ -95,7 +95,7 @@ class PowershellCommandSuspicious(Signature):
                             b64 = False
                         if b64:
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16') 
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -110,7 +110,7 @@ class PowershellCommandSuspicious(Signature):
                             b64 = False
                         if b64:
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16') 
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -180,7 +180,7 @@ class PowershellRenamed(Signature):
                             ret = True
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16')
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -192,7 +192,7 @@ class PowershellRenamed(Signature):
                             ret = True
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16')
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
