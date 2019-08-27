@@ -32,6 +32,7 @@ class PowershellCommandSuspicious(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1086"]
 
     def run(self):
         commands = [
@@ -95,7 +96,7 @@ class PowershellCommandSuspicious(Signature):
                             b64 = False
                         if b64:
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16') 
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -110,7 +111,7 @@ class PowershellCommandSuspicious(Signature):
                             b64 = False
                         if b64:
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16') 
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -125,6 +126,7 @@ class PowershellRenamed(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1086"]
 
     def run(self):
         commands = [
@@ -180,7 +182,7 @@ class PowershellRenamed(Signature):
                             ret = True
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16')
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -192,7 +194,7 @@ class PowershellRenamed(Signature):
                             ret = True
                             self.data.append({"command" : cmdline})
                             decoded = base64.b64decode(encoded)
-                            if "\\x00" in decoded:
+                            if "\x00" in decoded:
                                 decoded = base64.b64decode(encoded).decode('UTF-16')
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
@@ -207,6 +209,7 @@ class PowershellReversed(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1086"]
 
     def run(self):
         commands = [
@@ -268,6 +271,7 @@ class PowershellVariableObfuscation(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1086"]
 
     def run(self):
         ret = False
@@ -280,3 +284,53 @@ class PowershellVariableObfuscation(Signature):
                     self.data.append({"command" : cmdline})
 
         return ret
+
+class PowerShellNetworkConnection(Signature):
+    name = "powershell_network_connection"
+    description = "PowerShell attempted to make a network connection"
+    severity = 3
+    confidence = 50
+    categories = ["downloader"]
+    authors = ["Kevin Ross"]
+    minimum = "1.2"
+    evented = True
+    match = True
+    ttp = ["T1086"]
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.data = []
+   
+    filter_apinames = set(["InternetCrackUrlW","InternetCrackUrlA","URLDownloadToFileW","HttpOpenRequestW","InternetReadFile", "send", "WSAConnect"])
+    filter_analysistypes = set(["file"])
+
+    def on_call(self, call, process):
+        pname = process["process_name"].lower()
+        if pname == "powershell.exe":
+            if call["api"] == "URLDownloadToFileW":
+                buff = self.get_argument(call, "FileName").lower()
+                self.data.append({"request": buff })
+            if call["api"] == "HttpOpenRequestW":
+                buff = self.get_argument(call, "Path").lower()
+                self.data.append({"request": buff })
+            if call["api"] == "InternetCrackUrlW":
+                buff = self.get_argument(call, "Url").lower()
+                self.data.append({"request": buff })
+            if call["api"] == "InternetCrackUrlA":
+                buff = self.get_argument(call, "Url").lower()
+                self.data.append({"request": buff })
+            if call["api"] == "send":
+                buff = self.get_argument(call, "buffer").lower()
+                self.data.append({"request": buff })
+            if call["api"] == "WSAConnect":
+                buff = self.get_argument(call, "ip").lower()
+                port = self.get_argument(call, "port").lower()
+                if not buff.startswith(("10.","172.16.","192.168.")):
+                    self.data.append({"request": "%s:%s" % (buff,port)})
+        return None
+
+    def on_complete(self):
+        if self.data:
+            return True
+        else:
+            return False
