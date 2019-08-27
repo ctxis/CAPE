@@ -19,6 +19,7 @@ class WMICreateProcess(Signature):
     name = "wmi_create_process"
     description = "Attempted to create a process using Windows Management Instrumentation (WMI)"
     severity = 3
+    confidence = 50
     categories = ["martians"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
@@ -28,15 +29,24 @@ class WMICreateProcess(Signature):
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
         self.ret = False
+        self.whitelist = [
+            "werfault.exe",
+        ]
 
     filter_apinames = set(["CreateProcessInternalW"])
 
     def on_call(self, call, process):
         pname = process["process_name"]
-        if "wmiprvse" in pname.lower():
-            self.ret = True
+        if "wmiprvse" in pname.lower():           
             cmdline = self.get_argument(call, "CommandLine")
-            self.data.append({"cmdline" : cmdline})
+            whitelisted = False
+            for whitelist in self.whitelist:
+                if whitelist in cmdline.lower():
+                    whitelisted = True
+                    break
+            if not whitelisted:
+                self.ret = True
+                self.data.append({"cmdline" : cmdline})
 
     def on_complete(self):
         return self.ret
