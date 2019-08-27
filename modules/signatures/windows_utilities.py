@@ -257,6 +257,7 @@ class AltersWindowsUtility(Signature):
     name = "alters_windows_utility"
     description = "Attempts to move, copy or rename a command line or scripting utility likely for evasion"
     severity = 3
+    confidence = 100
     categories = ["commands", "stealth", "evasion"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
@@ -326,3 +327,42 @@ class SuspiciousCertutilUse(Signature):
                 self.data.append({"command" : cmdline})
 
         return ret
+
+class OverwritesAccessibilityUtility(Signature):
+    name = "overwrites_accessibility_utility"
+    description = "Overwrites an accessibility feature binary for Windows login bypass, persistence or privilege escalation"
+    severity = 3
+    confidence = 100
+    categories = ["evasion", "privilege_escalation", "persistence"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1015"]
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.ret = False
+        self.utilities = [
+            "atbroker.exe",
+            "displayswitch.exe",
+            "magnify.exe",
+            "narrator.exe",
+            "osk.exe",
+            "sethc.exe",
+            "utilman.exe",
+            ]
+
+    filter_apinames = set(["CopyFileExA","CopyFileExW","MoveFileWithProgressW","MoveFileWithProgressTransactedW"])
+
+    def on_call(self, call, process):
+        self.ret = False
+        origfile = self.get_argument(call, "ExistingFileName")
+        destfile = self.get_argument(call, "NewFileName")
+        for utility in self.utilities:
+            lower = destfile.lower()
+            if lower.endswith(utility):
+                self.ret = True
+                self.data.append({"utility" : "source file %s destination file %s" % (origfile,destfile)})
+
+    def on_complete(self):
+        return self.ret
