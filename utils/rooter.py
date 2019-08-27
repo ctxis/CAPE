@@ -8,7 +8,6 @@ import grp
 import json
 import logging.handlers
 import os.path
-import re
 import socket
 import stat
 import subprocess
@@ -34,7 +33,7 @@ def run(*args):
 def nic_available(interface):
     """Check if specified network interface is available."""
     try:
-        subprocess.check_call([settings.ifconfig, interface],
+        subprocess.check_call([settings.ip, "link", "show", interface],
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
         return True
@@ -293,8 +292,6 @@ if __name__ == "__main__":
                         help="Unix socket path")
     parser.add_argument("-g", "--group", default="cuckoo",
                         help="Unix socket group")
-    parser.add_argument("--ifconfig", default="/sbin/ifconfig",
-                        help="Path to ifconfig")
     parser.add_argument("--systemctl", default="/bin/systemctl",
                         help="Systemctl wrapper script for invoking OpenVPN")
     parser.add_argument("--iptables", default="/sbin/iptables",
@@ -313,9 +310,6 @@ if __name__ == "__main__":
             "Note that on CentOS you should provide --systemctl /bin/systemctl, "
             "rather than using the Ubuntu/Debian default /bin/systemctl."
         )
-
-    if not settings.ifconfig or not os.path.exists(settings.ifconfig):
-        sys.exit("The `ifconfig` binary is not available, eh?!")
 
     if not settings.iptables or not os.path.exists(settings.iptables):
         sys.exit("The `iptables` binary is not available, eh?!")
