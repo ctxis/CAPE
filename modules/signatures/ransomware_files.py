@@ -90,7 +90,7 @@ class RansomwareFiles(Signature):
             (".*\\\\_HELP_INSTRUCTION\.TXT$", ["CryptoMix"]),
             (".*\\\\!=How_recovery_files=!\.html$", ["Everbe"]),
             (".*\\\\\.FreezedByMagic\.README\.txt$", ["FreeMe"]),
-            ("C:\\ProgramData\\\.FreezedByMagic.LOG$", ["FreeMe"]),
+            ("C:\\\\ProgramData\\\.FreezedByMagic.LOG$", ["FreeMe"]),
             (".*\\\\#\ DECRYPT\ MY\ FILES\ #\.txt$", ["GetCrypt"]),
             (".*\\\\RECOVER-FILES\.html$", ["GlobeImposter"]),
             (".*\\\\READ_IT\.html$", ["GlobeImposter"]),
