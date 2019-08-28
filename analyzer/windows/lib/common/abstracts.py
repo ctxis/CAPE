@@ -21,6 +21,7 @@ class Package(object):
         self.config = config
         self.options = options
         self.pids = []
+        # Fetch the current working directory, defaults to $TEMP.
 
     def set_pids(self, pids):
         """Update list of monitored PIDs in the package context.
@@ -123,7 +124,7 @@ class Package(object):
         if free:
             suspended = False
         kernel_analysis = self.options.get("kernel_analysis", False)
-        
+
         if kernel_analysis != False:
             kernel_analysis = True
 
@@ -136,7 +137,7 @@ class Package(object):
             return None
 
         is_64bit = p.is_64bit()
-            
+
         if not kernel_analysis:
             if is_64bit:
                 p.inject(INJECT_QUEUEUSERAPC, interest)
@@ -144,7 +145,7 @@ class Package(object):
                 p.inject(INJECT_QUEUEUSERAPC, interest)
         p.resume()
         p.close()
-        
+
         return p.pid
 
     def debug(self, path, args, interest):
@@ -168,23 +169,23 @@ class Package(object):
                                      "analysis aborted.")
 
         is_64bit = p.is_64bit()
-            
+
         if is_64bit:
             p.debug_inject(interest, childprocess=False)
         else:
             p.debug_inject(interest, childprocess=False)
         p.resume()
         p.close()
-        
+
         return p.pid
 
     def package_files(self):
         """A list of files to upload to host.
         The list should be a list of tuples (<path on guest>, <name of file in package_files folder>).
-        (package_files is a folder that will be created in analysis folder). 
+        (package_files is a folder that will be created in analysis folder).
         """
         return None
-    
+
     def finish(self):
         """Finish run.
         If configured, upload memory dumps of
@@ -194,8 +195,22 @@ class Package(object):
             for pid in self.pids:
                 p = Process(pid=pid)
                 p.upload_memdump()
-        
+
         return True
+
+    def move_curdir(self, filepath):
+        """Move a file to the current working directory so it can be executed
+        from there.
+        @param filepath: the file to be moved
+        @return: the new filepath
+        """
+        if "curdir" in self.options:
+            self.curdir = os.path.expandvars(self.options["curdir"])
+        else:
+            self.curdir = os.getenv("TEMP")
+        outpath = os.path.join(self.curdir, os.path.basename(filepath))
+        os.rename(filepath, outpath)
+        return outpath
 
 class Auxiliary(object):
     def __init__(self, options={}, config=None):
