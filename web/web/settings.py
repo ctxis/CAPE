@@ -37,7 +37,6 @@ if cfg.mongodb.get("enabled") and cfg.elasticsearchdb.get("enabled") and \
 
 aux_cfg =  Config("auxiliary")
 vtdl_cfg = aux_cfg.virustotaldl
-tor_cfg = aux_cfg.tor
 
 # Enable Django authentication for website
 WEB_AUTHENTICATION = False
