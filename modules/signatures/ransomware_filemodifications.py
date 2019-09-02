@@ -68,7 +68,7 @@ class RansomwareFileModifications(Signature):
         deletedfiles = self.results["behavior"]["summary"]["delete_files"]
         deletedcount = 0
         for deletedfile in deletedfiles:
-            if "\\temp\\" not in deletedfile.lower() and not deletedfile.lower().endswith(".tmp"):
+            if "\\temp\\" not in deletedfile.lower() and "\\temporary internet files\\" not in deletedfile.lower() and "\\cache" not in deletedfile.lower() and not deletedfile.lower().endswith(".tmp"):
                 deletedcount += 1
         if deletedcount > 100:
             self.data.append({"mass file_deletion" : "Appears to have deleted %s files indicative of ransomware or wiper malware deleting files to prevent recovery" % (deletedcount)})
@@ -86,7 +86,7 @@ class RansomwareFileModifications(Signature):
             for dropped in self.results["dropped"]:
                 mimetype = dropped["type"]
                 filename = dropped["name"]
-                if mimetype == "data" and ".tmp" not in filename:
+                if mimetype == "data" and ".tmp" not in filename and "CryptnetUrlCache" not in filename:
                     droppedunknowncount += 1            
             if droppedunknowncount > 50 and self.results["info"]["package"] != "pdf":
                 self.data.append({"drops_unknown_mimetypes" : "Drops %s unknown file mime types which may be indicative of encrypted files being written back to disk" % (droppedunknowncount)})
