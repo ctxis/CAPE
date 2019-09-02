@@ -43,7 +43,7 @@ class StackPivot(Signature):
             "winword.exe",
         ]
 
-    filter_apinames = set(["NtCreateFile", "NtAllocateVirtualMemory", "NtProtectVirtualMemory", "VirtualProtectEx", "NtWriteVirtualMemory", "NtWow64WriteVirtualMemory64", "WriteProcessMemory", "NtMapViewOfSection", "CreateProcessInternalW", "URLDownloadToFileW"])
+    filter_apinames = set(["NtAllocateVirtualMemory", "NtProtectVirtualMemory", "VirtualProtectEx", "NtWriteVirtualMemory", "NtWow64WriteVirtualMemory64", "WriteProcessMemory", "NtMapViewOfSection", "URLDownloadToFileW"])
 
     def on_call(self, call, process):
         if process["process_name"].lower() in self.processes:
@@ -57,6 +57,92 @@ class StackPivot(Signature):
         for proc in self.procs:
             self.data.append({"process" : proc})
 
+        if self.data:
+            return True
+        else:
+            return False
+
+class StackPivotFileCreated(Signature):
+    name = "stack_pivot_file_created"
+    description = "A file was created using stack pivoting"
+    severity = 3
+    confidence = 100
+    categories = ["exploit", "shellcode"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.processes = [
+            "acrobat.exe",
+            "acrord32.exe",
+            "chrome.exe",
+            "excel.exe",
+            "FLTLDR.EXE",
+            "firefox.exe",
+            "HimTrayIcon.exe",
+            "hwp.exe",
+            "iexplore.exe",
+            "outlook.exe",
+            "powerpnt.exe",
+            "winword.exe",
+        ]
+
+    filter_apinames = set(["NtCreateFile"])
+
+    def on_call(self, call, process):
+        pname = process["process_name"]
+        if pname.lower() in self.processes:
+            pivot = self.get_argument(call, "StackPivoted")
+            filename = self.get_argument(call, "FileName")
+            if pivot == "yes":
+                self.data.append({pname : filename})
+
+    def on_complete(self):
+        if self.data:
+            return True
+        else:
+            return False
+
+class StackPivotProcessCreate(Signature):
+    name = "stack_pivot_process_create"
+    description = "A process was created using stack pivoting"
+    severity = 3
+    confidence = 100
+    categories = ["exploit", "shellcode"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+
+    def __init__(self, *args, **kwargs):
+        Signature.__init__(self, *args, **kwargs)
+        self.processes = [
+            "acrobat.exe",
+            "acrord32.exe",
+            "chrome.exe",
+            "excel.exe",
+            "FLTLDR.EXE",
+            "firefox.exe",
+            "HimTrayIcon.exe",
+            "hwp.exe",
+            "iexplore.exe",
+            "outlook.exe",
+            "powerpnt.exe",
+            "winword.exe",
+        ]
+
+    filter_apinames = set(["CreateProcessInternalW"])
+
+    def on_call(self, call, process):
+        pname = process["process_name"]
+        if pname.lower() in self.processes:
+            pivot = self.get_argument(call, "StackPivoted")
+            cmdline = self.get_argument(call, "CommandLine")
+            if pivot == "yes":
+                self.data.append({pname : cmdline})
+
+    def on_complete(self):
         if self.data:
             return True
         else:
