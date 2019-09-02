@@ -14,7 +14,7 @@ import multiprocessing
 
 log = logging.getLogger()
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), ".."))
-
+from lib.cuckoo.common.colors import red
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.core.database import Database, Task, TASK_REPORTED, TASK_COMPLETED
@@ -246,6 +246,8 @@ def main():
         init_logging(auto=True, debug=args.debug)
         autoprocess(parallel=args.parallel, failed_processing=args.failed_processing)
     else:
+        if not os.path.exists(os.path.join(CUCKOO_ROOT, "storage", "analyses", args.id)):
+            sys.exit(red("\n[-] Analysis folder doesn't exist anymore\n"))
         init_logging(tid=args.id, debug=args.debug)
         task = Database().view_task(int(args.id))
         if args.signatures:
