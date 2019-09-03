@@ -814,20 +814,11 @@ class Pcap:
                     if delip == host["ip"]:
                         self.results["hosts"].remove(host)
 
-            for host in self.results["tcp"]:
-                for delip in self.ip_whitelist:
-                    if delip == host["src"] or delip == host["dst"]:
-                        self.results["tcp"].remove(host)
-
-            for host in self.results["udp"]:
-                for delip in self.ip_whitelist:
-                    if delip == host["src"] or delip == host["dst"]:
-                        self.results["udp"].remove(host)
-
-            for host in self.results["icmp"]:
-                for delip in self.ip_whitelist:
-                    if delip == host["src"] or delip == host["dst"]:
-                        self.results["icmp"].remove(host)
+            for keyword in ("tcp", "udp", "icmp"):
+                for host in self.results[keyword]:
+                    for delip in self.ip_whitelist:
+                        if delip == host["src"] or delip == host["dst"]:
+                            self.results[keyword].remove(host)
 
         return self.results
 
