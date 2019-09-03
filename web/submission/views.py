@@ -500,7 +500,6 @@ def index(request, resubmit_hash=False):
         enabledconf["kernel"] = settings.OPT_ZER0M0N
         enabledconf["memory"] = Config("processing").memory.get("enabled")
         enabledconf["procmemory"] = Config("processing").procmemory.get("enabled")
-        enabledconf["tor"] = Config("auxiliary").tor.get("enabled")
         if Config("auxiliary").gateways:
             enabledconf["gateways"] = True
         else:
