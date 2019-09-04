@@ -31,8 +31,6 @@ class CAPEExtractedContent(Signature):
                 capetype = cape["cape_type"]
                 yara = cape["cape_yara"]
                 process = cape["process_name"]
-                for c in ['$', '.']:
-                    process = process.replace(c, '_')
                 if capetype and process:
                     self.data.append({process : capetype})
                     ret = True
