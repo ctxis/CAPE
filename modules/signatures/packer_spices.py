@@ -25,12 +25,8 @@ class SpicesPacked(Signature):
     ttp = ["T1045"]
 
     def run(self):
-        if not "static" in self.results or not "dotnet" in self.results["static"]:
-            return False
-
-        if "customattrs" in self.results["static"]["dotnet"] and self.results["static"]["dotnet"]["customattrs"]:
-            for attr in self.results["static"]["dotnet"]["customattrs"]:
-                if "9rays.net" in attr["value"].lower() or "spices.net" in attr["value"].lower():
-                    return True
+        for attr in self.results.get("static", {}).get("dotnet", {}).get("customattrs", []):
+            if "9rays.net" in attr["value"].lower() or "spices.net" in attr["value"].lower():
+                return True
 
         return False

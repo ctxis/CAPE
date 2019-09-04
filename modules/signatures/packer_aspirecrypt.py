@@ -25,12 +25,8 @@ class AspireCryptPacked(Signature):
     ttp = ["T1045"]
 
     def run(self):
-        if not "static" in self.results or not "dotnet" in self.results["static"]:
-            return False
-
-        if "customattrs" in self.results["static"]["dotnet"] and self.results["static"]["dotnet"]["customattrs"]:
-            for attr in self.results["static"]["dotnet"]["customattrs"]:
-                if "aspirecrypt" in attr["name"].lower() or "aspirecrypt" in attr["value"].lower():
-                    return True
+        for attr in self.results.get("static", {}).get("dotnet", {}).get("customattrs", []):
+            if "aspirecrypt" in attr["name"].lower() or "aspirecrypt" in attr["value"].lower():
+                return True
 
         return False
