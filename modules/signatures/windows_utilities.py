@@ -366,3 +366,26 @@ class OverwritesAccessibilityUtility(Signature):
 
     def on_complete(self):
         return self.ret
+
+class DotNETCSCBuild(Signature):
+    name = "dotnet_csc_build"
+    description = "Uses csc.exe C# compiler to build and execute code"
+    severity = 3
+    confidence = 20
+    categories = ["commands"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    references = ["https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/command-line-building-with-csc-exe"]
+    ttp = ["T1500"]
+	
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "csc " in lower or "csc.exe" in lower:
+                ret = True
+                self.data.append({"command" : cmdline})
+
+        return ret
