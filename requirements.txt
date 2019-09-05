@@ -52,3 +52,4 @@ gunicorn
 suricata-update
 git+https://github.com/doomedraven/sflock.git
 socks5man
+pyattck

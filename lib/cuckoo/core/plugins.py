@@ -35,7 +35,7 @@ def import_plugin(name):
     try:
         module = __import__(name, globals(), locals(), ["dummy"], -1)
     except ImportError as e:
-        raise CuckooCriticalError("Unable to import plugin "
+        log.warning("Unable to import plugin "
                                   "\"{0}\": {1}".format(name, e))
     else:
         load_plugins(module)
@@ -242,6 +242,7 @@ class RunProcessing(object):
             log.info("No processing modules loaded")
 
         family = ""
+        self.results["malfamily_tag"] = ""
         # add detection based on suricata here
         if not family and "suricata" in self.results and "alerts" in self.results["suricata"] and self.results["suricata"]["alerts"]:
             for alert in self.results["suricata"]["alerts"]:
@@ -288,6 +289,7 @@ class RunProcessing(object):
                             isgood = False
                         if isgood:
                             family = famcheck.title()
+                            self.results["malfamily_tag"] = "Suricata"
 
         if not family and self.results["info"]["category"] == "file" and "virustotal" in self.results and "results" in self.results["virustotal"] and self.results["virustotal"]["results"]:
             detectnames = []
@@ -298,14 +300,17 @@ class RunProcessing(object):
                         detectnames.append(res["sig"])
                     detectnames.append(res["sig"])
             family = get_vt_consensus(detectnames)
+            self.results["malfamily_tag"] = "VirusTotal"
 
         # fall back to ClamAV detection
         if not family and self.results["info"]["category"] == "file" and "clamav" in self.results["target"]["file"] and self.results["target"]["file"]["clamav"] and self.results["target"]["file"]["clamav"].startswith("Win.Trojan."):
             words = re.findall(r"[A-Za-z0-9]+", self.results["target"]["file"]["clamav"])
             family = words[2]
+            self.results["malfamily_tag"] = "ClamAV"
 
         if self.results.get("cape", False):
             self.results["malfamily"] = self.results["cape"]
+            self.results["malfamily_tag"] = "CAPE"
         else:
             self.results["malfamily"] = family
 
@@ -317,6 +322,7 @@ class RunSignatures(object):
     def __init__(self, task, results):
         self.task = task
         self.results = results
+        self.ttps = list()
 
     def _load_overlay(self):
         """Loads overlay data from a json file.
@@ -520,6 +526,8 @@ class RunSignatures(object):
                     continue
                 else:
                     if result is True:
+                        if hasattr(sig, "ttp"):
+                            self.ttps += sig.ttp
                         log.debug("Analysis matched signature \"%s\"", sig.name)
                         matched.append(sig.as_result())
                         if sig in complete_list:
@@ -546,6 +554,8 @@ class RunSignatures(object):
                     match = self.process(signature)
                     # If the signature is matched, add it to the list.
                     if match:
+                        if hasattr(signature, "ttp"):
+                            self.ttps += signature.ttp
                         matched.append(match)
 
         # Sort the matched signatures by their severity level.
@@ -563,11 +573,13 @@ class RunSignatures(object):
         if malscore < 0.0:
             malscore = 0.0
         self.results["malscore"] = malscore
+        self.results["ttps"] = sorted(list(set(self.ttps)))
 
         # Make a best effort detection of malware family name (can be updated later by re-processing the analysis)
         for match in matched:
             if "families" in match and match["families"]:
                 self.results["malfamily"] = match["families"][0].title()
+                self.results["malfamily_tag"] = "Signature"
                 break
 
 class RunReporting:
@@ -610,7 +622,7 @@ class RunReporting:
         try:
             options = self.cfg.get(module_name)
         except CuckooOperationalError:
-            log.debug("Reporting module %s not found in configuration file", module_name)
+            log.info("Reporting module %s not found in configuration file", module_name)
             return
 
         # If the reporting module is disabled in the config, skip it.
