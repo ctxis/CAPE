@@ -27,14 +27,14 @@ class CAPEExtractedContent(Signature):
     def run(self):
         ret = False
         if "CAPE" in self.results:
-            for cape in self.results["CAPE"]:
-                capetype = cape["cape_type"]
-                yara = cape["cape_yara"]
-                process = cape["process_name"]
+            for cape in self.results.get("CAPE", []):
+                capetype = cape.get("cape_type", "")
+                yara = cape.get("cape_yara", "")
+                process = cape.get("process_name", "")
                 if capetype and process:
-                    self.data.append({process : capetype})
+                    self.data.append({process: capetype})
                     ret = True
                     if yara:
-                        self.data.append({process : yara})
+                        self.data.append({process: yara})
 
             return ret
