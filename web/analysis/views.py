@@ -1300,7 +1300,7 @@ def remove(request, task_id):
                 results_db.analysis.remove({"_id": ObjectId(analysis["_id"])})
             analyses_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id)
             if os.path.exists(analyses_path):
-                os.rmdir(analyses_path)
+                shutil.rmtree(analyses_path)
         else:
             return render(request, "error.html",
                                       {"error": "The specified analysis does not exist"})
