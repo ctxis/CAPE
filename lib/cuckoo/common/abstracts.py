@@ -52,7 +52,12 @@ except ImportError:
 if repconf.mitre.enabled:
     try:
         from pyattck import Attck
-        mitre = Attck(os.path.join(CUCKOO_ROOT, repconf.mitre.local_file))
+        attack_file = repconf.mitre.get("local_file", False)
+        if attack_file:
+           attack_file = os.path.join(CUCKOO_ROOT, attack_file)
+        else:
+           attack_file = False
+        mitre = Attck(attack_file)
         HAVE_MITRE = True
         log.error("Missed pyattck dependency")
     except ImportError:
