@@ -97,6 +97,8 @@ class Suricata(Processing):
         suricata["ssh_log_full_path"] = None
         suricata["dns_log_full_path"] = None
 
+        tls_items = ["fingerprint", "issuer", "version", "subject", "sni", "ja3", "serial"]
+
         SURICATA_ALERT_LOG_FULL_PATH = "%s/%s" % (self.logs_path, SURICATA_ALERT_LOG)
         SURICATA_TLS_LOG_FULL_PATH = "%s/%s" % (self.logs_path, SURICATA_TLS_LOG)
         SURICATA_HTTP_LOG_FULL_PATH = "%s/%s" % (self.logs_path, SURICATA_HTTP_LOG)
@@ -230,98 +232,98 @@ class Suricata(Processing):
                     log.warning("Suricata: Failed to parse line as json" % (line))
                     continue
 
-                if parsed["event_type"] == "alert":
-                    if (parsed["alert"]["signature_id"] not in sid_blacklist
-                        and not parsed["alert"]["signature"].startswith(
-                            "SURICATA STREAM")):
-                        alog = dict()
-                        if parsed["alert"]["gid"] == '':
-                            alog["gid"] = "None"
-                        else:
-                            alog["gid"] = parsed["alert"]["gid"]
-                        if parsed["alert"]["rev"] == '':
-                            alog["rev"] = "None"
-                        else:
-                            alog["rev"] = parsed["alert"]["rev"]
-                        if parsed["alert"]["severity"] == '':
-                            alog["severity"] = "None"
-                        else:
-                            alog["severity"] = parsed["alert"]["severity"]
-                        alog["sid"] = parsed["alert"]["signature_id"]
+                if 'event_type' in parsed:
+                    if parsed["event_type"] == "alert":
+                        if (parsed["alert"]["signature_id"] not in sid_blacklist
+                            and not parsed["alert"]["signature"].startswith(
+                                "SURICATA STREAM")):
+                            alog = dict()
+                            if parsed["alert"]["gid"] == '':
+                                alog["gid"] = "None"
+                            else:
+                                alog["gid"] = parsed["alert"]["gid"]
+                            if parsed["alert"]["rev"] == '':
+                                alog["rev"] = "None"
+                            else:
+                                alog["rev"] = parsed["alert"]["rev"]
+                            if parsed["alert"]["severity"] == '':
+                                alog["severity"] = "None"
+                            else:
+                                alog["severity"] = parsed["alert"]["severity"]
+                            alog["sid"] = parsed["alert"]["signature_id"]
+                            try:
+                                alog["srcport"] = parsed["src_port"]
+                            except:
+                                alog["srcport"] = "None"
+                            alog["srcip"] = parsed["src_ip"]
+                            try:
+                                alog["dstport"] = parsed["dest_port"]
+                            except:
+                                alog["dstport"] = "None"
+                            alog["dstip"] = parsed["dest_ip"]
+                            alog["protocol"] = parsed["proto"]
+                            alog["timestamp"] = parsed["timestamp"].replace("T", " ")
+                            if parsed["alert"]["category"] == '':
+                                alog["category"] = "None"
+                            else:
+                                alog["category"] = parsed["alert"]["category"]
+                            alog["signature"] = parsed["alert"]["signature"]
+                            suricata["alerts"].append(alog)
+
+                    elif parsed["event_type"] == "http":
+                        hlog = dict()
+                        hlog["srcport"] = parsed["src_port"]
+                        hlog["srcip"] = parsed["src_ip"]
+                        hlog["dstport"] = parsed["dest_port"]
+                        hlog["dstip"] = parsed["dest_ip"]
+                        hlog["timestamp"] = parsed["timestamp"].replace("T", " ")
                         try:
-                            alog["srcport"] = parsed["src_port"]
+                            hlog["uri"] = parsed["http"]["url"]
                         except:
-                            alog["srcport"] = "None"
-                        alog["srcip"] = parsed["src_ip"]
+                            hlog["uri"] = "None"
+                        hlog["length"] = parsed["http"]["length"]
                         try:
-                            alog["dstport"] = parsed["dest_port"]
+                            hlog["hostname"] = parsed["http"]["hostname"]
                         except:
-                            alog["dstport"] = "None"
-                        alog["dstip"] = parsed["dest_ip"]
-                        alog["protocol"] = parsed["proto"]
-                        alog["timestamp"] = parsed["timestamp"].replace("T", " ")
-                        if parsed["alert"]["category"] == '':
-                            alog["category"] = "None"
-                        else:
-                            alog["category"] = parsed["alert"]["category"]
-                        alog["signature"] = parsed["alert"]["signature"]
-                        suricata["alerts"].append(alog)
+                            hlog["hostname"] = "None"
+                        try:
+                            hlog["status"] = str(parsed["http"]["status"])
+                        except:
+                            hlog["status"] = "None"
+                        try:
+                           hlog["method"] = parsed["http"]["http_method"]
+                        except:
+                            hlog["method"] = "None"
+                        try:
+                           hlog["contenttype"] = parsed["http"]["http_content_type"]
+                        except:
+                            hlog["contenttype"] = "None"
+                        try:
+                            hlog["ua"] = parsed["http"]["http_user_agent"]
+                        except:
+                            hlog["ua"] = "None"
+                        try:
+                            hlog["referrer"] = parsed["http"]["http_refer"]
+                        except:
+                            hlog["referrer"] = "None"
+                        suricata["http"].append(hlog)
 
-                elif parsed["event_type"] == "http":
-                    hlog = dict()
-                    hlog["srcport"] = parsed["src_port"]
-                    hlog["srcip"] = parsed["src_ip"]
-                    hlog["dstport"] = parsed["dest_port"]
-                    hlog["dstip"] = parsed["dest_ip"]
-                    hlog["timestamp"] = parsed["timestamp"].replace("T", " ")
-                    try:
-                        hlog["uri"] = parsed["http"]["url"]
-                    except:
-                        hlog["uri"] = "None"
-                    hlog["length"] = parsed["http"]["length"]
-                    try:
-                        hlog["hostname"] = parsed["http"]["hostname"]
-                    except:
-                        hlog["hostname"] = "None"
-                    try:
-                        hlog["status"] = str(parsed["http"]["status"])
-                    except:
-                        hlog["status"] = "None"
-                    try:
-                       hlog["method"] = parsed["http"]["http_method"]
-                    except:
-                        hlog["method"] = "None"
-                    try:
-                       hlog["contenttype"] = parsed["http"]["http_content_type"]
-                    except:
-                        hlog["contenttype"] = "None"
-                    try:
-                        hlog["ua"] = parsed["http"]["http_user_agent"]
-                    except:
-                        hlog["ua"] = "None"
-                    try:
-                        hlog["referrer"] = parsed["http"]["http_refer"]
-                    except:
-                        hlog["referrer"] = "None"
-                    suricata["http"].append(hlog)
+                    elif parsed["event_type"] == "tls":
+                        tlog = dict()
+                        tlog["srcport"] = parsed["src_port"]
+                        tlog["srcip"] = parsed["src_ip"]
+                        tlog["dstport"] = parsed["dest_port"]
+                        tlog["dstip"] = parsed["dest_ip"]
+                        tlog["timestamp"] = parsed["timestamp"].replace("T", " ")
+                        for key in tls_items:
+                            if key in parsed["tls"]:
+                                tlog[key] = parsed["tls"][key]
+                        suricata["tls"].append(tlog)
 
-                elif parsed["event_type"] == "tls":
-                    tlog = dict()
-                    tlog["srcport"] = parsed["src_port"]
-                    tlog["srcip"] = parsed["src_ip"]
-                    tlog["dstport"] = parsed["dest_port"]
-                    tlog["dstip"] = parsed["dest_ip"]
-                    tlog["timestamp"] = parsed["timestamp"].replace("T", " ")
-                    tlog["fingerprint"] = parsed["tls"]["fingerprint"]
-                    tlog["issuer"] = parsed["tls"]["issuerdn"]
-                    tlog["version"] = parsed["tls"]["version"]
-                    tlog["subject"] = parsed["tls"]["subject"]
-                    suricata["tls"].append(tlog)
-
-                elif parsed["event_type"] == "ssh":
-                    suricata["ssh"].append(parsed)
-                elif parsed["event_type"] == "dns":
-                    suricata["dns"].append(parsed)
+                    elif parsed["event_type"] == "ssh":
+                        suricata["ssh"].append(parsed)
+                    elif parsed["event_type"] == "dns":
+                        suricata["dns"].append(parsed)
 
         if os.path.exists(SURICATA_FILE_LOG_FULL_PATH):
             suricata["file_log_full_path"] = SURICATA_FILE_LOG_FULL_PATH
