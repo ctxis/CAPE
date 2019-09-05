@@ -35,6 +35,7 @@ from lib.cuckoo.core.resultserver import ResultServer
 from django.core.validators import URLValidator
 
 log = logging.getLogger(__name__)
+repconf = Config("reporting")
 
 try:
     import libvirt
@@ -48,13 +49,17 @@ try:
 except ImportError:
     HAVE_TLDEXTRACT = False
 
-try:
-    from pyattck import Attck
-    mitre = Attck()
-    HAVE_MITRE = True
-    log.error("Missed pyattck dependency")
-except ImportError:
+if repconf.mitre.enabled:
+    try:
+        from pyattck import Attck
+        mitre = Attck(os.path.join(CUCKOO_ROOT, repconf.mitre.local_file))
+        HAVE_MITRE = True
+        log.error("Missed pyattck dependency")
+    except ImportError:
+        HAVE_MITRE = False
+else:
     HAVE_MITRE = False
+
 
 
 myresolver = dns.resolver.Resolver()
