@@ -4,9 +4,10 @@
 
 from lib.cuckoo.common.abstracts import Signature
 
+
 class UsesWindowsUtilities(Signature):
-    name = "uses_windows_utilities"
-    description = "Uses Windows utilities for basic functionality"
+    name = "uses_windows_utilities_to_create_scheduled_task"
+    description = "Uses Windows utilities for creating scheduled task(s)"
     severity = 2
     confidence = 80
     categories = ["commands", "lateral"]
@@ -20,6 +21,33 @@ class UsesWindowsUtilities(Signature):
         utilities = [
             "at ",
             "at.exe",
+            "schtasks",
+        ]
+
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            for utility in utilities:
+                if utility in lower:
+                    ret = True
+                    self.data.append({"command" : cmdline})
+
+        return ret
+
+class UsesWindowsUtilities(Signature):
+    name = "uses_windows_utilities"
+    description = "Uses Windows utilities for basic functionality"
+    severity = 2
+    confidence = 80
+    categories = ["commands", "lateral"]
+    authors = ["Cuckoo Technologies", "Kevin Ross"]
+    minimum = "1.3"
+
+    evented = True
+
+    def run(self):
+        utilities = [
             "attrib",
             "copy",
             "dir ",
@@ -58,7 +86,6 @@ class UsesWindowsUtilities(Signature):
             "rwinsta",
             "sc ",
             "sc.exe",
-            "schtasks",
             "set ",
             "set.exe",
             "shutdown",
@@ -315,7 +342,7 @@ class SuspiciousCertutilUse(Signature):
     evented = True
     references = ["https://www.sentinelone.com/blog/malware-living-off-land-with-certutil/"]
     ttp = ["T1140", "T1130", "T1105"]
-	
+    
     def run(self):
 
         ret = False
@@ -378,7 +405,7 @@ class DotNETCSCBuild(Signature):
     evented = True
     references = ["https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/command-line-building-with-csc-exe"]
     ttp = ["T1500"]
-	
+    
     def run(self):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
