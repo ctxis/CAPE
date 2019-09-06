@@ -24,6 +24,7 @@ class RansomwareFiles(Signature):
     categories = ["ransomware"]
     authors = ["KillerInstinct"]
     minimum = "1.2"
+    ttp = ["T1022"]
 
     def run(self):
         # List of tuples with a regex pattern for the file name and a list of
