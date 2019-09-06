@@ -222,6 +222,7 @@ class CAPE_InjectionCreateRemoteThread(Signature):
     authors = ["JoseMi Holguin", "nex", "Optiv", "kevoreilly", "KillerInstinct"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -295,6 +296,7 @@ class CAPE_InjectionProcessHollowing(Signature):
     authors = ["glysbaysb", "Optiv", "KillerInstinct"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055", "T1093"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -354,6 +356,7 @@ class CAPE_InjectionSetWindowLong(Signature):
     authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055", "T1181"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -396,6 +399,7 @@ class CAPE_Injection(Signature):
     authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -439,6 +443,7 @@ class CAPE_EvilGrab(Signature):
     authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1219"]
 
     filter_apinames = set(["RegSetValueExA", "RegSetValueExW", "RegCreateKeyExA", "RegCreateKeyExW"])
 
@@ -473,6 +478,7 @@ class CAPE_PlugX(Signature):
     authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1219"]
 
     filter_apinames = set(["RtlDecompressBuffer", "memcpy"])
 
@@ -519,6 +525,7 @@ class CAPE_Doppelganging(Signature):
     authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055", "T1186"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -550,6 +557,7 @@ class CAPE_TransactedHollowing(Signature):
     authors = ["kevoreilly"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1055", "T1093"]
 
     filter_apinames = set(["RtlSetCurrentTransaction", "NtRollbackTransaction", "NtMapViewOfSection"])
 
