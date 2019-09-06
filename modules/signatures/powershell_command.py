@@ -32,7 +32,7 @@ class PowershellCommandSuspicious(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         commands = [
@@ -126,7 +126,7 @@ class PowershellRenamed(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         commands = [
@@ -209,7 +209,7 @@ class PowershellReversed(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         commands = [
@@ -271,7 +271,7 @@ class PowershellVariableObfuscation(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         ret = False
@@ -295,7 +295,7 @@ class PowerShellNetworkConnection(Signature):
     minimum = "1.2"
     evented = True
     match = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
