@@ -23,6 +23,9 @@ class Dropped(Processing):
         if self.task["category"] == "pcap":
             return dropped_files
 
+        if not os.path.exists(self.dropped_path):
+            return dropped_files
+        
         textchars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
         is_binary_file = lambda bytes: bool(bytes.translate(None, textchars))
         file_names = os.listdir(self.dropped_path)
