@@ -573,7 +573,7 @@ class RunSignatures(object):
         if malscore < 0.0:
             malscore = 0.0
         self.results["malscore"] = malscore
-        self.results["ttps"] = sorted(list(set(self.ttps)))
+        self.results["ttps"] = self.ttps
 
         # Make a best effort detection of malware family name (can be updated later by re-processing the analysis)
         for match in matched:
