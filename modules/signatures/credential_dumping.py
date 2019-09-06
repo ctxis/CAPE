@@ -24,7 +24,8 @@ class LsassCredentialDumping(Signature):
     minimum = "1.3"
     evented = True
     references = ["cyberwardog.blogspot.co.uk/2017/03/chronicles-of-threat-hunter-hunting-for_22.html", "cyberwardog.blogspot.co.uk/2017/04/chronicles-of-threat-hunter-hunting-for.html"]
-
+    ttp = ["T1003"]
+    
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
         self.lsasspid = []
