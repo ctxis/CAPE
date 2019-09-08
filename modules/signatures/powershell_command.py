@@ -32,7 +32,7 @@ class PowershellCommandSuspicious(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         commands = [
@@ -97,7 +97,7 @@ class PowershellCommandSuspicious(Signature):
                         if b64:
                             decoded = base64.b64decode(encoded)
                             if "\x00" in decoded:
-                                decoded = base64.b64decode(encoded).decode('UTF-16') 
+                                decoded = base64.b64decode(encoded).decode('UTF-16')
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
                 if "frombase64string(" in lower:
@@ -112,7 +112,7 @@ class PowershellCommandSuspicious(Signature):
                         if b64:
                             decoded = base64.b64decode(encoded)
                             if "\x00" in decoded:
-                                decoded = base64.b64decode(encoded).decode('UTF-16') 
+                                decoded = base64.b64decode(encoded).decode('UTF-16')
                             self.data.append({"decoded_base64_string" : convert_to_printable(decoded)})
 
         return ret
@@ -126,7 +126,7 @@ class PowershellRenamed(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         commands = [
@@ -209,7 +209,7 @@ class PowershellReversed(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         commands = [
@@ -271,7 +271,7 @@ class PowershellVariableObfuscation(Signature):
     authors = ["Kevin Ross", "Optiv"]
     minimum = "1.3"
     evented = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def run(self):
         ret = False
@@ -295,12 +295,12 @@ class PowerShellNetworkConnection(Signature):
     minimum = "1.2"
     evented = True
     match = True
-    ttp = ["T1086"]
+    ttp = ["T1086", "T1064"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
         self.data = []
-   
+
     filter_apinames = set(["InternetCrackUrlW","InternetCrackUrlA","URLDownloadToFileW","HttpOpenRequestW","InternetReadFile", "send", "WSAConnect"])
     filter_analysistypes = set(["file"])
 
