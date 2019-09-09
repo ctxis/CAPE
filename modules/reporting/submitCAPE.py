@@ -307,7 +307,7 @@ class SubmitCAPE(Report):
         parent_package = results["info"].get("package")
 
         # Initial static hits from CAPE's yara signatures
-        for entry in results("target", {}).get("file", {}).get("cape_yara", []):
+        for entry in results.get("target", {}).get("file", {}).get("cape_yara", []):
             self.process_cape_yara(entry, detections)
 
         for pattern in ("procdump", "CAPE", "dropped"):

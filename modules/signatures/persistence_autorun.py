@@ -24,6 +24,7 @@ except ImportError:
 
 from lib.cuckoo.common.abstracts import Signature
 
+
 class Autorun_scheduler(Signature):
     name = "persistence_autorun_tasks"
     description = "Installs itself for autorun at Windows startup"
@@ -63,7 +64,7 @@ class Autorun_scheduler(Signature):
         ]
         whitelists = [
             ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\{CAFEEFAC-0017-0000-FFFF-ABCDEFFEDCBA}\\\\InprocServer32\\\\.*",
-            ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\ThreadingModel$"
+            #".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\ThreadingModel$",
         ]
 
         for indicator in indicators:
@@ -110,12 +111,14 @@ class Autorun_scheduler(Signature):
 
         return self.found_autorun
 
+
 class Autorun(Signature):
     name = "persistence_autorun"
     description = "Installs itself for autorun at Windows startup"
     severity = 3
     categories = ["persistence"]
-    authors = ["Michael Boman", "nex", "securitykitten", "Optiv", "KillerInstinct"]
+    authors = ["Michael Boman", "nex",
+               "securitykitten", "Optiv", "KillerInstinct"]
     minimum = "1.3"
     ttp = ["T1060"]
 
@@ -126,7 +129,8 @@ class Autorun(Signature):
         self.registry_writes = dict()
         self.found_autorun = False
 
-    filter_apinames = set(["RegSetValueExA", "RegSetValueExW", "NtSetValueKey", "CreateServiceA", "CreateServiceW"])
+    filter_apinames = set(["RegSetValueExA", "RegSetValueExW",
+                           "NtSetValueKey", "CreateServiceA", "CreateServiceW"])
 
     def on_call(self, call, process):
         if call["api"].startswith("CreateService") and call["status"]:
@@ -134,8 +138,8 @@ class Autorun(Signature):
             servicename = self.get_argument(call, "ServiceName")
             binpath = self.get_argument(call, "BinaryPathName")
             if starttype < 3:
-                self.data.append({"service name" : servicename })
-                self.data.append({"service path" : binpath })
+                self.data.append({"service name": servicename})
+                self.data.append({"service path": binpath})
                 self.found_autorun = True
         elif call["status"]:
             fullname = self.get_argument(call, "FullName")
@@ -161,17 +165,18 @@ class Autorun(Signature):
             ".*\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Windows\\\\load$",
             ".*\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\ShellServiceObjectDelayLoad\\\\.*",
             ".*\\\\System\\\\(CurrentControlSet|ControlSet001)\\\\Control\\\\Session\\ Manager\\\\AppCertDlls\\\\.*",
-            ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\.*",
+            #".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\.*",
             ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\LocalServer32\\\\.*",
-            ".*\\\\Microsoft\\\\Command\\ Processor\\\\AutoRun$"
-            ]
+            ".*\\\\Microsoft\\\\Command\\ Processor\\\\AutoRun$",
+        ]
         whitelists = [
             ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\{CAFEEFAC-0017-0000-FFFF-ABCDEFFEDCBA}\\\\InprocServer32\\\\.*",
-            ".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\ThreadingModel$"
-            ]
+            #".*\\\\Software\\\\(Wow6432Node\\\\)?Classes\\\\clsid\\\\[^\\\\]*\\\\InprocServer32\\\\ThreadingModel$",
+        ]
 
         for indicator in indicators:
-            match_key = self.check_write_key(pattern=indicator, regex=True, all=True)
+            match_key = self.check_write_key(
+                pattern=indicator, regex=True, all=True)
             if match_key:
                 for match in match_key:
                     in_whitelist = False
@@ -182,9 +187,9 @@ class Autorun(Signature):
 
                     if not in_whitelist:
                         data = self.registry_writes.get(match, "unknown")
-                        if data.lower() != "c:\\program files\\java\\jre7\\bin\jp2iexp.dll":
-                            self.data.append({"key" : match})
-                            self.data.append({"data" : data})
+                        if data.lower() != "c:\\program files\\java\\jre7\\bin\\jp2iexp.dll":
+                            self.data.append({"key": match})
+                            self.data.append({"data": data})
                             self.found_autorun = True
 
         indicators = [
@@ -198,12 +203,13 @@ class Autorun(Signature):
                 for drop in self.results["dropped"]:
                     for path in drop["guest_paths"]:
                         if re.match(indicator, path, re.IGNORECASE):
-                            self.data.append({"file" : path})
+                            self.data.append({"file": path})
                             self.found_autorun = True
-            match_file = self.check_write_file(pattern=indicator, regex=True, all=True)
+            match_file = self.check_write_file(
+                pattern=indicator, regex=True, all=True)
             if match_file:
                 for match in match_file:
-                    self.data.append({"file" : match})
+                    self.data.append({"file": match})
                 self.found_autorun = True
 
         return self.found_autorun

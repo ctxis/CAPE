@@ -3,7 +3,7 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 # MAEC 5.0 Cuckoo Report Module
-
+# https://maecproject.github.io/releases/5.0/MAEC_Vocabularies_Specification.pdf
 import io
 import sys
 import json
@@ -14,8 +14,7 @@ import logging
 import dateutil.parser
 from collections import OrderedDict
 from lib.cuckoo.common.abstracts import Report
-from lib.cuckoo.common.exceptions import CuckooReportError
-from  lib.cuckoo.common.constants import CUCKOO_ROOT
+from lib.cuckoo.common.constants import CUCKOO_ROOT
 
 log = logging.getLogger(__name__)
 
@@ -157,6 +156,7 @@ class MaecReport(Report):
         self.add_process_tree()
         self.add_signatures()
         self.add_capabilities()
+        self.add_mitre_attack(results)
         self.output()
 
     def setup(self):
@@ -615,6 +615,9 @@ class MaecReport(Report):
         meant to be nested in a STIX file object to its "extensions" field
         """
         avClassList = []
+        if "scans" not in cuckoo_virusTotal_dict:
+            return avClassList
+
         for vendor, scan_obj in cuckoo_virusTotal_dict['scans'].items():
             # Only grabbing scan information if the vendor detected the scan
             # object
@@ -678,12 +681,10 @@ class MaecReport(Report):
             ppid = process['parent_id']
             # This is the "root" process
             if str(ppid) not in process_pids:
-                node = self.create_process_tree_node(process, process_children,
-                    True)
+                node = self.create_process_tree_node(process, process_children, True)
                 process_tree_nodes.append(node)
             else:
-                node = self.create_process_tree_node(process, process_children,
-                    False)
+                node = self.create_process_tree_node(process, process_children, False)
                 process_tree_nodes.append(node)
         self.primaryInstance['dynamic_features']['process_tree'] = \
             process_tree_nodes
@@ -698,7 +699,7 @@ class MaecReport(Report):
             maec_signature['description'] = signature['description']
             maec_signature['severity'] = str(signature['severity'])
             maec_signatures.append(maec_signature)
-            if 'name' in signature and signature['name']:
+            if signature.get('name', False):
                 self.signature_names.append(signature['name'])
         if maec_signatures:
             self.primaryInstance['triggered_signatures'] = maec_signatures
@@ -748,6 +749,26 @@ class MaecReport(Report):
                             capabilities.append(capability)
         if capabilities:
             self.primaryInstance['capabilities'] = capabilities
+
+    def add_mitre_attack(self, results):
+        if not results.get("ttps") or not hasattr(self, "mitre"):
+            return
+
+        maec_attcks = list()
+        for tactic in self.mitre.tactics:
+            for technique in tactic.techniques:
+                if technique.id in results["ttps"].keys():
+                    maec_attck = OrderedDict()
+
+                    maec_attck.setdefault(tactic.name, list())
+                    maec_attck[tactic.name].append({"technique_id": technique.id, "ttp_name": technique.name,
+                                               "description": technique.description, "signature": results["ttps"][technique.id]})
+
+                    maec_attcks.append(maec_attck)
+
+        if maec_attcks:
+            self.primaryInstance['mitre_attck'] = maec_attcks
+
 
     def output(self):
         # Add the primary Malware Instance to the package
