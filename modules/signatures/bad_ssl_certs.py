@@ -15,6 +15,7 @@
 
 from lib.cuckoo.common.abstracts import Signature
 
+
 class BadSSLCerts(Signature):
     name = "bad_ssl_certs"
     description = "A known bad/malicious SSL cert was accessed"
@@ -35,32 +36,29 @@ class BadSSLCerts(Signature):
         }
         matches = dict()
         # Check feeds; an ideal format has a hash and description
-        if "feeds" in self.results and self.results["feeds"]:
-            # Get the data from the pre-packaged AbuseCH SSL Feed
-            if "Bad_SSL_Certs" in self.results["feeds"]:
-                with open(self.results["feeds"]["Bad_SSL_Certs"], "r") as feedfile:
-                    data = feedfile.read().splitlines()
-                if data:
-                    # This feed has results in the form of: SHA1,Description
-                    for item in data:
-                        sha1, desc = item.split(",")
-                        # populate the indicators dict
-                        if sha1 not in sha1_indicators.keys():
-                            sha1_indicators[sha1] = desc
+        # Get the data from the pre-packaged AbuseCH SSL Feed
+        if self.results.get("feeds", {}).get("Bad_SSL_Certs", False):
+            with open(self.results["feeds"]["Bad_SSL_Certs"], "r") as feedfile:
+                data = feedfile.read().splitlines()
+            if data:
+                # This feed has results in the form of: SHA1,Description
+                for item in data:
+                    sha1, desc = item.split(",")
+                    # populate the indicators dict
+                    if sha1 not in sha1_indicators.keys():
+                        sha1_indicators[sha1] = desc
 
         # Check for TLS fingerprints and then try to find a match
-        if "suricata" in self.results and self.results["suricata"]:
-            if "tls" in self.results["suricata"] and self.results["suricata"]["tls"]:
-                for shahash in self.results["suricata"]["tls"]:
-                    sha = shahash["fingerprint"].replace(":", "")
-                    if sha in sha1_indicators.keys():
-                        if sha not in matches.keys():
-                            matches[sha] = sha1_indicators[sha]
+        if self.results.get("suricata", {}).get("tls", False):
+            for shahash in self.results["suricata"]["tls"]:
+                sha = shahash["fingerprint"].replace(":", "")
+                if sha in sha1_indicators.keys() and sha not in matches.keys():
+                    matches[sha] = sha1_indicators[sha]
 
         if matches:
             for item in matches.keys():
                 self.families.append(matches[item].split(" ")[0])
-                self.data.append({matches[item]:item})
+                self.data.append({matches[item]: item})
             return True
 
         return False
