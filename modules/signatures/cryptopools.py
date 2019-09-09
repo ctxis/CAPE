@@ -7,6 +7,8 @@ class MINERS(Signature):
     categories = ["miners"]
     authors = ["doomedraven", "bartblaze"]
     minimum = "1.2"
+    ttp = ["T1496"]
+
     pool_domains = [
         "aeon-pool.com",
         "alimabi.cn",

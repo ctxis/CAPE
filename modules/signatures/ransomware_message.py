@@ -29,6 +29,7 @@ class RansomwareMessage(Signature):
     minimum = "1.3"
     evented = True
     match = True
+    ttp = ["T1486"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -103,7 +104,6 @@ class RansomwareMessage(Signature):
 
     def on_call(self, call, process):
         if call["api"] == "NtWriteFile":
-            filescore = 0
             buff = self.get_raw_argument(call, "Buffer").lower()
             filepath = self.get_raw_argument(call, "HandleName")
             patterns = "|".join(self.indicators)
