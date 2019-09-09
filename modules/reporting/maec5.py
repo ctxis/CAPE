@@ -48,7 +48,7 @@ sort_order = ["id", "type", "name", "value", "hashes", "path", "size",
               "vm_ref", "summary", "process_ref", "ordinal_position",
               "initiated_action_refs", "schema_version", "maec_objects",
               "observable_objects", "relationships", "extensions",
-              "triggered_signatures"]
+              "triggered_signatures", "mitre_attck"]
 
 # Mappings between Cuckoo Signature names and MAEC Labels
 label_mappings = {"trojan": "trojan",
