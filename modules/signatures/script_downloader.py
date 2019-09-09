@@ -29,7 +29,7 @@ class ScriptNetworkActvity(Signature):
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
         self.ret = False
-   
+
     filter_apinames = set(["InternetCrackUrlW","InternetCrackUrlA","URLDownloadToFileW","HttpOpenRequestW","InternetReadFile"])
 
     def on_call(self, call, process):
