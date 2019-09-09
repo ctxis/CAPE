@@ -5,9 +5,9 @@
 from lib.cuckoo.common.abstracts import Signature
 
 
-class UsesWindowsUtilities(Signature):
+class UsesWindowsUtilitiesScheduler(Signature):
     name = "uses_windows_utilities_to_create_scheduled_task"
-    description = "Uses Windows utilities for creating scheduled task(s)"
+    description = "Uses Windows utilities for basic functionality"
     severity = 2
     confidence = 80
     categories = ["commands", "lateral"]
@@ -342,7 +342,7 @@ class SuspiciousCertutilUse(Signature):
     evented = True
     references = ["https://www.sentinelone.com/blog/malware-living-off-land-with-certutil/"]
     ttp = ["T1140", "T1130", "T1105"]
-    
+
     def run(self):
 
         ret = False
@@ -405,7 +405,7 @@ class DotNETCSCBuild(Signature):
     evented = True
     references = ["https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/command-line-building-with-csc-exe"]
     ttp = ["T1500"]
-    
+
     def run(self):
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
