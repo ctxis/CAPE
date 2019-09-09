@@ -59,9 +59,9 @@ if repconf.mitre.enabled:
            attack_file = False
         mitre = Attck(attack_file)
         HAVE_MITRE = True
-        log.error("Missed pyattck dependency")
     except ImportError:
         HAVE_MITRE = False
+        log.error("Missed pyattck dependency")
 else:
     HAVE_MITRE = False
 

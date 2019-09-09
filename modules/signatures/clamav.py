@@ -53,7 +53,7 @@ class ClamAV(Signature):
                         if entry["file_info"]["type"]:
                             lentry =  "%s, type:%s" % (lentry,entry["file_info"]["type"])
                         self.data.append({"suri_extracted": lentry})
-                            
+
         if "dropped" in self.results:
             for entry in self.results["dropped"]:
                 if "clamav" in entry.keys() and entry["clamav"] and "sha256" in entry.keys():

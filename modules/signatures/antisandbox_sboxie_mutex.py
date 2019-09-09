@@ -22,6 +22,7 @@ class AntisandboxSboxieMutex(Signature):
     categories = ["antisandbox"]
     authors = ["KillerInstinct"]
     minimum = "1.2"
+    ttp = ["T1063"]
 
     def run(self):
         indicators = [
