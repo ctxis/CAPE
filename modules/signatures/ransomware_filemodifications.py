@@ -29,6 +29,7 @@ class RansomwareFileModifications(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1486"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)
@@ -36,7 +37,7 @@ class RansomwareFileModifications(Signature):
         self.appendcount = 0
         self.appendemailcount = 0
         self.newextensions = []
-     
+
     filter_apinames = set(["MoveFileWithProgressW","MoveFileWithProgressTransactedW"])
 
     def on_call(self, call, process):
@@ -87,10 +88,10 @@ class RansomwareFileModifications(Signature):
                 mimetype = dropped["type"]
                 filename = dropped["name"]
                 if mimetype == "data" and ".tmp" not in filename and "CryptnetUrlCache" not in filename:
-                    droppedunknowncount += 1            
+                    droppedunknowncount += 1
             if droppedunknowncount > 50 and self.results["info"]["package"] != "pdf":
                 self.data.append({"drops_unknown_mimetypes" : "Drops %s unknown file mime types which may be indicative of encrypted files being written back to disk" % (droppedunknowncount)})
-                ret = True 
+                ret = True
 
         # Note: Always make sure this check is at bottom so that appended file extensions are underneath behavior alerts
         if self.appendcount > 40:
@@ -98,7 +99,7 @@ class RansomwareFileModifications(Signature):
             newcount = len(self.newextensions)
             if newcount > 15:
                 self.data.append({"appends_new_extension" : "Appended %s unique file extensions to multiple modified files" % (newcount)})
-            if newcount < 16:           
+            if newcount < 16:
                 self.data.append({"appends_new_extension" : "Appends a new file extension to multiple modified files" })
                 for newextension in self.newextensions:
                     self.data.append({"new_appended_file_extension" : newextension})

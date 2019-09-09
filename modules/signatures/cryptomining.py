@@ -27,6 +27,7 @@ class CryptominingStratumCommand(Signature):
     minimum = "1.3"
     evented = True
     references = ["blog.talosintelligence.com/2018/01/malicious-xmr-mining.html", "www.fireeye.com/blog/threat-research/2018/07/cryptocurrencies-cyber-crime-growth-of-miners.html"]
+    ttp = ["T1496"]
 
     def run(self):
         xmr_address_re = '-u[ ]*4[0-9AB][123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{93}'

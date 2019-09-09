@@ -13,6 +13,7 @@ class InjectionRWX(Signature):
     authors = ["Optiv"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1055"]
 
     def __init__(self, *args, **kwargs):
         Signature.__init__(self, *args, **kwargs)

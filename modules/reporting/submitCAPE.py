@@ -307,18 +307,14 @@ class SubmitCAPE(Report):
         parent_package = results["info"].get("package")
 
         # Initial static hits from CAPE's yara signatures
-        if "target" in results:
-            target = results["target"]
-            if "file" in target and "cape_yara" in target["file"]:
-                for entry in target["file"]["cape_yara"]:
-                    self.process_cape_yara(entry, detections)
+        for entry in results.get("target", {}).get("file", {}).get("cape_yara", []):
+            self.process_cape_yara(entry, detections)
 
         for pattern in ("procdump", "CAPE", "dropped"):
-            if pattern in results and results[pattern]:
-                for file in results[pattern]:
-                    if "cape_yara" in file:
-                        for entry in file["cape_yara"]:
-                            self.process_cape_yara(entry, detections)
+            for file in results.get(pattern, []):
+                if "cape_yara" in file:
+                    for entry in file["cape_yara"]:
+                        self.process_cape_yara(entry, detections)
 
         # Dynamic CAPE hits
         # Packers, injection or other generic dumping

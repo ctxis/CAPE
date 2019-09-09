@@ -23,6 +23,7 @@ class SandboxieDetectLibs(Signature):
     authors = ["Optiv"]
     minimum = "1.2"
     evented = True
+    ttp = ["T1063"]
 
     filter_apinames = set(["LdrLoadDll", "LdrGetDllHandle"])
 

@@ -30,6 +30,7 @@ class RansomwareDMALocker(Signature):
     authors = ["Kevin Ross"]
     minimum = "1.3"
     evented = True
+    ttp = ["T1486"]
 
 
     def __init__(self, *args, **kwargs):
@@ -42,5 +43,5 @@ class RansomwareDMALocker(Signature):
             key = re.compile(".*\\\\SOFTWARE\\\\(Wow6432Node\\\\)?Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\\\\cryptedinfo$")
             buff = self.get_argument(call, "Buffer").lower()
             fullname = self.get_argument(call, "FullName")
-            if buff == "notepad c:\programdata\cryptinfo.txt" and key.match(fullname): 
+            if buff == "notepad c:\programdata\cryptinfo.txt" and key.match(fullname):
                 return True
