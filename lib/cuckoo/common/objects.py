@@ -433,7 +433,7 @@ class File(object):
         return infos
 
 class Static(File):
-
+    pass
 
 class ProcDump(object):
     def __init__(self, dump_file, pretty=False):
