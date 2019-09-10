@@ -49,6 +49,7 @@ class NanocoreRAT(Signature):
                "-[0-9a-fA-F]{12}"
         fileiocs = [
             ".*\\\\" + guid + "\\\\run\.dat$",
+            ".*\\\\" + guid + "\\\\task\.dat$",
             ".*\\\\" + guid + "\\\\catelog\.dat$",
             ".*\\\\" + guid + "\\\\storage\.dat$",
             ".*\\\\" + guid + "\\\\settings\.bin$",
