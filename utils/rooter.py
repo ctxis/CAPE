@@ -155,7 +155,7 @@ def inetsim_enable(ipaddr, inetsim_ip, dns_port, resultserver_port):
     run(settings.iptables, "-A", "OUTPUT", "-m", "state", "--state",
         "INVALID", "-j", "DROP")
     dns_forward("-A", ipaddr, inetsim_ip, dns_port)
-     run(settings.iptables, "-A", "OUTPUT", "--source", ipaddr, "-j", "DROP")
+    run(settings.iptables, "-A", "OUTPUT", "--source", ipaddr, "-j", "DROP")
 
 def inetsim_disable(ipaddr, inetsim_ip, dns_port, resultserver_port):
     """Disable hijacking of all traffic and send it to InetSIM."""
