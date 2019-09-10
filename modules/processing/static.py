@@ -12,11 +12,10 @@ import array
 import base64
 import hashlib
 
-from datetime import datetime, timedelta
 from lib.cuckoo.common.icon import PEGroupIconDir
 from PIL import Image
 from StringIO import StringIO
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from subprocess import Popen, PIPE
 import struct
 
@@ -1094,7 +1093,7 @@ class Office(object):
             temp_dict["CVE"] = ""
             temp_dict["sha256"] = ""
             temp_dict["index"] = ""
-            
+
             if rtfobj.is_package:
                 log.debug('Saving file from OLE Package in object #%d:' % rtfobj.format_id)
                 log.debug('  Filename = %r' % rtfobj.filename)
@@ -1200,7 +1199,7 @@ class Office(object):
                 results["office_dde"] = convert_to_printable(dde)
         except Exception as e:
             log.error(e)
-        
+
         metares = officeresults["Metadata"] = dict()
         # The bulk of the metadata checks are in the OLE Structures
         # So don't check if we're dealing with XML.
@@ -1565,7 +1564,7 @@ class Static(Processing):
         self.key = "static"
         static = {}
 
-        if self.task["category"] == "file":
+        if self.task["category"] in ("file", "static"):
             package = ""
             if "info" in self.results and "package" in self.results["info"]:
                 package = self.results["info"]["package"]

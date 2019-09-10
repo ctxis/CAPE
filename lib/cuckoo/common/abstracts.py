@@ -741,7 +741,7 @@ class Signature(object):
 
     def yara_detected(self, name):
         target = self.results.get("target", {})
-        if target.get("category") == "file" and target.get("file"):
+        if target.get("category") in ("file", "static") and target.get("file"):
             for block in self.results["target"]["file"]["yara"]:
                 if re.findall(name, block["name"], re.I):
                     return "sample", self.results["target"]["file"]["path"], block
