@@ -190,9 +190,10 @@ def index(request, page=1):
         page = 1
     off = (page - 1) * TASK_LIMIT
 
-    tasks_files = db.list_tasks(limit=TASK_LIMIT, offset=off, category="file", not_status=TASK_PENDING)
-    tasks_urls = db.list_tasks(limit=TASK_LIMIT, offset=off, category="url", not_status=TASK_PENDING)
-    tasks_pcaps = db.list_tasks(limit=TASK_LIMIT, offset=off, category="pcap", not_status=TASK_PENDING)
+    tasks_files = db.list_tasks(limit=TASK_LIMIT, offset=off, category="file", not_status=TASK_PENDING) or 0
+    tasks_files += db.list_tasks(limit=TASK_LIMIT, offset=off, category="static", not_status=TASK_PENDING) or 0
+    tasks_urls = db.list_tasks(limit=TASK_LIMIT, offset=off, category="url", not_status=TASK_PENDING) or 0
+    tasks_pcaps = db.list_tasks(limit=TASK_LIMIT, offset=off, category="pcap", not_status=TASK_PENDING) or 0
     analyses_files = []
     analyses_urls = []
     analyses_pcaps = []
@@ -205,9 +206,10 @@ def index(request, page=1):
     paging["next_page"] = str(page + 1)
     paging["prev_page"] = str(page - 1)
 
-    tasks_files_number = db.count_matching_tasks(category="file", not_status=TASK_PENDING)
-    tasks_urls_number = db.count_matching_tasks(category="url", not_status=TASK_PENDING)
-    tasks_pcaps_number = db.count_matching_tasks(category="pcap", not_status=TASK_PENDING)
+    tasks_files_number = db.count_matching_tasks(category="file", not_status=TASK_PENDING) or 0
+    tasks_files_number += db.count_matching_tasks(category="static", not_status=TASK_PENDING) or 0
+    tasks_urls_number = db.count_matching_tasks(category="url", not_status=TASK_PENDING) or 0
+    tasks_pcaps_number = db.count_matching_tasks(category="pcap", not_status=TASK_PENDING) or 0
     pages_files_num = tasks_files_number / TASK_LIMIT + 1
     pages_urls_num = tasks_urls_number / TASK_LIMIT + 1
     pages_pcaps_num = tasks_pcaps_number / TASK_LIMIT + 1
