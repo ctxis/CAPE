@@ -15,6 +15,7 @@ from lib.cuckoo.common.exceptions import CuckooDependencyError
 from lib.cuckoo.common.objects import File, URL, PCAP, Static
 from lib.cuckoo.common.utils import create_folder, Singleton, classlock, SuperLock, get_options
 from lib.cuckoo.common.demux import demux_sample
+from lib.cuckoo.common.cape_utils import static_extraction
 
 try:
     from sqlalchemy import create_engine, Column, event
@@ -1086,7 +1087,7 @@ class Database(object):
                                    custom="", machine="", platform="", tags=None,
                                    memory=False, enforce_timeout=False, clock=None,shrike_url=None,
                                    shrike_msg=None, shrike_sid=None, shrike_refer=None, parent_id=None,
-                                   sample_parent_id=None):
+                                   sample_parent_id=None, static=False):
         """
         Handles ZIP file submissions, submitting each extracted file to the database
         Returns a list of added task IDs
@@ -1109,7 +1110,13 @@ class Database(object):
 
         # create tasks for each file in the archive
         for file in extracted_files:
-            task_id = self.add_path(file_path=file,
+            config = False
+            if static:
+                config = static_extraction(file)
+                if config:
+                    task_id = self.add_static(file_path=file, priority=priority)
+            if not config:
+                task_id = self.add_path(file_path=file,
                                     timeout=timeout,
                                     priority=priority,
                                     options=options,

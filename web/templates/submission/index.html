@@ -451,13 +451,11 @@ $(document).ready( function() {
                                     <input type="checkbox" name="nohuman" /> Disable automated interaction
                                 </label>
                             </div>
-                            {% if config.tor %}
-                            <div class="checkbox">
+                            <div class="static">
                                 <label>
-                                    <input type="checkbox" name="tor" /> Enable Tor transparent proxy
+                                    <input type="checkbox" name="static" checked/> Try to extract config without VM <span class="text-muted"><small>(Submit to VM if not extracted)</small></span>
                                 </label>
                             </div>
-                            {% endif %}
                             {% if config.kernel %}
                             <div class="checkbox">
                                 <label>
