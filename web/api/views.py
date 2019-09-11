@@ -371,7 +371,6 @@ def tasks_create_file(request):
             if static:
                 task_id = db.add_static(file_path=tmp_path, priority=priority)
                 task_ids.append(task_id)
-                continue
 
             if quarantine:
                 path = unquarantine(tmp_path)
