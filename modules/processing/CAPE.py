@@ -135,8 +135,8 @@ class CAPE(Processing):
             if upx_extract["type"]:
                 upx_extract["cape_type"] = "UPX-extracted "
                 type_strings = upx_extract["type"].split()
-                if type_strings[0][0] in ("PE32+", "PE32"):
-                    upx_extract["cape_type"] += pe_map[type_strings[0][0]]
+                if type_strings[0] in ("PE32+", "PE32"):
+                    upx_extract["cape_type"] += pe_map[type_strings[0]]
                     if type_strings[2][0] == "(DLL)":
                         upx_extract["cape_type"] += "DLL"
                     else:
@@ -226,8 +226,8 @@ class CAPE(Processing):
                     file_info["virtual_address"] = metastrings[4]
 
             type_strings = file_info["type"].split()
-            if type_strings[0][0] in ("PE32+", "PE32"):
-                file_info["cape_type"] += pe_map[type_strings[0][0]]
+            if type_strings[0] in ("PE32+", "PE32"):
+                file_info["cape_type"] += pe_map[type_strings[0]]
                 if type_strings[2] == ("(DLL)"):
                     file_info["cape_type"] += "DLL"
                 else:
@@ -252,8 +252,8 @@ class CAPE(Processing):
                     cape_config["cape_type"] = code_mapping[file_info["cape_type_code"]]
 
                 type_strings = file_info["type"].split()
-                if type_strings[0][0] in ("PE32+", "PE32"):
-                    file_info["cape_type"] += pe_map[type_strings[0][0]]
+                if type_strings[0] in ("PE32+", "PE32"):
+                    file_info["cape_type"] += pe_map[type_strings[0]]
                     if type_strings[2] == ("(DLL)"):
                         file_info["cape_type"] += "DLL"
                     else:
@@ -572,8 +572,8 @@ class CAPE(Processing):
                 pass
             type_strings = file_info["type"].split()
             if "-bit" not in file_info["cape_type"]:
-                if type_strings[0][0] in ("PE32+", "PE32"):
-                    file_info["cape_type"] += pe_map[type_strings[0][0]]
+                if type_strings[0] in ("PE32+", "PE32"):
+                    file_info["cape_type"] += pe_map[type_strings[0]]
                     if type_strings[2] == ("(DLL)"):
                         file_info["cape_type"] += "DLL"
                     else:
