@@ -79,7 +79,7 @@ class URL:
         """@param url: URL"""
         self.url = url
 
-class File:
+class File(object):
     """Basic file object class with all useful utilities."""
 
     YARA_RULEPATH = \
@@ -136,12 +136,12 @@ class File:
 
     def calc_hashes(self):
         """Calculate all possible hashes for this file."""
-        crc     = 0
-        md5     = hashlib.md5()
-        sha1    = hashlib.sha1()
-        sha256  = hashlib.sha256()
-        sha512  = hashlib.sha512()
-        
+        crc    = 0
+        md5    = hashlib.md5()
+        sha1   = hashlib.sha1()
+        sha256 = hashlib.sha256()
+        sha512 = hashlib.sha512()
+
         for chunk in self.get_chunks():
             crc = binascii.crc32(chunk, crc)
             md5.update(chunk)
@@ -149,11 +149,11 @@ class File:
             sha256.update(chunk)
             sha512.update(chunk)
 
-        self._crc32     = "".join("%02X" % ((crc>>i)&0xff) for i in [24, 16, 8, 0])
-        self._md5       = md5.hexdigest()
-        self._sha1      = sha1.hexdigest()
-        self._sha256    = sha256.hexdigest()
-        self._sha512    = sha512.hexdigest()
+        self._crc32  = "".join("%02X" % ((crc>>i)&0xff) for i in [24, 16, 8, 0])
+        self._md5    = md5.hexdigest()
+        self._sha1   = sha1.hexdigest()
+        self._sha256 = sha256.hexdigest()
+        self._sha512 = sha512.hexdigest()
 
     @property
     def file_data(self):
@@ -322,23 +322,6 @@ class File:
 
         return new
 
-    def _yara_matches_177(self, matches):
-        """Extract matches from the Yara output for version 1.7.7."""
-        ret = []
-        for _, rule_matches in matches.items():
-            for match in rule_matches:
-                strings = set()
-
-                for s in match["strings"]:
-                    strings.add(self._yara_encode_string(s["data"]))
-
-                ret.append({
-                    "name": match["rule"],
-                    "meta": match["meta"],
-                    "strings": list(strings),
-                })
-        return ret
-
     def get_yara(self, rulepath=YARA_RULEPATH):
         """Get Yara signatures matches.
         @return: matched Yara signatures.
@@ -401,6 +384,7 @@ class File:
             log.exception("Unable to match Yara signatures: %s", e)
 
         return results
+
     def get_clamav(self):
         """Get ClamAV signatures matches.
         @return: matched ClamAV signatures.
@@ -447,6 +431,9 @@ class File:
         infos["ep_bytes"] = self.get_ep_bytes()
 
         return infos
+
+class Static(File):
+    pass
 
 class ProcDump(object):
     def __init__(self, dump_file, pretty=False):
@@ -502,7 +489,6 @@ class ProcDump(object):
         except:
             log.warning("Exception parsing memory dump, last map = 0x%x", last_map)
             return
-        return new_addr_space
 
     def _coalesce_chunks(self, chunklist):
         low = chunklist[0]["start"]
@@ -513,7 +499,7 @@ class ProcDump(object):
             if chunk["prot"] != prot:
                 prot = None
         return { "start" : low, "end" : high, "size" : high - low, "prot" : prot, "PE" : PE, "chunks" : chunklist }
- 
+
     def parse_dump(self):
         f = self.dumpfile
         address_space = []

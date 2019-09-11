@@ -1,4 +1,4 @@
-# Copyright (C) 2015 Kevin O'Reilly kevin.oreilly@contextis.co.uk 
+# Copyright (C) 2015 Kevin O'Reilly kevin.oreilly@contextis.co.uk
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -11,12 +11,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
+
 import sys
 import os
 import shutil
 import json
-import binascii
 import logging
 try:
     import re2 as re
@@ -25,18 +24,14 @@ except ImportError:
 import subprocess
 import tempfile
 import hashlib
-import random
 import imp
 import datetime
+import collections
 
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
-from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.exceptions import CuckooProcessingError
-from struct import unpack_from, calcsize
-from socket import inet_ntoa
-import collections
 from lib.cuckoo.common.utils import convert_to_printable
 
 try:
@@ -47,8 +42,7 @@ except ImportError:
 
 ssdeep_threshold = 90
 
-parser_path = os.path.dirname(__file__)
-parser_path += "/parsers"
+parser_path = os.path.join(os.path.dirname(__file__), "parsers")
 if parser_path not in sys.path:
     sys.path.append(parser_path)
 from malwareconfig import JavaDropper
@@ -68,7 +62,7 @@ INJECTION_SECTION       = 5
 EXTRACTION_PE           = 8
 EXTRACTION_SHELLCODE    = 9
 PLUGX_PAYLOAD           = 0x10
-PLUGX_CONFIG            = 0x11    
+PLUGX_CONFIG            = 0x11
 EVILGRAB_PAYLOAD        = 0x14
 EVILGRAB_DATA           = 0x15
 SEDRECO_DATA            = 0x20
@@ -126,7 +120,7 @@ def upx_harness(raw_data):
         log.error("CAPE: UPX Error %s", e)
         os.unlink(upxfile.name)
         return
-    
+
     if ret == 0:
         sha256 = hash_file(hashlib.sha256, upxfile.name)
         newname = os.path.join(os.path.dirname(upxfile.name), sha256)
@@ -139,15 +133,15 @@ def upx_harness(raw_data):
         log.error("CAPE: Error - UPX 'not packed' exception.")
     else:
         log.error("CAPE: Unknown error - check UPX is installed and working.")
-        
+
     os.unlink(upxfile.name)
     return
-        
+
 class CAPE(Processing):
     """CAPE output file processing."""
 
     cape_config = {}
-    
+
     def upx_unpack(self, file_data, CAPE_output):
         unpacked_file = upx_harness(file_data)
         if unpacked_file and os.path.exists(unpacked_file):
@@ -183,8 +177,8 @@ class CAPE(Processing):
                     if type_strings[2] == ("(DLL)"):
                         upx_extract["cape_type"] += "DLL"
                     else:
-                        upx_extract["cape_type"] += "executable"  
-        
+                        upx_extract["cape_type"] += "executable"
+
     def process_file(self, file_path, CAPE_output, append_file):
         """Process file.
         @return: file_info
@@ -192,12 +186,12 @@ class CAPE(Processing):
         global cape_config
         cape_name = ""
         strings = []
-        
+
         buf = self.options.get("buffer", BUFSIZE)
-            
+
         if file_path.endswith("_info.txt"):
             return
-            
+
         texttypes = [
             "ASCII",
             "Windows Registry text",
@@ -227,7 +221,7 @@ class CAPE(Processing):
                 file_info["data"] = convert_to_printable(file_data[:buf] + " <truncated>")
             else:
                 file_info["data"] = convert_to_printable(file_data)
-            
+
         metastrings = metastring.split(",")
         if len(metastrings) > 1:
             file_info["pid"] = metastrings[1]
@@ -239,7 +233,7 @@ class CAPE(Processing):
 
         file_info["cape_type_code"] = 0
         file_info["cape_type"] = ""
-            
+
         if metastrings != "":
             try:
                 file_info["cape_type_code"] = int(metastrings[0])
@@ -311,7 +305,7 @@ class CAPE(Processing):
                     if type_strings[2] == ("(DLL)"):
                         file_info["cape_type"] += "DLL"
                     else:
-                        file_info["cape_type"] += "executable"                
+                        file_info["cape_type"] += "executable"
             # EvilGrab
             if file_info["cape_type_code"] == EVILGRAB_PAYLOAD:
                 file_info["cape_type"] = "EvilGrab Payload"
@@ -336,7 +330,7 @@ class CAPE(Processing):
                 if file_info["size"] == 256 or file_info["size"] == 260:
                     ConfigItem = "filepath"
                     ConfigData = format(file_data)
-                    cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                    cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                 if file_info["size"] > 0x1000:
                     append_file = True
                 else:
@@ -369,7 +363,7 @@ class CAPE(Processing):
                     ConfigItem = "Keylogger Flag"
                 elif SedrecoConfigIndex == '0x9':
                     ConfigItem = "C&C3"
-                else: 
+                else:
                     ConfigItem = "Unknown"
                 ConfigData = format(file_data)
                 if ConfigData:
@@ -385,7 +379,7 @@ class CAPE(Processing):
                 ConfigItem = "JSON Data"
                 parsed = json.loads(file_data.rstrip(b'\0'))
                 ConfigData = json.dumps(parsed, indent=4, sort_keys=True)
-                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                 append_file = True
             if file_info["cape_type_code"] == CERBER_PAYLOAD:
                 file_info["cape_type"] = "Cerber Payload"
@@ -427,7 +421,7 @@ class CAPE(Processing):
                         malwareconfig_config = module.config(file_data)
                         if isinstance(malwareconfig_config, list):
                             for (key, value) in malwareconfig_config[0].iteritems():
-                                cape_config["cape_config"].update({key: [value]}) 
+                                cape_config["cape_config"].update({key: [value]})
                         elif isinstance(malwareconfig_config, dict):
                             for (key, value) in malwareconfig_config.iteritems():
                                 cape_config["cape_config"].update({key: [value]})
@@ -469,22 +463,22 @@ class CAPE(Processing):
                         ConfigItem = "Botnet name"
                         ConfigData = data
                         if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                     if index == '11':
                         ConfigItem = "Number of C2 servers"
                         ConfigData = data
                         if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                     if index == '47':
                         ConfigItem = "Bot ID"
                         ConfigData = data
                         if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                     if index == '3':
                         ConfigItem = "Config timestamp"
                         ConfigData = datetime.datetime.fromtimestamp(int(data)).strftime('%H:%M:%S %d-%m-%Y')
                         if ConfigData:
-                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                            cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                     if index == '22':
                         values = data.split(':')
                         ConfigItem = "Password #1"
@@ -498,14 +492,14 @@ class CAPE(Processing):
                         try:
                             ConfigData = values[1]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                         ConfigItem = "C2 #1"
                         try:
                             ConfigData = values[0]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                     if index == '23':
@@ -521,16 +515,16 @@ class CAPE(Processing):
                         try:
                             ConfigData = values[1]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                         ConfigItem = "C2 #2"
                         try:
                             ConfigData = values[0]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
-                            pass                
+                            pass
                     if index == '24':
                         values = data.split(':')
                         ConfigItem = "Password #3"
@@ -544,14 +538,14 @@ class CAPE(Processing):
                         try:
                             ConfigData = values[1]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                         ConfigItem = "C2 #3"
                         try:
                             ConfigData = values[0]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                     if index == '25':
@@ -567,14 +561,14 @@ class CAPE(Processing):
                         try:
                             ConfigData = values[1]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                         ConfigItem = "C2 #4"
                         try:
                             ConfigData = values[0]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                     if index == '26':
@@ -590,14 +584,14 @@ class CAPE(Processing):
                         try:
                             ConfigData = values[1]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                         ConfigItem = "C2 #5"
                         try:
                             ConfigData = values[0]
                             if ConfigData:
-                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})                
+                                cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                         except:
                             pass
                 append_file = False
@@ -713,7 +707,7 @@ class CAPE(Processing):
             if hit["name"] == "UPX":
                 log.info("CAPE: Found UPX Packed sample - attempting to unpack")
                 self.upx_unpack(file_data, CAPE_output)
-                
+
             # Check for a payload or config hit
             extraction_types = [
                 "payload",
@@ -740,8 +734,8 @@ class CAPE(Processing):
                     if type_strings[2] == ("(DLL)"):
                         file_info["cape_type"] += "DLL"
                     else:
-                        file_info["cape_type"] += "executable"  
-                        
+                        file_info["cape_type"] += "executable"
+
             suppress_parsing_list = ["Cerber", "Emotet_Payload", "Ursnif", "QakBot"];
 
             if hit["name"] in suppress_parsing_list:
@@ -766,7 +760,7 @@ class CAPE(Processing):
                                 log.info("CAPE: DC3-MWCP parser: %s", line.split(': ')[1])
                 except ImportError:
                     pass
-                
+
             # malwareconfig
             malwareconfig_loaded = False
             if cape_name and mwcp_loaded == False:
@@ -779,7 +773,7 @@ class CAPE(Processing):
                     log.info("CAPE: Imported malwareconfig.com parser %s", cape_name)
                 except ImportError:
                     log.info("CAPE: malwareconfig.com parser: No module named %s", cape_name)
-            
+
             # Get config data
             if mwcp_loaded:
                 try:
@@ -789,7 +783,7 @@ class CAPE(Processing):
                     else:
                         cape_config["cape_config"].update(convert(mwcp.metadata))
                 except Exception as e:
-                    log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)            
+                    log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)
             elif malwareconfig_loaded:
                 try:
                     if not "cape_config" in cape_config:
@@ -797,13 +791,13 @@ class CAPE(Processing):
                     malwareconfig_config = module.config(file_data)
                     if isinstance(malwareconfig_config, list):
                         for (key, value) in malwareconfig_config[0].iteritems():
-                            cape_config["cape_config"].update({key: [value]}) 
+                            cape_config["cape_config"].update({key: [value]})
                     elif isinstance(malwareconfig_config, dict):
                         for (key, value) in malwareconfig_config.iteritems():
                             cape_config["cape_config"].update({key: [value]})
                 except Exception as e:
                     log.error("CAPE: malwareconfig parsing error with %s: %s", cape_name, e)
-            
+
             if "cape_config" in cape_config:
                 if cape_config["cape_config"] == {}:
                     del cape_config["cape_config"]
@@ -829,7 +823,7 @@ class CAPE(Processing):
         if append_file == True:
             CAPE_output.append(file_info)
         return file_info
-    
+
     def run(self):
         """Run analysis.
         @return: list of CAPE output files with related information.
@@ -840,41 +834,34 @@ class CAPE(Processing):
         CAPE_output = []
         self.script_dump_files = []
 
-        if hasattr(self, "CAPE_path"):
-            # Process dynamically dumped CAPE files
-            for dir_name, dir_names, file_names in os.walk(self.CAPE_path):
-                for file_name in file_names:
-                    file_path = os.path.join(dir_name, file_name)
-            # We want to exclude duplicate files from display in ui
-                    if len(file_name) <= 64:
-                        self.process_file(file_path, CAPE_output, True)
-                    else:
-                        self.process_file(file_path, CAPE_output, False)
-            # Process files that may have been decrypted from ScriptDump
-            for file_path in self.script_dump_files:
-                self.process_file(file_path, CAPE_output, False)
-        # We want to process procdumps too just in case they might
-        # be detected as payloads and trigger config parsing
-        if hasattr(self, "procdump_path"):
-            for dir_name, dir_names, file_names in os.walk(self.procdump_path):
-                for file_name in file_names:
-                    file_path = os.path.join(dir_name, file_name)
-            # We set append_file to False as we don't wan't to include
-            # the files by default in the CAPE tab
+        for folder in ("CAPE_path", "procdump_path", "dropped_path"):
+
+            if hasattr(self, folder):
+                # Process dynamically dumped CAPE/procdumps files/dropped might
+                # be detected as payloads and trigger config parsing
+                for dir_name, dir_names, file_names in os.walk(getattr(self, folder)):
+                    for file_name in file_names:
+                        file_path = os.path.join(dir_name, file_name)
+                         # We want to exclude duplicate files from display in ui
+                        if folder not in ("procdump_path", "dropped_path") and len(file_name) <= 64:
+                            self.process_file(file_path, CAPE_output, True)
+                        else:
+                            # We set append_file to False as we don't wan't to include
+                            # the files by default in the CAPE tab
+                            self.process_file(file_path, CAPE_output, False)
+
+                # Process files that may have been decrypted from ScriptDump
+                for file_path in self.script_dump_files:
                     self.process_file(file_path, CAPE_output, False)
-        # We want to process dropped files too 
-        for dir_name, dir_names, file_names in os.walk(self.dropped_path):
-            for file_name in file_names:
-                file_path = os.path.join(dir_name, file_name)
-                self.process_file(file_path, CAPE_output, False)
+
         # Finally static processing of submitted file
-        if self.task["category"] == "file":
+        if self.task["category"] in ("file", "static"):
             if not os.path.exists(self.file_path):
                 raise CuckooProcessingError("Sample file doesn't exist: \"%s\"" % self.file_path)
-            
+
             self.process_file(self.file_path, CAPE_output, False)
-            
+
         if "cape_config" in cape_config:
             CAPE_output.append(cape_config)
-        
+
         return CAPE_output

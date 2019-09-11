@@ -12,7 +12,7 @@ from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.exceptions import CuckooDatabaseError
 from lib.cuckoo.common.exceptions import CuckooOperationalError
 from lib.cuckoo.common.exceptions import CuckooDependencyError
-from lib.cuckoo.common.objects import File, URL, PCAP
+from lib.cuckoo.common.objects import File, URL, PCAP, Static
 from lib.cuckoo.common.utils import create_folder, Singleton, classlock, SuperLock, get_options
 from lib.cuckoo.common.demux import demux_sample
 
@@ -951,7 +951,7 @@ class Database(object):
         if not priority:
             priority = 1
 
-        if isinstance(obj, File) or isinstance(obj, PCAP):
+        if isinstance(obj, File) or isinstance(obj, PCAP) or isinstance(obj, Static):
             fileobj = File(obj.file_path)
             file_type = fileobj.get_type()
             file_md5 = fileobj.get_md5()
@@ -992,7 +992,7 @@ class Database(object):
             task = Task(obj.file_path)
             task.sample_id = sample.id
 
-            if isinstance(obj, PCAP):
+            if isinstance(obj, PCAP) or isinstance(obj, Static):
                 # since no VM will operate on this PCAP
                 task.started_on = datetime.now()
 
@@ -1049,7 +1049,7 @@ class Database(object):
     def add_path(self, file_path, timeout=0, package="", options="",
                  priority=1, custom="", machine="", platform="", tags=None,
                  memory=False, enforce_timeout=False, clock=None, shrike_url=None,
-                 shrike_msg=None, shrike_sid = None, shrike_refer=None, parent_id=None,
+                 shrike_msg=None, shrike_sid=None, shrike_refer=None, parent_id=None,
                  sample_parent_id=None):
         """Add a task to database from file path.
         @param file_path: sample path.
@@ -1084,7 +1084,7 @@ class Database(object):
 
     def demux_sample_and_add_to_db(self, file_path, timeout=0, package="", options="", priority=1,
                                    custom="", machine="", platform="", tags=None,
-                                   memory=False, enforce_timeout=False, clock=None, shrike_url=None,
+                                   memory=False, enforce_timeout=False, clock=None,shrike_url=None,
                                    shrike_msg=None, shrike_sid=None, shrike_refer=None, parent_id=None,
                                    sample_parent_id=None):
         """
@@ -1107,6 +1107,7 @@ class Database(object):
                     extracted_files = [xfile]
                     break
 
+        # create tasks for each file in the archive
         for file in extracted_files:
             task_id = self.add_path(file_path=file,
                                     timeout=timeout,
@@ -1140,6 +1141,17 @@ class Database(object):
                         custom, machine, platform, tags, memory,
                         enforce_timeout, clock, shrike_url, shrike_msg,
                         shrike_sid, shrike_refer, parent_id)
+
+    @classlock
+    def add_static(self, file_path, timeout=0, package="", options="", priority=1,
+                custom="", machine="", platform="", tags=None, memory=False,
+                enforce_timeout=False, clock=None, shrike_url=None, shrike_msg=None,
+                shrike_sid=None, shrike_refer=None, parent_id=None, static=True):
+        return self.add(Static(file_path), timeout, package, options, priority,
+                        custom, machine, platform, tags, memory,
+                        enforce_timeout, clock, shrike_url, shrike_msg,
+                        shrike_sid, shrike_refer, parent_id, static)
+
 
     @classlock
     def add_url(self, url, timeout=0, package="", options="", priority=1,
@@ -1189,6 +1201,8 @@ class Database(object):
             add = self.add_url
         elif task.category == "pcap":
             add = self.add_pcap
+        elif task.category == "static":
+            add = self.add_static
 
         # Change status to recovered.
         session = self.Session()
@@ -1463,29 +1477,24 @@ class Database(object):
             session = self.Session()
             try:
 
-                db_sample = session.query(Sample).filter(
-                    query_filter == sample_hash).first()
+                db_sample = session.query(Sample).filter(query_filter == sample_hash).first()
                 if db_sample is not None:
-                    path = os.path.join(
-                        CUCKOO_ROOT, "storage", "binaries", db_sample.sha256)
+                    path = os.path.join(CUCKOO_ROOT, "storage", "binaries", db_sample.sha256)
                     if os.path.exists(path):
                         sample = [path]
 
                 if sample is None:
                     # search in temp folder if not found in binaries
-                    db_sample = session.query(Task).filter(
-                        query_filter == sample_hash).filter(Sample.id == Task.sample_id).all()
+                    db_sample = session.query(Task).filter(query_filter == sample_hash).filter(Sample.id == Task.sample_id).all()
                     if db_sample is not None:
                         samples = filter(None, [tmp_sample.to_dict().get("target", "") for tmp_sample in db_sample])
                         #hash validation and if exist
-                        samples = [
-                            path for path in samples if os.path.exists(path)]
+                        samples = [path for path in samples if os.path.exists(path)]
                         for path in samples:
-                            f = open(path, "rb").read()
-                            if sample_hash == sizes[len(sample_hash)](f).hexdigest():
-                                sample = [path]
-                                break
-                            f.close()
+                            with open(path, "rb").read() as f:
+                                if sample_hash == sizes[len(sample_hash)](f).hexdigest():
+                                    sample = [path]
+                                    break
             except AttributeError:
                 pass
             except SQLAlchemyError as e:
