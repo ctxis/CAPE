@@ -23,7 +23,7 @@ class Strings(Processing):
         self.key = "strings"
         strings = []
 
-        if self.task["category"] == "file":
+        if self.task["category"] in ("file", "static"):
             if not os.path.exists(self.file_path):
                 raise CuckooProcessingError("Sample file doesn't exist: \"%s\"" % self.file_path)
 

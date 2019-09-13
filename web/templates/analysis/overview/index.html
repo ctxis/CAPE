@@ -1,7 +1,7 @@
 {% include "analysis/overview/_info.html" %}
 <hr />
 {% if analysis.info.category != "pcap" %}
-{% if analysis.info.category == "file" and analysis.target %}
+{% if analysis.info.category in "file,static" and analysis.target %}
     {% include "analysis/overview/_file.html" %}
 {% elif analysis.info.category == "url" %}
     {% include "analysis/overview/_url.html" %}

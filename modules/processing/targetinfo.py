@@ -17,9 +17,8 @@ class TargetInfo(Processing):
         self.key = "target"
 
         target_info = {"category": self.task["category"]}
-
         # We have to deal with file or URL targets.
-        if self.task["category"] == "file":
+        if self.task["category"] in ("file", "static"):
             target_info["file"] = {}
 
             # Let's try to get as much information as possible, i.e., the

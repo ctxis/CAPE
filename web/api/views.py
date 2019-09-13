@@ -216,7 +216,7 @@ def tasks_create_file(request):
         shrike_msg = request.POST.get("shrike_msg", None)
         shrike_sid = request.POST.get("shrike_sid", None)
         shrike_refer = request.POST.get("shrike_refer", None)
-
+        static = bool(request.POST.get("static", False))
         task_ids = []
         task_machines = []
         vm_list = []
@@ -274,6 +274,7 @@ def tasks_create_file(request):
 
 
                 tmp_path = store_temp_file(sample.read(), sample.name)
+
                 if pcap:
                     if sample.name.lower().endswith(".saz"):
                         saz = saz_to_pcap(tmp_path)
@@ -290,6 +291,10 @@ def tasks_create_file(request):
                     else:
                         path = tmp_path
                     task_id = db.add_pcap(file_path=path)
+                    task_ids.append(task_id)
+                    continue
+                if static:
+                    task_id = db.add_static(file_path=tmp_path, priority=priority)
                     task_ids.append(task_id)
                     continue
 
@@ -320,7 +325,8 @@ def tasks_create_file(request):
                                           shrike_url=shrike_url,
                                           shrike_msg=shrike_msg,
                                           shrike_sid=shrike_sid,
-                                          shrike_refer=shrike_refer
+                                          shrike_refer=shrike_refer,
+                                          static=static,
                                           )
                     except CuckooDemuxError as e:
                         resp = {"error": True,
@@ -362,6 +368,10 @@ def tasks_create_file(request):
                 task_id = db.add_pcap(file_path=path)
                 task_ids.append(task_id)
 
+            if static:
+                task_id = db.add_static(file_path=tmp_path, priority=priority)
+                task_ids.append(task_id)
+
             if quarantine:
                 path = unquarantine(tmp_path)
                 try:
@@ -388,7 +398,8 @@ def tasks_create_file(request):
                                           shrike_url=shrike_url,
                                           shrike_msg=shrike_msg,
                                           shrike_sid=shrike_sid,
-                                          shrike_refer=shrike_refer
+                                          shrike_refer=shrike_refer,
+                                          static=static,
                                           )
                     if task_ids_new:
                         task_ids.extend(task_ids_new)
@@ -582,6 +593,7 @@ def tasks_vtdl(request):
         custom = request.POST.get("custom", "")
         memory = bool(request.POST.get("memory", False))
         clock = request.POST.get("clock", None)
+        static = bool(request.POST.get("static", False))
 
         task_machines = []
         vm_list = []
@@ -657,7 +669,7 @@ def tasks_vtdl(request):
                     for entry in task_machines:
                         task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
                                                                      machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock,
-                                                                     shrike_url=shrike_url, shrike_msg=shrike_msg, shrike_sid=shrike_sid, shrike_refer=shrike_refer)
+                                                                     shrike_url=shrike_url, shrike_msg=shrike_msg, shrike_sid=shrike_sid, shrike_refer=shrike_refer, static=static)
                         task_ids.extend(task_ids_new)
                 elif r.status_code == 403:
                     resp = {"error": True, "error_value": "API key provided is not a valid VirusTotal key or is not authorized for VirusTotal downloads"}

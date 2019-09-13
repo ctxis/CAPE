@@ -1,3 +1,4 @@
+
 # Copyright (C) 2010-2015 Cuckoo Foundation.
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
@@ -19,7 +20,6 @@ import zlib
 
 import subprocess
 from bson.binary import Binary
-from bson.binary import Binary
 from django.conf import settings
 from wsgiref.util import FileWrapper
 from django.http import HttpResponse, StreamingHttpResponse
@@ -36,6 +36,12 @@ from lib.cuckoo.core.database import Database, Task, TASK_PENDING
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.constants import CUCKOO_ROOT
 import modules.processing.network as network
+
+try:
+    import requests
+    HAVE_REQUEST = True
+except ImportError:
+    HAVE_REQUEST = False
 
 TASK_LIMIT = 25
 
@@ -94,7 +100,7 @@ def get_analysis_info(db, id=-1, task=None):
         return None
 
     new = task.to_dict()
-    if new["category"] in ["file", "pcap"] and new["sample_id"] != None:
+    if new["category"] in ["file", "pcap", "static"] and new["sample_id"] != None:
         new["sample"] = db.view_sample(new["sample_id"]).to_dict()
         filename = os.path.basename(new["target"])
         new.update({"filename": filename})
@@ -114,7 +120,7 @@ def get_analysis_info(db, id=-1, task=None):
                        "network.pcap_sha256": 1,
                        "mlist_cnt": 1, "f_mlist_cnt": 1, "info.package": 1, "target.file.clamav": 1,
                        "suri_tls_cnt": 1, "suri_alert_cnt": 1, "suri_http_cnt": 1, "suri_file_cnt": 1,
-                      "trid" : 1
+                      "trid": 1
                    }, sort=[("_id", pymongo.DESCENDING)]
                )
 
@@ -191,6 +197,7 @@ def index(request, page=1):
     off = (page - 1) * TASK_LIMIT
 
     tasks_files = db.list_tasks(limit=TASK_LIMIT, offset=off, category="file", not_status=TASK_PENDING)
+    tasks_files += db.list_tasks(limit=TASK_LIMIT, offset=off, category="static", not_status=TASK_PENDING)
     tasks_urls = db.list_tasks(limit=TASK_LIMIT, offset=off, category="url", not_status=TASK_PENDING)
     tasks_pcaps = db.list_tasks(limit=TASK_LIMIT, offset=off, category="pcap", not_status=TASK_PENDING)
     analyses_files = []
@@ -205,12 +212,20 @@ def index(request, page=1):
     paging["next_page"] = str(page + 1)
     paging["prev_page"] = str(page - 1)
 
-    tasks_files_number = db.count_matching_tasks(category="file", not_status=TASK_PENDING)
-    tasks_urls_number = db.count_matching_tasks(category="url", not_status=TASK_PENDING)
-    tasks_pcaps_number = db.count_matching_tasks(category="pcap", not_status=TASK_PENDING)
-    pages_files_num = tasks_files_number / TASK_LIMIT + 1
-    pages_urls_num = tasks_urls_number / TASK_LIMIT + 1
-    pages_pcaps_num = tasks_pcaps_number / TASK_LIMIT + 1
+
+    pages_files_num = 0
+    pages_urls_num = 0
+    pages_pcaps_num = 0
+    tasks_files_number = db.count_matching_tasks(category="file", not_status=TASK_PENDING) or 0
+    tasks_files_number += db.count_matching_tasks(category="static", not_status=TASK_PENDING) or 0
+    tasks_urls_number = db.count_matching_tasks(category="url", not_status=TASK_PENDING) or 0
+    tasks_pcaps_number = db.count_matching_tasks(category="pcap", not_status=TASK_PENDING) or 0
+    if pages_files_num:
+        pages_files_num = tasks_files_number / TASK_LIMIT + 1
+    if pages_urls_num:
+        pages_urls_num = tasks_urls_number / TASK_LIMIT + 1
+    if pages_pcaps_num:
+        pages_pcaps_num = tasks_pcaps_number / TASK_LIMIT + 1
     files_pages = []
     urls_pages = []
     pcaps_pages = []
@@ -744,7 +759,7 @@ def report(request, task_id):
         query = es.search(
                     index=fullidx,
                     doc_type="analysis",
-                    q="info.id : \"%s\"" % task_id
+                    q="info.id: \"%s\"" % task_id
                  )["hits"]["hits"][0]
         report = query["_source"]
         # Extract out data for Admin tab in the analysis page
@@ -790,9 +805,9 @@ def report(request, task_id):
         for root, dirs, files in os.walk(debugger_log_path):
             for name in files:
                 if name.endswith('.log'):
-                    debugger_log_file = open(os.path.join(root, name), "r")
-                    report["debugger_logs"][int(name.strip('.log'))] = debugger_log_file.read()
-                    debugger_log_file.close()
+                    report["debugger_logs"][int(name.strip('.log'))] = open(os.path.join(root, name), "r").read()
+
+
 
     if settings.MOLOCH_ENABLED and "suricata" in report:
         suricata = report["suricata"]
@@ -870,10 +885,21 @@ def report(request, task_id):
         bingraph_svg_content = open(bingraph_svg_path, "rb").read()
         bingraph = True
 
+    if HAVE_REQUEST and enabledconf["distributed"]:
+        try:
+            res = requests.get("http://127.0.0.1:9003/task/{}".format(task_id), timeout=3, verify=False)
+            if res and res.ok:
+                if "name" in res.json():
+                    report["distributed"] = dict()
+                    report["distributed"]["name"] = res.json()["name"]
+                    report["distributed"]["task_id"] = res.json()["task_id"]
+        except Exception as e:
+            print(e)
+
     return render(request, "analysis/report.html",
         {
             "analysis": report,
-            "children" : children,
+            "children": children,
             "domainlookups": domainlookups,
             "iplookups": iplookups,
             "similar": similarinfo,
@@ -894,13 +920,13 @@ def file(request, category, task_id, dlfile):
     cd = ""
 
     extmap = {
-        "memdump" : ".dmp",
-        "memdumpstrings" : ".dmp.strings",
+        "memdump": ".dmp",
+        "memdumpstrings": ".dmp.strings",
     }
 
     if category == "sample":
         path = os.path.join(CUCKOO_ROOT, "storage", "binaries", dlfile)
-    elif category in ("samplezip", "droppedzip", "CAPE", "CAPEZIP"):
+    elif category in ("samplezip", "droppedzip", "CAPE", "CAPEZIP", "procdump", "procdumpzip", "memdumpzip"):
         # ability to download password protected zip archives
         path = ""
         if category == "samplezip":
@@ -910,11 +936,19 @@ def file(request, category, task_id, dlfile):
         elif category.startswith("CAPE"):
             buf = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "CAPE", file_name)
             if os.path.isdir(buf):
-                path = os.path.join(buf, dlfile)
+                dfile = min(os.listdir(buf), key=len)
+                path = os.path.join(buf, dfile)
             else:
                 path = buf
+        elif category.startswith("procdump"):
+            buf = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "procdump", file_name)
+            path = buf
+        elif category.startswith("memdumpzip"):
+            buf = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "memory", file_name)
+            path = buf
+            file_name += ".dmp"
         TMPDIR = "/tmp"
-        if path and category in ("samplezip", "droppedzip", "CAPEZIP"):
+        if path and category in ("samplezip", "droppedzip", "CAPEZIP", "procdumpzip", "memdumpzip"):
             try:
                 cmd = ["7z", "a", "-y", "-pinfected", os.path.join(TMPDIR, file_name + ".zip"), path]
                 output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
@@ -923,6 +957,8 @@ def file(request, category, task_id, dlfile):
             file_name += ".zip"
             path = os.path.join(TMPDIR, file_name)
             cd = "application/zip"
+    elif category == "debugger_log":
+        path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "debugger", str(dlfile)+".log")
     elif category == "rtf":
         path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "rtf_objects", file_name)
     elif category == "pcap":
@@ -952,14 +988,16 @@ def file(request, category, task_id, dlfile):
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "files", file_name)
         if os.path.isdir(buf):
-            path = os.path.join(buf, dlfile)
+            dfile = min(os.listdir(buf), key=len)
+            path = os.path.join(buf, dfile)
         else:
             path = buf
     elif category == "procdump":
         buf = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                            task_id, "procdump", file_name)
         if os.path.isdir(buf):
-            path = os.path.join(buf, dlfile)
+            dfile = min(os.listdir(buf), key=len)
+            path = os.path.join(buf, dfile)
         else:
             path = buf
     # Just for suricata dropped files currently
@@ -972,9 +1010,9 @@ def file(request, category, task_id, dlfile):
         file_name = "file." + dlfile
         path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
                             task_id, "logs", "files", file_name)
-    elif category == "debugger_log":
-        file_name += ".log"
-        path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id, "debugger", file_name)
+    elif category == "rtf":
+        path = os.path.join(CUCKOO_ROOT, "storage", "analyses",
+                            task_id, "rtf_objects", file_name)
     else:
         return render(request, "error.html",
                                   {"error": "Category not defined"})
@@ -988,6 +1026,7 @@ def file(request, category, task_id, dlfile):
     except:
         return render(request, "error.html",
                                   {"error": "File {} not found".format(path)})
+
     resp["Content-Length"] = os.path.getsize(path)
     resp["Content-Disposition"] = "attachment; filename=" + file_name
     return resp
@@ -1083,6 +1122,17 @@ def filereport(request, task_id, category):
 
             return response
 
+        elif enabledconf["distributed"]:
+            # check for memdump on slave
+            try:
+                res = requests.get("http://127.0.0.1:9003/task/{task_id}".format(task_id=task_id), verify=False, timeout=30)
+                if res and res.ok and res.json()["status"] == 1:
+                    url = res.json()["url"]
+                    dist_task_id = res.json()["task_id"]
+                    return redirect(url.replace(":8090", ":8000")+"api/tasks/get/report/"+str(dist_task_id)+"/"+category+"/", permanent=True)
+            except Exception as e:
+                print(e)
+
     return render(request, "error.html",
                               {"error": "File not found"})
 
@@ -1092,10 +1142,20 @@ def full_memory_dump_file(request, analysis_number):
     file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(analysis_number), "memory.dmp")
     if os.path.exists(file_path):
         filename = os.path.basename(file_path)
-    else:
+    elif os.path.exists(file_path + ".zip"):
         file_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(analysis_number), "memory.dmp.zip")
         if os.path.exists(file_path):
             filename = os.path.basename(file_path)
+    elif enabledconf["distributed"]:
+        # check for memdump on slave
+        try:
+            res = requests.get("http://127.0.0.1:9003/task/{task_id}".format(task_id=analysis_number), verify=False, timeout=30)
+            if res and res.ok and res.json()["status"] == 1:
+                url = res.json()["url"]
+                dist_task_id = res.json()["task_id"]
+                return redirect(url.replace(":8090", ":8000")+"api/tasks/get/fullmemory/"+str(dist_task_id)+"/", permanent=True)
+        except Exception as e:
+            print(e)
     if filename:
         content_type = "application/octet-stream"
         response = StreamingHttpResponse(FileWrapper(open(file_path), 8192),
@@ -1132,55 +1192,56 @@ def perform_search(term, value):
     if enabledconf["mongodb"] and enabledconf["elasticsearchdb"] and essearch and not term:
         return es.search(index=fullidx, doc_type="analysis", q="%s*" % value, sort='task_id:desc')["hits"]["hits"]
     term_map = {
-        "name" : "target.file.name",
-        "type" : "target.file.type",
-        "string" : "strings",
-        "ssdeep" : "target.file.ssdeep",
-        "trid" : "trid",
-        "crc32" : "target.file.crc32",
-        "file" : "behavior.summary.files",
-        "command" : "behavior.summary.executed_commands",
-        "resolvedapi" : "behavior.summary.resolved_apis",
-        "key" : "behavior.summary.keys",
-        "mutex" : "behavior.summary.mutexes",
-        "domain" : "network.domains.domain",
-        "ip" : "network.hosts.ip",
-        "signature" : "signatures.description",
-        "signame" : "signatures.name",
-        "malfamily" : "malfamily",
-        "url" : "target.url",
-        "iconhash" : "static.pe.icon_hash",
-        "iconfuzzy" : "static.pe.icon_fuzzy",
-        "imphash" : "static.pe.imphash",
-        "surihttp" : "suricata.http",
-        "suritls" : "suricata.tls",
-        "surisid" : "suricata.alerts.sid",
-        "surialert" : "suricata.alerts.signature",
-        "surimsg" : "suricata.alerts.signature",
-        "suriurl" : "suricata.http.uri",
-        "suriua" : "suricata.http.ua",
-        "surireferrer" : "suricata.http.referrer",
-        "suritlssubject" : "suricata.tls.subject",
-        "suritlsissuerdn" : "suricata.tls.issuer",
-        "suritlsfingerprint" : "suricata.tls.fingerprint",
-        "clamav" : "target.file.clamav",
-        "yaraname" : "target.file.yara.name",
-        "capeyara" : "target.file.cape_yara.name",
-        "procmemyara" : "procmemory.yara.name",
-        "virustotal" : "virustotal.results.sig",
-        "comment" : "info.comments.Data",
-        "shrikemsg" : "info.shrike_msg",
-        "shrikeurl" : "info.shrike_url",
-        "shrikerefer" : "info.shrike_refer",
-        "shrikesid" : "info.shrike_sid",
-        "custom" : "info.custom",
-        "md5" : "target.file.md5",
-        "sha1" : "target.file.sha1",
-        "sha256" : "target.file.sha256",
-        "sha512" : "target.file.sha512",
+        "name": "target.file.name",
+        "type": "target.file.type",
+        "string": "strings",
+        "ssdeep": "target.file.ssdeep",
+        "trid": "trid",
+        "crc32": "target.file.crc32",
+        "file": "behavior.summary.files",
+        "command": "behavior.summary.executed_commands",
+        "resolvedapi": "behavior.summary.resolved_apis",
+        "key": "behavior.summary.keys",
+        "mutex": "behavior.summary.mutexes",
+        "domain": "network.domains.domain",
+        "ip": "network.hosts.ip",
+        "signature": "signatures.description",
+        "signame": "signatures.name",
+        "malfamily": "malfamily",
+        "url": "target.url",
+        "iconhash": "static.pe.icon_hash",
+        "iconfuzzy": "static.pe.icon_fuzzy",
+        "imphash": "static.pe.imphash",
+        "surihttp": "suricata.http",
+        "suritls": "suricata.tls",
+        "surisid": "suricata.alerts.sid",
+        "surialert": "suricata.alerts.signature",
+        "surimsg": "suricata.alerts.signature",
+        "suriurl": "suricata.http.uri",
+        "suriua": "suricata.http.ua",
+        "surireferrer": "suricata.http.referrer",
+        "suritlssubject": "suricata.tls.subject",
+        "suritlsissuerdn": "suricata.tls.issuer",
+        "suritlsfingerprint": "suricata.tls.fingerprint",
+        "clamav": "target.file.clamav",
+        "yaraname": "target.file.yara.name",
+        "capeyara": "target.file.cape_yara.name",
+        "procmemyara": "procmemory.yara.name",
+        "virustotal": "virustotal.results.sig",
+        "comment": "info.comments.Data",
+        "shrikemsg": "info.shrike_msg",
+        "shrikeurl": "info.shrike_url",
+        "shrikerefer": "info.shrike_refer",
+        "shrikesid": "info.shrike_sid",
+        "custom": "info.custom",
+        "md5": "target.file.md5",
+        "sha1": "target.file.sha1",
+        "sha256": "target.file.sha256",
+        "sha512": "target.file.sha512",
+        #"ttp": "ttps",
     }
 
-    query_val =  { "$regex" : value, "$options" : "-i"}
+    query_val = {"$regex": value, "$options": "-i"}
     if term == "surisid":
         try:
             query_val = int(value)
@@ -1202,14 +1263,14 @@ def perform_search(term, value):
         raise ValueError
 
     if enabledconf["mongodb"]:
-        return results_db.analysis.find({term_map[term] : query_val}).sort([["_id", -1]])
+        return results_db.analysis.find({term_map[term]: query_val}).sort([["_id", -1]])
     if es_as_db:
         return es.search(index=fullidx, doc_type="analysis", q=term_map[term] + ": %s" % value)["hits"]["hits"]
 
 def perform_malscore_search(value):
-    query_val =  {"$gte" : float(value)}
+    query_val =  {"$gte": float(value)}
     if enabledconf["mongodb"]:
-        return results_db.analysis.find({"malscore" : query_val}).sort([["_id", -1]])
+        return results_db.analysis.find({"malscore": query_val}).sort([["_id", -1]])
 
 @csrf_exempt
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
@@ -1298,6 +1359,7 @@ def remove(request, task_id):
                         results_db.calls.remove({"_id": ObjectId(call)})
                 # Delete analysis data.
                 results_db.analysis.remove({"_id": ObjectId(analysis["_id"])})
+
             analyses_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", task_id)
             if os.path.exists(analyses_path):
                 shutil.rmtree(analyses_path)
@@ -1356,7 +1418,7 @@ def pcapstream(request, task_id, conntuple):
         conndata = es.search(
                     index=fullidx,
                     doc_type="analysis",
-                    q="info.id : \"%s\"" % task_id
+                    q="info.id: \"%s\"" % task_id
                  )["hits"]["hits"][0]["_source"]
 
     if not conndata:
@@ -1406,7 +1468,7 @@ def comments(request, task_id):
             query = es.search(
                         index=fullidx,
                         doc_type="analysis",
-                        q="info.id : \"%s\"" % task_id
+                        q="info.id: \"%s\"" % task_id
                     )["hits"]["hits"][0]
             report = query["_source"]
             esid = query["_id"]
@@ -1418,12 +1480,12 @@ def comments(request, task_id):
         buf = dict()
         buf["Timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         escape_map = {
-            '&' : "&amp;",
-            '\"' : "&quot;",
-            '\'' : "&apos;",
-            '<' : "&lt;",
-            '>' : "&gt;",
-            '\n' : "<br />",
+            '&': "&amp;",
+            '\"': "&quot;",
+            '\'': "&apos;",
+            '<': "&lt;",
+            '>': "&gt;",
+            '\n': "<br />",
             }
         buf["Data"] = "".join(escape_map.get(thechar, thechar) for thechar in comment)
         # status can be posted/removed
