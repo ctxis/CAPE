@@ -69,6 +69,26 @@ def check_configs():
     return True
 
 
+def check_signatures():
+    """Checks if user pulled in community signature modules
+    @raise CuckooStartupError: if community signature modules not installed.
+    """
+
+    sigpath = os.path.join(CUCKOO_ROOT, "modules", "signatures")
+    bad = False
+
+    if os.path.exists(sigpath):
+        path, dirs, files = os.walk(sigpath).next()
+        if len(files) < 20:
+            bad = True
+    else:
+        bad = True
+
+    if bad:
+        log.info(
+            "Signature modules are not installed.  Please run: utils/community.py --force --rewrite --all")
+
+
 def create_structure():
     """Creates Cuckoo directories."""
     folders = [
