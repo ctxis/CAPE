@@ -56,6 +56,7 @@ Following is the default *conf/auxiliary.conf* file::
     # Enable or disable the use of an external sniffer (tcpdump) [yes/no].
     enabled = yes
 
+
     # Specify the path to your local installation of tcpdump. Make sure this
     # path is correct.
     tcpdump = /usr/sbin/tcpdump
@@ -67,33 +68,7 @@ Following is the default *conf/auxiliary.conf* file::
     # Specify a Berkeley packet filter to pass to tcpdump.
     # bpf = not arp
 
-    [tor]
-    # Enable or disable the use of Tor transparent proxying
-    # Note that this is a global enable/disable. It is still required that
-    # you specifically enable Tor for each analyzed sample from the
-    # web interface.
-    #
-    # Please note that in order to implement this functionality securely
-    # without any additional privilege on the part of Cuckoo, the below
-    # scripts should simply pass the IP address of the VM used for analysis
-    # to a daemon running as root, which can run the
-    # iptables rules itself. For a working example, see
-    # https://github.com/seanthegeek/routetor
-    enabled = yes
-
-    # Specify the path to a binary or script that will initiate the firewall
-    # rules to redirect traffic to the Tor transparent proxy.  The file
-    # will be executed with the argument of the static IP of the VM used
-    # for analysis.
-    torstart = /usr/sbin/torstart
-
-
-    # Specify the path to a binary or script that will eliminate the firewall
-    # rules used to redirect traffic to the Tor transparent proxy.  The file
-    # will be executed with the argument of the static IP of the VM used
-    # for analysis.
-    torstop = /usr/sbin/torstop
-
+ 
     [gateways]
     #RTR1 = 192.168.1.254
     #RTR2 = 192.168.1.1

@@ -311,10 +311,11 @@ class SubmitCAPE(Report):
             self.process_cape_yara(entry, detections)
 
         for pattern in ("procdump", "CAPE", "dropped"):
-            for file in results.get(pattern, []):
-                if "cape_yara" in file:
-                    for entry in file["cape_yara"]:
-                        self.process_cape_yara(entry, detections)
+            if pattern in results and results[pattern]:
+                for file in results.get(pattern, []):
+                    if "cape_yara" in file:
+                        for entry in file["cape_yara"]:
+                            self.process_cape_yara(entry, detections)
 
         # Dynamic CAPE hits
         # Packers, injection or other generic dumping

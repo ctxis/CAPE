@@ -382,7 +382,7 @@ def tasks_create_file(request):
                 path = tmp_path
 
             for entry in task_machines:
-                if not pcap and not static:
+                if not pcap:
                     task_ids_new = db.demux_sample_and_add_to_db(file_path=path,
                                           package=package,
                                           timeout=timeout,
