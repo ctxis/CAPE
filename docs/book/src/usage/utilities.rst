@@ -67,36 +67,6 @@ running Cuckoo with many virtual machines:
 This could increase the performance of your system because the reporting is not
 yet demanded to Cuckoo.
 
-Community Download Utility
-==========================
-
-This utility downloads signatures from `Cuckoo Community Repository`_ and installs
-specific additional modules in your local setup.
-Following are the usage options::
-
-    $ ./utils/community.py -h
-
-    usage: community.py [-h] [-a] [-s] [-p] [-m] [-r] [-f] [-w] [-b BRANCH]
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -a, --all             Download everything
-      -s, --signatures      Download Cuckoo signatures
-      -p, --processing      Download processing modules
-      -m, --machinemanagers
-                            Download machine managers
-      -r, --reporting       Download reporting modules
-      -f, --force           Install files without confirmation
-      -w, --rewrite         Rewrite existing files
-      -b BRANCH, --branch BRANCH
-                            Specify a different branch
-
-*Example*: install all available signatures::
-
-  $ ./utils/community.py --signatures --force
-
-.. _`Cuckoo Community Repository`: https://github.com/cuckoobox/community
-
 Database migration utility
 ==========================
 
