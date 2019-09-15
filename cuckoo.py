@@ -15,7 +15,7 @@ try:
     from lib.cuckoo.common.exceptions import CuckooCriticalError
     from lib.cuckoo.common.exceptions import CuckooDependencyError
     from lib.cuckoo.core.database import Database
-    from lib.cuckoo.core.startup import check_working_directory, check_configs, check_signatures, cuckoo_clean, cuckoo_clean_failed_tasks, cuckoo_clean_failed_url_tasks,cuckoo_clean_before_day,cuckoo_clean_sorted_pcap_dump,cuckoo_clean_bson_suri_logs, cuckoo_clean_pending_tasks 
+    from lib.cuckoo.core.startup import check_working_directory, check_configs, cuckoo_clean, cuckoo_clean_failed_tasks, cuckoo_clean_failed_url_tasks,cuckoo_clean_before_day,cuckoo_clean_sorted_pcap_dump,cuckoo_clean_bson_suri_logs, cuckoo_clean_pending_tasks
     from lib.cuckoo.core.startup import create_structure
     from lib.cuckoo.core.startup import init_logging, init_modules, init_console_logging
     from lib.cuckoo.core.startup import init_tasks, init_yara
@@ -38,7 +38,6 @@ def cuckoo_init(quiet=False, debug=False, artwork=False, test=False):
     logo()
     check_working_directory()
     check_configs()
-    check_signatures()
     create_structure()
 
     if artwork:
@@ -111,7 +110,7 @@ if __name__ == "__main__":
 
     if args.failed_clean:
         cuckoo_clean_failed_tasks()
-        sys.exit(0)       
+        sys.exit(0)
 
     if args.failed_url_clean:
         cuckoo_clean_failed_url_tasks()
