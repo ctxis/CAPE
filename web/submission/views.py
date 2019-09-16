@@ -337,6 +337,26 @@ def index(request, resubmit_hash=False):
                         except CuckooDemuxError as err:
                             return render(request, "error.html", {"error": err})
 
+        elif "static" in request.FILES:
+            samples = request.FILES.getlist("static")
+            for sample in samples:
+                if not sample.size:
+                    if len(samples) != 1:
+                        continue
+
+                    return render(request, "error.html", {"error": "You uploaded an empty file."})
+                elif sample.size > settings.MAX_UPLOAD_SIZE:
+                    return render(request, "error.html", {"error": "You uploaded a file that exceeds the maximum allowed upload size specified in web/web/local_settings.py."})
+
+                # Moving sample from django temporary file to Cuckoo temporary storage to
+                # let it persist between reboot (if user like to configure it in that way).
+                path = store_temp_file(sample.read(), sample.name)
+
+                task_id = db.add_static(file_path=path, priority=priority)
+                if not task_id:
+                    return render(request, "error.html", {"error": "We don't have static extractor for this"})
+                task_ids.append(task_id)
+                        
         elif "quarantine" in request.FILES:
             samples = request.FILES.getlist("quarantine")
             for sample in samples:
