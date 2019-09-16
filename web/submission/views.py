@@ -509,18 +509,23 @@ def index(request, resubmit_hash=False):
         enabledconf["dist_master_storage_only"] = repconf.distributed.master_storage_only
 
         all_tags = load_vms_tags()
-
-        # Get enabled machinery
-        machinery = Config("cuckoo").cuckoo.get("machinery")
-        # Get VM names for machinery config elements
-        vms = [x.strip() for x in getattr(Config(machinery), machinery).get("machines").split(",")]
-        # Check each VM config element for tags
-        for vmtag in vms:
-            if "tags" in getattr(Config(machinery), vmtag).keys():
-                enabledconf["tags"] = True
-
-        if enabledconf["tags"] is False and all_tags:
+        if all_tags:
             enabledconf["tags"] = True
+
+        if not enabledconf["tags"]:
+            # load multi machinery tags:
+            if machinery == "multi":
+                for mmachinery in Config(machinery).multi.get("machinery").split(","):
+                    vms = [x.strip() for x in getattr(Config(mmachinery), mmachinery).get("machines").split(",")]
+                    if any(["tags" in getattr(Config(mmachinery), vmtag).keys() for vmtag in vms]):
+                        enabledconf["tags"] = True
+                        break
+            else:
+                # Get VM names for machinery config elements
+                vms = [x.strip() for x in getattr(Config(machinery), machinery).get("machines").split(",")]
+                # Check each VM config element for tags
+                if any(["tags" in getattr(Config(machinery), vmtag).keys() for vmtag in vms]):
+                    enabledconf["tags"] = True
 
         files = os.listdir(os.path.join(settings.CUCKOO_PATH, "analyzer", "windows", "modules", "packages"))
 
