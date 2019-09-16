@@ -136,6 +136,7 @@ class RansomwareFiles(Signature):
             (".*\\\\[A-Z0-9]{6}-Readme\.txt$", ["Koko", "Mailto"]),
             (".*\\\\#README\.lilocked$", ["Lilocked"]),
             (".*\\\\SGUARD-README\.(txt|TXT)$", ["SGuard"]),
+            (".*\\\\RyukReadMe\.html$", ["Ryuk"]),
         ]
 
         for ioc in file_list:
