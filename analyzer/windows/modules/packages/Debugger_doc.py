@@ -3,13 +3,11 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import os
-import shutil
-
 from lib.common.abstracts import Package
 
 class Debugger_doc(Package):
     """CAPE Word Debugger package."""
-    
+
     def __init__(self, options={}, config=None):
         """@param options: options dict."""
         self.config = config

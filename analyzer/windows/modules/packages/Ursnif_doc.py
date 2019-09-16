@@ -3,18 +3,14 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import os
-import shutil
-
 from lib.common.abstracts import Package
 
 class Ursnif_doc(Package):
     """Ursnif document analysis package."""
     PATHS = [
         ("ProgramFiles", "Microsoft Office", "WINWORD.EXE"),
-        ("ProgramFiles", "Microsoft Office", "Office11", "WINWORD.EXE"),
-        ("ProgramFiles", "Microsoft Office", "Office12", "WINWORD.EXE"),
-        ("ProgramFiles", "Microsoft Office", "Office14", "WINWORD.EXE"),
-        ("ProgramFiles", "Microsoft Office", "Office15", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office", "Office*", "WINWORD.EXE"),
+        ("ProgramFiles", "Microsoft Office*", "root", "Office*", "WINWORD.EXE"),
         ("ProgramFiles", "Microsoft Office", "WORDVIEW.EXE"),
     ]
 
@@ -24,12 +20,12 @@ class Ursnif_doc(Package):
         self.options = options
         self.options["dll"] = "Ursnif.dll"
         self.options["dll_64"] = "Ursnif_x64.dll"
-        
+
     def start(self, path):
-        word = self.get_path("Microsoft Office Word")
+        word = self.get_path_glob("Microsoft Office Word")
         if "." not in os.path.basename(path):
             new_path = path + ".doc"
             os.rename(path, new_path)
             path = new_path
-            
+
         return self.execute(word, "\"%s\" /q" % path, path)
