@@ -533,6 +533,8 @@ def index(request, resubmit_hash=False):
             enabledconf["tags"] = True
 
         if not enabledconf["tags"]:
+            # Get enabled machinery
+            machinery = Config("cuckoo").cuckoo.get("machinery")
             # load multi machinery tags:
             if machinery == "multi":
                 for mmachinery in Config(machinery).multi.get("machinery").split(","):
