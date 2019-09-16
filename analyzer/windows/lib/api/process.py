@@ -505,7 +505,8 @@ class Process:
                 "loader",
                 "loader_64",
                 "nohuman",
-                "route"
+                "route",
+                "main_task_id",
                 ]
 
             for optname, option in self.options.items():
