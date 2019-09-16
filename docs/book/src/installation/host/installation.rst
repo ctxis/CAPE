@@ -37,4 +37,3 @@ ready to go ;-).
 
 After configuration, don't forget to run utils/community.py --force --rewrite --all
 to install all the available Cuckoo signature modules.
-
