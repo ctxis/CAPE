@@ -100,7 +100,7 @@ class Emotet(Parser):
         if refc2list:
             c2list_va_offset = int(refc2list['$snippet3'])
             c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+2:c2list_va_offset+6])[0]
-            if c2_list_va > 0x10000:
+            if c2_list_va - image_base > 0x20000:
                 c2_list_va = c2_list_va & 0xffff
             else:
                 c2_list_rva = c2_list_va - image_base
@@ -129,7 +129,7 @@ class Emotet(Parser):
             if refc2list:
                 c2list_va_offset = int(refc2list['$snippet4'])
                 c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+8:c2list_va_offset+12])[0]
-                if c2_list_va > 0x10000:
+                if c2_list_va - image_base > 0x20000:
                     c2_list_rva = c2_list_va & 0xffff
                 else:
                     c2_list_rva = c2_list_va - image_base
@@ -158,7 +158,7 @@ class Emotet(Parser):
                 if refc2list:
                     c2list_va_offset = int(refc2list['$snippet5'])
                     c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+5:c2list_va_offset+9])[0]
-                    if c2_list_va > 0x10000:
+                    if c2_list_va - image_base > 0x20000:
                         c2_list_rva = c2_list_va & 0xffff
                     else:
                         c2_list_rva = c2_list_va - image_base
@@ -187,7 +187,7 @@ class Emotet(Parser):
                     if refc2list:
                         c2list_va_offset = int(refc2list['$snippet6'])
                         c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+15:c2list_va_offset+19])[0]
-                        if c2_list_va > 0x10000:
+                        if c2_list_va - image_base > 0x20000:
                             c2_list_rva = c2_list_va & 0xffff
                         else:
                             c2_list_rva = c2_list_va - image_base
