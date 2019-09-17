@@ -150,6 +150,7 @@ class RunProcessing(object):
         self.task = task
         self.analysis_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task["id"]))
         self.cfg = Config("processing")
+        self.cuckoo_cfg = Config()
         self.results = results
 
     def process(self, module):
@@ -240,6 +241,20 @@ class RunProcessing(object):
                     self.results.update(result)
         else:
             log.info("No processing modules loaded")
+
+        # For correct error log on webgui
+        for file_name in os.listdir(os.path.join(self.analysis_path, "logs")):
+            file_path = os.path.join(self.analysis_path, "logs", file_name)
+
+            if os.path.isdir(file_path):
+                continue
+
+            # Skipping the current log file if it's too big.
+            if os.stat(file_path).st_size > self.cuckoo_cfg.processing.analysis_size_limit:
+                if not hasattr(self.results, "debug"):
+                    self.results.setdefault("debug", dict()).setdefault("errors", list())
+                self.results["debug"]["errors"].append("Behavioral log {0} too big to be processed, skipped. Increase analysis_size_limit in cuckoo.conf".format(file_name))
+                continue
 
         family = ""
         self.results["malfamily_tag"] = ""
