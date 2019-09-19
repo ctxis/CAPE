@@ -98,7 +98,6 @@ def update_options(gw, orig_options):
 
     return options
 
-        return HttpResponse(jdata,
 # Chunked file reading. Useful for large files like memory dumps.
 def validate_task(tid):
     task = db.view_task(tid)
