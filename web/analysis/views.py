@@ -22,12 +22,11 @@ import subprocess
 from bson.binary import Binary
 from django.conf import settings
 from wsgiref.util import FileWrapper
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_safe
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-
 from django.core.exceptions import PermissionDenied
 from urllib import quote
 sys.path.append(settings.CUCKOO_PATH)
@@ -805,9 +804,8 @@ def report(request, task_id):
         for root, dirs, files in os.walk(debugger_log_path):
             for name in files:
                 if name.endswith('.log'):
-                    report["debugger_logs"][int(name.strip('.log'))] = open(os.path.join(root, name), "r").read()
-
-
+                    with open(os.path.join(root, name), "r") as f:
+                        report["debugger_logs"][int(name.strip('.log'))] = f.read()
 
     if settings.MOLOCH_ENABLED and "suricata" in report:
         suricata = report["suricata"]
@@ -1516,7 +1514,6 @@ def comments(request, task_id):
 def configdownload(request, task_id, cape_name):
 
     db = Database()
-    cd = "text/plain"
     task = db.view_task(task_id)
     if not task:
         return render(request, "error.html", {"error": "Task ID {} does not existNone".format(task_id)})
@@ -1534,25 +1531,16 @@ def configdownload(request, task_id, cape_name):
             pass
 
     if rtmp:
-        if "CAPE" in rtmp:
+        if rtmp.get("CAPE", False):
             try:
                 rtmp["CAPE"] = json.loads(zlib.decompress(rtmp["CAPE"]))
             except:
                 # In case compress results processing module is not enabled
                 pass
             for cape in rtmp["CAPE"]:
-                if "cape_name" in cape and cape["cape_name"] == cape_name:
-                    filepath = tempfile.NamedTemporaryFile(delete=False)
-                    for key in cape["cape_config"]:
-                        filepath.write("{}\t{}\n".format(key, cape["cape_config"][key]))
-                    filepath.close()
-                    filename = cape['cape_name'] + "_config.txt"
-                    newpath = os.path.join(os.path.dirname(filepath.name), filename)
-                    shutil.move(filepath.name, newpath)
+                if cape.get("cape_name", "") == cape_name:
                     try:
-                        resp = StreamingHttpResponse(FileWrapper(open(newpath), 8192), content_type=cd)
-                        resp["Content-Length"] = os.path.getsize(newpath)
-                        resp["Content-Disposition"] = "attachment; filename=" + filename
+                        resp = JsonResponse(cape["cape_config"])
                         return resp
                     except Exception as e:
                         return render(request, "error.html", {"error": "{}".format(e)})
