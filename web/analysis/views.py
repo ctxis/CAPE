@@ -1509,7 +1509,6 @@ def comments(request, task_id):
     else:
         return render(request, "error.html",
                                   {"error": "Invalid Method"})
-
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def configdownload(request, task_id, cape_name):
 
@@ -1521,7 +1520,7 @@ def configdownload(request, task_id, cape_name):
     rtmp = None
     if enabledconf["mongodb"]:
         rtmp = results_db.analysis.find_one({"info.id": int(task_id)}, sort=[("_id", pymongo.DESCENDING)])
-    if es_as_db:
+    elif es_as_db:
         rtmp = es.search(index=fullidx, doc_type="analysis", q="info.id: \"%s\"" % str(task_id))["hits"]["hits"]
         if len(rtmp) > 1:
             rtmp = rtmp[-1]["_source"]
@@ -1529,6 +1528,9 @@ def configdownload(request, task_id, cape_name):
             rtmp = rtmp[0]["_source"]
         else:
             pass
+    else:
+        return render(request, "error.html",
+                      {"error": "WebGui storage Mongo/ES disabled"})
 
     if rtmp:
         if rtmp.get("CAPE", False):
@@ -1540,8 +1542,7 @@ def configdownload(request, task_id, cape_name):
             for cape in rtmp["CAPE"]:
                 if cape.get("cape_name", "") == cape_name:
                     try:
-                        resp = JsonResponse(cape["cape_config"])
-                        return resp
+                        return JsonResponse(cape["cape_config"])
                     except Exception as e:
                         return render(request, "error.html", {"error": "{}".format(e)})
         else:
@@ -1549,3 +1550,5 @@ def configdownload(request, task_id, cape_name):
     else:
         return render(request, "error.html",
                       {"error": "Could not retrieve results for task {} from db.".format(task_id)})
+
+    return render(request, "error.html", {"error": "Config not fond".})
