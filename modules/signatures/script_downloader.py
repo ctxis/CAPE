@@ -30,7 +30,7 @@ class ScriptNetworkActvity(Signature):
         Signature.__init__(self, *args, **kwargs)
         self.ret = False
 
-    filter_apinames = set(["InternetCrackUrlW","InternetCrackUrlA","URLDownloadToFileW","HttpOpenRequestW","InternetReadFile", "send", "SslEncryptPacket", "WSAConnect"]
+    filter_apinames = set(["InternetCrackUrlW","InternetCrackUrlA","URLDownloadToFileW","HttpOpenRequestW","InternetReadFile", "send", "SslEncryptPacket", "WSAConnect"])
 
     def on_call(self, call, process):
         pname = process["process_name"].lower()
