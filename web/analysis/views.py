@@ -1551,4 +1551,4 @@ def configdownload(request, task_id, cape_name):
         return render(request, "error.html",
                       {"error": "Could not retrieve results for task {} from db.".format(task_id)})
 
-    return render(request, "error.html", {"error": "Config not fond".})
+    return render(request, "error.html", {"error": "Config not fond"})
