@@ -27,7 +27,7 @@ from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.rooter import vpns, _load_socks5_operational
-from utils import submit_utils
+from lib.cuckoo.common.web_utils import get_magic_type, download_file, get_file_content
 
 # this required for hash searches
 FULL_DB = False
@@ -104,44 +104,6 @@ def load_vms_tags():
             all_tags.append(tag.name)
 
     return all_tags
-
-def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static):
-    onesuccess = False
-
-    if not content:
-        try:
-            r = requests.get(url, params=params, headers=headers, verify=False)
-        except requests.exceptions.RequestException as e:
-            return "error", render(request, "error.html", {"error": "Error completing connection to {1}: {0}".format(e, service)})
-
-        if r.status_code == 200:
-            content = r.content
-        elif r.status_code == 403:
-            return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
-
-    if not content:
-        return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
-
-    try:
-        f = open(filename, 'wb')
-        f.write(content)
-        f.close()
-    except:
-        return "error", render(request, "error.html", {"error": "Error writing {} download file to temporary path".format(service)})
-
-    onesuccess = True
-
-    for gw in task_gateways:
-        options = update_options(gw, orig_options)
-
-        for entry in task_machines:
-            task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
-                                                         machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock, static=static)
-            if isinstance(task_ids, list):
-                task_ids.extend(task_ids_new)
-    if not onesuccess:
-        return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
-    return "ok", task_ids
 
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
@@ -287,7 +249,7 @@ def index(request, resubmit_hash=False):
                                 break
             if paths is not None and paths:
                 content = ""
-                content = submit_utils.get_file_content(paths)
+                content = get_file_content(paths)
                 if content is False:
                     return render(request, "error.html", {"error": "Can't find {} on disk".format(resubmission_hash)})
                 base_dir = tempfile.mkdtemp(prefix='resubmit_',dir=settings.TEMP_PATH)
@@ -300,7 +262,7 @@ def index(request, resubmit_hash=False):
                 url = 'local'
                 params = {}
 
-                status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", path, package, timeout, options, priority, machine, gateway,
+                status, task_ids = download_file(False, content, request, db, task_ids, url, params, headers, "Local", path, package, timeout, options, priority, machine, gateway,
                                                  clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static)
 
                 if status != "ok":
@@ -356,7 +318,7 @@ def index(request, resubmit_hash=False):
                 if not task_id:
                     return render(request, "error.html", {"error": "We don't have static extractor for this"})
                 task_ids.append(task_id)
-                        
+
         elif "quarantine" in request.FILES:
             samples = request.FILES.getlist("quarantine")
             for sample in samples:
@@ -474,7 +436,7 @@ def index(request, resubmit_hash=False):
                     paths = db.sample_path_by_hash(h)
                     content = ""
                     if paths is not None:
-                        content = submit_utils.get_file_content(paths)
+                        content = get_file_content(paths)
 
                     headers = {}
                     params = {}
@@ -485,12 +447,12 @@ def index(request, resubmit_hash=False):
                         headers = {'x-apikey': settings.VTDL_INTEL_KEY}
 
                     if not content:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers,
+                        status, task_ids = download_file(False, content, request, db, task_ids, url, params, headers,
                                                          "VirusTotal", filename, package, timeout, options, priority,
                                                          machine, gateway, clock, custom, memory, enforce_timeout,
                                                          referrer, tags, orig_options, task_gateways, task_machines, static)
                     else:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local",
+                        status, task_ids = download_file(False, content, request, db, task_ids, url, params, headers, "Local",
                                                          filename, package, timeout, options, priority, machine,
                                                          gateway, clock, custom, memory, enforce_timeout, referrer,
                                                          tags, orig_options, task_gateways, task_machines, static)
