@@ -4,8 +4,6 @@
 
 import os
 import shutil
-from subprocess import call
-from lib.common.abstracts import Package
 import logging
 
 try:
@@ -33,10 +31,8 @@ class Extraction_zip(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "Extraction.dll"
-        #self.options["dll_64"] = "Extraction_x64.dll"
+        self.options["dll_64"] = "Extraction_x64.dll"
 
-        log.info("Timeout: " + str(self.config.timeout))
-        
     def extract_zip(self, zip_path, extract_path, password, recursion_depth):
         """Extracts a nested ZIP file.
         @param zip_path: ZIP path
@@ -70,7 +66,12 @@ class Extraction_zip(Package):
                     for name in archive.namelist():
                         if name.endswith(".zip"):
                             # Recurse.
-                            self.extract_zip(os.path.join(extract_path, name), extract_path, password, recursion_depth + 1)
+                            try:
+                                self.extract_zip(os.path.join(extract_path, name), extract_path, password, recursion_depth + 1)
+                            except BadZipfile:
+                                log.warning("Nested zip file '%s' name end with 'zip' extension is not a valid zip. Skip extracting" % name)
+                            except RuntimeError as run_err:
+                                log.error("Error to extract nested zip file %s with details: %s" % name, run_err)
 
     def is_overwritten(self, zip_path):
         """Checks if the ZIP file contains another file with the same name, so it is going to be overwritten.
@@ -101,7 +102,8 @@ class Extraction_zip(Package):
     def start(self, path):
         root = os.environ["TEMP"]
         password = self.options.get("password")
-        exe_regex = re.compile('(\.exe|\.scr|\.msi|\.bat|\.lnk)$',flags=re.IGNORECASE)
+        exe_regex = re.compile('(\.exe|\.scr|\.msi|\.bat|\.lnk|\.js|\.jse|\.vbs|\.vbe|\.wsf)$',flags=re.IGNORECASE)
+        dll_regex = re.compile('(\.dll|\.ocx)$',flags=re.IGNORECASE)
         zipinfos = self.get_infos(path)
         self.extract_zip(path, root, password, 0)
 
@@ -115,17 +117,47 @@ class Extraction_zip(Package):
                     if exe_regex.search(f.filename):
                         file_name = f.filename
                         break
+                if not file_name:
+                    for f in zipinfos:
+                        if dll_regex.search(f.filename):
+                            file_name = f.filename
+                            break
                 # Default to the first one if none found
                 file_name = file_name if file_name else zipinfos[0].filename
                 log.debug("Missing file option, auto executing: {0}".format(file_name))
             else:
                 raise CuckooPackageError("Empty ZIP archive")
 
-
         file_path = os.path.join(root, file_name)
+        log.debug("file_name: \"%s\"" % (file_name))
         if file_name.lower().endswith(".lnk"):
             cmd_path = self.get_path("cmd.exe")
             cmd_args = "/c start /wait \"\" \"{0}\"".format(file_path)
             return self.execute(cmd_path, cmd_args, file_path)
+        elif file_name.lower().endswith(".msi"):
+            msi_path = self.get_path("msiexec.exe")
+            msi_args = "/I \"{0}\"".format(file_path)
+            return self.execute(msi_path, msi_args, file_path)
+        elif file_name.lower().endswith((".js", ".jse", ".vbs", ".vbe", ".wsf")):
+            wscript = self.get_path_app_in_path("wscript.exe")
+            wscript_args = "\"{0}\"".format(file_path)
+            return self.execute(wscript, wscript_args, file_path)
+        elif file_name.lower().endswith((".dll", ".ocx")):
+            rundll32 = self.get_path_app_in_path("rundll32.exe")
+            function = self.options.get("function", "#1")
+            arguments = self.options.get("arguments")
+            dllloader = self.options.get("dllloader")
+            dll_args = "\"{0}\",{1}".format(file_path, function)
+            if arguments:
+                dll_args += " {0}".format(arguments)
+            if dllloader:
+                newname = os.path.join(os.path.dirname(rundll32), dllloader)
+                shutil.copy(rundll32, newname)
+                rundll32 = newname
+            return self.execute(rundll32, dll_args, file_path)
+        elif file_name.lower().endswith(".ps1"):
+            powershell = self.get_path_app_in_path("powershell.exe")
+            args = "-NoProfile -ExecutionPolicy bypass -File \"{0}\"".format(path)
+            return self.execute(powershell, args, file_path)
         else:
             return self.execute(file_path, self.options.get("arguments"), file_path)
