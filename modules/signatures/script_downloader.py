@@ -54,15 +54,18 @@ class ScriptNetworkActvity(Signature):
             if call["api"] == "send":
                 buff = self.get_argument(call, "buffer").lower()
                 if buff.startswith("get") or buff.startswith("post"):
+                    self.ret = True
                     self.data.append({"request": buff })
             if call["api"] == "SslEncryptPacket":
                 buff = self.get_argument(call, "Buffer").lower()
                 if buff.startswith("get") or buff.startswith("post"):
+                    self.ret = True
                     self.data.append({"request": buff })
             if call["api"] == "WSAConnect":
                 buff = self.get_argument(call, "ip").lower()
                 port = self.get_argument(call, "port").lower()
                 if not buff.startswith(("10.","172.16.","192.168.")):
+                    self.ret = True
                     self.data.append({"request": "%s:%s" % (buff,port)})
 
     def on_complete(self):
