@@ -37,7 +37,7 @@ class WMICreateProcess(Signature):
 
     def on_call(self, call, process):
         pname = process["process_name"]
-        if "wmiprvse" in pname.lower():           
+        if "wmiprvse" in pname.lower()  or "scrcons" in pname.lower():           
             cmdline = self.get_argument(call, "CommandLine")
             whitelisted = False
             for whitelist in self.whitelist:
@@ -90,3 +90,25 @@ class WMIScriptProcess(Signature):
 
     def on_complete(self):
         return self.ret
+
+class ScrconsWMIScriptConsumer(Signature):
+    name = "scrcons_wmi_script_consumer"
+    description = "Windows Management Instrumentation (WMI) script consumer process was launched indicating script execution or using an event consumer for persistence"
+    severity = 3
+    confidence = 50
+    categories = ["wmi"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1047"]
+	
+    def run(self):
+        ret = False
+        cmdlines = self.results["behavior"]["summary"]["executed_commands"]
+        for cmdline in cmdlines:
+            lower = cmdline.lower()
+            if "scrcons" in lower:
+                self.data.append({"command" : cmdline})
+                ret = True
+
+        return ret
