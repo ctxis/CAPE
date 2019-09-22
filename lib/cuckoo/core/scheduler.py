@@ -236,6 +236,7 @@ class AnalysisManager(threading.Thread):
         """Start analysis."""
         succeeded = False
         dead_machine = False
+        self.socks5s = _load_socks5_operational()
 
         log.info("Task #{0}: Starting analysis of {1} '{2}'".format(
                  self.task.id, self.task.category.upper(), self.task.target))
@@ -305,7 +306,6 @@ class AnalysisManager(threading.Thread):
             # Start the machine.
             machinery.start(self.machine.label)
 
-            self.socks5s = _load_socks5_operational()
             # Enable network routing.
             self.route_network()
 

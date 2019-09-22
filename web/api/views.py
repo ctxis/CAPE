@@ -26,10 +26,11 @@ from lib.cuckoo.common.constants import CUCKOO_ROOT, CUCKOO_VERSION
 from lib.cuckoo.common.quarantine import unquarantine
 from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
-from lib.cuckoo.common.utils import store_temp_file, delete_folder
-from lib.cuckoo.common.utils import convert_to_printable, validate_referrer
+from lib.cuckoo.common.utils import store_temp_file, delete_folder, sanitize_filename
+from lib.cuckoo.common.utils import convert_to_printable, validate_referrer, get_user_filename
 from lib.cuckoo.core.database import Database, Task
 from lib.cuckoo.core.database import TASK_REPORTED
+from lib.cuckoo.common.web_utils import download_file, get_file_content, jsonize
 
 # Config variables
 apiconf = Config("api")
@@ -96,20 +97,6 @@ def update_options(gw, orig_options):
             options += ",gwname=%s" % (settings.GATEWAYS_IP_MAP[gw])
 
     return options
-
-# Same jsonize function from api.py except we can now return Django
-# HttpResponse objects as well. (Shortcut to return errors)
-def jsonize(data, response=False):
-    """Converts data dict to JSON.
-    @param data: data dict
-    @return: JSON formatted data or HttpResponse object with json data
-    """
-    if response:
-        jdata = json.dumps(data, sort_keys=False, indent=4)
-        return HttpResponse(jdata,
-                            content_type="application/json; charset=UTF-8")
-    else:
-        return json.dumps(data, sort_keys=False, indent=4)
 
 # Chunked file reading. Useful for large files like memory dumps.
 def validate_task(tid):
@@ -572,6 +559,7 @@ if apiconf.vtdl.get("enabled"):
 @ratelimit(key="ip", rate=raterpm, block=rateblock)
 @csrf_exempt
 def tasks_vtdl(request):
+    status = "ok"
     resp = {}
     if request.method == "POST":
         # Check if this API function is enabled
@@ -580,7 +568,7 @@ def tasks_vtdl(request):
                     "error_value": "VTDL Create API is Disabled"}
             return jsonize(resp, response=True)
 
-        vtdl = request.POST.get("vtdl".strip(),None)
+        vtdl = request.POST.get("vtdl".strip(), None)
         resp["error"] = False
         # Parse potential POST options (see submission/views.py)
         package = request.POST.get("package", "")
@@ -594,6 +582,7 @@ def tasks_vtdl(request):
         memory = bool(request.POST.get("memory", False))
         clock = request.POST.get("clock", None)
         static = bool(request.POST.get("static", False))
+        opt_filename = get_user_filename(options, custom)
 
         task_machines = []
         vm_list = []
@@ -618,14 +607,11 @@ def tasks_vtdl(request):
                 resp = {"error": True,
                         "error_value": ("Machine '{0}' does not exist. "
                                         "Available: {1}".format(machine,
-                                        ", ".join(vm_list)))}
+                                                                ", ".join(vm_list)))}
                 return jsonize(resp, response=True)
         enforce_timeout = bool(request.POST.get("enforce_timeout", False))
-        shrike_url = request.POST.get("shrike_url", None)
-        shrike_msg = request.POST.get("shrike_msg", None)
-        shrike_sid = request.POST.get("shrike_sid", None)
-        shrike_refer = request.POST.get("shrike_refer", None)
-        gateway = request.POST.get("gateway",None)
+        referrer = False
+        orig_options = options
 
         if not vtdl:
             resp = {"error": True, "error_value": "vtdl (hash list) value is empty"}
@@ -635,69 +621,57 @@ def tasks_vtdl(request):
             resp = {"error": True, "error_value": "You specified VirusTotal but must edit the file and specify your VTDL_PRIV_KEY or VTDL_INTEL_KEY variable and VTDL_PATH base directory"}
             return jsonize(resp, response=True)
         else:
-            base_dir = tempfile.mkdtemp(prefix='cuckoovtdl',dir=settings.VTDL_PATH)
+            base_dir = tempfile.mkdtemp(prefix='cuckoovtdl', dir=settings.VTDL_PATH)
             hashlist = []
-            params = {}
             if "," in vtdl:
-                hashlist=vtdl.replace(" ", "").strip().split(",")
+                hashlist = vtdl.replace(" ", "").strip().split(",")
             else:
-                hashlist=vtdl.split()
-            onesuccess = False
+                hashlist.append(vtdl)
+            params = {}
+            headers = {}
             for h in hashlist:
-                filename = base_dir + "/" + h
-                if settings.VTDL_PRIV_KEY:
-                    headers = {'x-apikey': settings.VTDL_PRIV_KEY}
-                elif settings.VTDL_INTEL_KEY:
-                    headers = {'x-apikey': settings.VTDL_INTEL_KEY}
-                url = "https://www.virustotal.com/api/v3/files/{id}/download".format(id = h)
-                try:
-                    r = requests.get(url, headers=headers, verify=True)
-                except requests.exceptions.RequestException as e:
-                    resp = {"error": True, "error_value": "Error completing connection to VirusTotal: {0}".format(e)}
-                    return jsonize(resp, response=True)
-                if r.status_code == 200:
-                    try:
-                        f = open(filename, 'wb')
-                        f.write(r.content)
-                        f.close()
-                    except:
-                        resp = {"error": True, "error_value": "Error writing VirusTotal download file to temporary path"}
-                        return jsonize(resp, response=True)
-
-                    onesuccess = True
-
-                    for entry in task_machines:
-                        task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
-                                                                     machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock,
-                                                                     shrike_url=shrike_url, shrike_msg=shrike_msg, shrike_sid=shrike_sid, shrike_refer=shrike_refer, static=static)
-                        task_ids.extend(task_ids_new)
-                elif r.status_code == 403:
-                    resp = {"error": True, "error_value": "API key provided is not a valid VirusTotal key or is not authorized for VirusTotal downloads"}
-                    return jsonize(resp, response=True)
-
-            if not onesuccess:
-                resp = {"error": True, "error_value": "Provided hash(s) not found on VirusTotal {0}".format(hashlist)}
-                return jsonize(resp, response=True)
-
+                if opt_filename:
+                    filename = base_dir + "/" + opt_filename
+                else:
+                    filename = base_dir + "/" + sanitize_filename(h)
+                url = "https://www.virustotal.com/api/v3/files/{id}/download".format(
+                    id=h)
+                paths = db.sample_path_by_hash(h)
+                content = False
+                if paths:
+                    content = get_file_content(paths)
+                if not content:
+                    if settings.VTDL_PRIV_KEY:
+                        headers = {'x-apikey': settings.VTDL_PRIV_KEY}
+                    elif settings.VTDL_INTEL_KEY:
+                        headers = {'x-apikey': settings.VTDL_INTEL_KEY}
+                    status, task_ids = download_file(True, content, request, db, task_ids, url, params, headers, "VirusTotal", filename, package, timeout, options,
+                                                     priority, machine, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_machines=task_machines, static=static, fhash=False)
+                else:
+                    status, task_ids = download_file(True, content, request, db, task_ids, url, params, headers, "Local", filename, package, timeout, options, priority,
+                                                     machine, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_machines=task_machines, static=static, fhash=False)
+        if status == "error":
+            # error
+            return task_ids
         if len(task_ids) > 0:
             resp["data"] = {}
             resp["data"]["task_ids"] = task_ids
             callback = apiconf.filecreate.get("status")
             if len(task_ids) == 1:
                 resp["data"]["message"] = "Task ID {0} has been submitted".format(
-                               str(task_ids[0]))
+                    str(task_ids[0]))
                 if callback:
                     resp["url"] = ["{0}/submit/status/{1}/".format(
-                                  apiconf.api.get("url"), task_ids[0])]
+                        apiconf.api.get("url"), task_ids[0])]
             else:
-                resp["data"]["task_ids"] = task_ids
                 resp["data"]["message"] = "Task IDs {0} have been submitted".format(
-                               ", ".join(str(x) for x in task_ids))
+                    ", ".join(str(x) for x in task_ids))
                 if callback:
                     resp["url"] = list()
                     for tid in task_ids:
                         resp["url"].append("{0}/submit/status/{1}".format(
                                            apiconf.api.get("url"), tid))
+            resp["data"]["task_ids"] = task_ids
         else:
             resp = {"error": True,
                     "error_value": "Error adding task to database"}

@@ -83,6 +83,7 @@ class MINERS(Signature):
         "xmrpool.eu",
         "xmrpool.net",
         "xmrpool.xyz",
+        "xmr.pool.minergate.com",
     ]
 
     def __init__(self, *args, **kwargs):
