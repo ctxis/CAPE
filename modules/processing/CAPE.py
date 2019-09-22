@@ -307,6 +307,10 @@ class CAPE(Processing):
                 cape_config["cape_config"].update({ConfigItem: [ConfigData]})
                 append_file = True
             # Ursnif
+            if file_info["cape_type_code"] == URSNIF_PAYLOAD:
+                cape_name = "Ursnif"
+                cape_config["cape_type"] = "Ursnif Payload"
+                file_info["cape_type"] = "Ursnif Payload"
             if file_info["cape_type_code"] == URSNIF_CONFIG:
                 file_info["cape_type"] = "Ursnif Config"
                 cape_config["cape_type"] = "Ursnif Config"
