@@ -118,3 +118,81 @@ class PEAnomaly(Signature):
         if self.weight:
             return True
         return False
+
+class StaticPEPDBPath(Signature):
+    name = "static_pe_pdbpath"
+    description = "The PE file contains a PDB path"
+    severity = 1
+    confidence = 80
+    weight = 20
+    categories = ["static"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    references = ["https://www.fireeye.com/blog/threat-research/2019/08/definitive-dossier-of-devilish-debug-details-part-one-pdb-paths-malware.html"]
+
+    def run(self):
+        ret = False
+        suspiciousnames = [
+            "attack",
+            "backdoor",
+            "bind",
+            "bypass",
+            "downloader",
+            "dropper",
+            "exploit",
+            "fake",
+            "fuck",
+            "hack",
+            "hide",
+            "hook",
+            "inject",
+            "keylog",
+            "payload",
+            "shell",
+            "spy",
+            "trojan",
+        ]
+
+        devterms = [
+            "consoleapplication",
+            "windowsApplication",
+            "windowsformsapplication",
+            "visual studio ",
+            "\\desktop",
+            "\\users",
+            "\\new folder",
+            "- copy",
+        ]
+        
+        if "static" in self.results:
+            if "pe" in self.results["static"]:
+                if "pdbpath" in self.results["static"]["pe"]:
+                    pdbpath = self.results["static"]["pe"]["pdbpath"]
+                    if pdbpath:
+                        for suspiciousname in suspiciousnames:
+                            if suspiciousname in pdbpath.lower():
+                                if self.severity != 3:
+                                    self.severity = 3
+                                self.data.append({"anomaly" : "the pdb path contains a suspicious string" })
+                                self.description = "The PE file contains a suspicious PDB path"
+                                break
+
+                        for devterm in devterms:
+                            if devterm in pdbpath.lower():
+                                if self.severity != 2 and self.severity != 3:
+                                    self.severity = 2
+                                self.data.append({"anomaly" : "the pdb path contains a reference to a development path or term that may suggest a non-enterprise environment development/compilation" })
+                                self.description = "The PE file contains a suspicious PDB path"
+                                break
+
+                        regex = re.compile('[a-zA-Z]:\\\\[\x00-\xFF]{0,500}[^\x00-\x7F]{1,}[\x00-\xFF]{0,500}\.pdb')
+                        if re.match(regex, pdbpath):
+                            if self.severity != 2 and self.severity != 3:
+                                self.severity = 2
+                            self.data.append({"anomaly" : "the pdb path contains non-ascii characters" })
+                            self.description = "The PE file contains a suspicious PDB path"
+
+                        self.data.append({"pdbpath" : pdbpath })
+                        ret = True
+
+        return ret
