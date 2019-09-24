@@ -46,12 +46,10 @@ class PackerUnknownPESectionName(Signature):
             ".upx",
         ]
 
-        if "static" in self.results and "pe" in self.results["static"]:
-            if "sections" in self.results["static"]["pe"]:               
-                for section in self.results["static"]["pe"]["sections"]:
-                    if section["name"].lower() not in knownsections:
-                        ret = True
-                        descmsg = "name: {0}, entropy: {1}, characteristics: {2}, raw_size: {3}, virtual_size: {4}".format(section["name"], section["entropy"], section["characteristics"], section["size_of_data"], section["virtual_size"])
-                        self.data.append({"unknown section" : descmsg})
+        for section in self.results.get("static", {}).get("pe", {}).get("sections", []):
+            if section["name"].lower() not in knownsections:
+                ret = True
+                descmsg = "name: {0}, entropy: {1}, characteristics: {2}, raw_size: {3}, virtual_size: {4}".format(section["name"], section["entropy"], section["characteristics"], section["size_of_data"], section["virtual_size"])
+                self.data.append({"unknown section": descmsg})
 
         return ret
