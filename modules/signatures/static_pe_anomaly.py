@@ -1,4 +1,4 @@
-﻿# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
+# Copyright (C) 2015 Optiv, Inc. (brad.spengler@optiv.com)
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
@@ -77,10 +77,10 @@ class PEAnomaly(Signature):
                 if secstart < lowrva:
                     lowrva = secstart
             if foundnamedupe:
-                self.data.append({"anomaly" : "Found duplicated section names"})
+                self.data.append({"anomaly": "Found duplicated section names"})
                 self.weight += 1
             if unprint:
-                self.data.append({"anomaly" : "Unprintable characters found in section name"})
+                self.data.append({"anomaly": "Unprintable characters found in section name"})
                 self.weight += 1
             if not foundsec and foundcodesec:
                 # we check for code sections to not FP on resource-only DLLs where the EP RVA will be 0
@@ -89,16 +89,16 @@ class PEAnomaly(Signature):
             if foundsec and "IMAGE_SCN_MEM_EXECUTE" not in foundsec["characteristics"]:
                 # Windows essentially turns DEP off in this case, but it was only seen (as far as named packers go) in
                 # one instance I could think of years ago in a rare packer
-                self.data.append({"anomaly" : "Entrypoint of binary points to a non-executable code section"})
+                self.data.append({"anomaly": "Entrypoint of binary points to a non-executable code section"})
                 self.weight += 1
             if bigvirt:
                 # used to blow up memory dumpers
-                self.data.append({"anomaly" : "Contains a section with a virtual size >= 100MB"})
+                self.data.append({"anomaly": "Contains a section with a virtual size >= 100MB"})
                 self.weight += 1
         if "resources" in self.results["static"]["pe"]:
             for resource in self.results["static"]["pe"]["resources"]:
                 if int(resource["size"], 16) >= 100 * 1024 * 1024:
-                    self.data.append({"anomaly" : "Contains a resource with a size >= 100MB"})
+                    self.data.append({"anomaly": "Contains a resource with a size >= 100MB"})
                     self.weight += 1
 
         if "versioninfo" in self.results["static"]["pe"]:
@@ -164,35 +164,32 @@ class StaticPEPDBPath(Signature):
             "- copy",
         ]
         
-        if "static" in self.results:
-            if "pe" in self.results["static"]:
-                if "pdbpath" in self.results["static"]["pe"]:
-                    pdbpath = self.results["static"]["pe"]["pdbpath"]
-                    if pdbpath:
-                        for suspiciousname in suspiciousnames:
-                            if suspiciousname in pdbpath.lower():
-                                if self.severity != 3:
-                                    self.severity = 3
-                                self.data.append({"anomaly" : "the pdb path contains a suspicious string" })
-                                self.description = "The PE file contains a suspicious PDB path"
-                                break
+        pdbpath = self.results.get("static", {}).get("pe", {}).get("pdbpath", "")
+        if pdbpath:
+            for suspiciousname in suspiciousnames:
+                if suspiciousname in pdbpath.lower():
+                    if self.severity != 3:
+                        self.severity = 3
+                    self.data.append({"anomaly" : "the pdb path contains a suspicious string" })
+                    self.description = "The PE file contains a suspicious PDB path"
+                    break
 
-                        for devterm in devterms:
-                            if devterm in pdbpath.lower():
-                                if self.severity != 2 and self.severity != 3:
-                                    self.severity = 2
-                                self.data.append({"anomaly" : "the pdb path contains a reference to a development path or term that may suggest a non-enterprise environment development/compilation" })
-                                self.description = "The PE file contains a suspicious PDB path"
-                                break
+            for devterm in devterms:
+                if devterm in pdbpath.lower():
+                    if self.severity != 2 and self.severity != 3:
+                        self.severity = 2
+                    self.data.append({"anomaly" : "the pdb path contains a reference to a development path or term that may suggest a non-enterprise environment development/compilation" })
+                    self.description = "The PE file contains a suspicious PDB path"
+                    break
 
-                        regex = re.compile('[a-zA-Z]:\\\\[\x00-\xFF]{0,500}[^\x00-\x7F]{1,}[\x00-\xFF]{0,500}\.pdb')
-                        if re.match(regex, pdbpath):
-                            if self.severity != 2 and self.severity != 3:
-                                self.severity = 2
-                            self.data.append({"anomaly" : "the pdb path contains non-ascii characters" })
-                            self.description = "The PE file contains a suspicious PDB path"
+            regex = re.compile('[a-zA-Z]:\\\\[\x00-\xFF]{0,500}[^\x00-\x7F]{1,}[\x00-\xFF]{0,500}\.pdb')
+            if re.match(regex, pdbpath):
+                if self.severity != 2 and self.severity != 3:
+                    self.severity = 2
+                self.data.append({"anomaly" : "the pdb path contains non-ascii characters" })
+                self.description = "The PE file contains a suspicious PDB path"
 
-                        self.data.append({"pdbpath" : pdbpath })
-                        ret = True
+            self.data.append({"pdbpath": pdbpath})
+            ret = True
 
         return ret
