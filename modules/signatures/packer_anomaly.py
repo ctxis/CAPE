@@ -35,6 +35,7 @@ class PackerUnknownPESectionName(Signature):
             ".eh_fram",
             ".idata",
             ".gdata",
+            ".ndata",
             ".pdata",
             ".rdata",
             ".reloc",
