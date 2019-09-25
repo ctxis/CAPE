@@ -27,14 +27,18 @@ class PackerUnknownPESectionName(Signature):
     def run(self):
         ret = False
         knownsections = [
+            ".aspack",
             ".bss",
             ".crt",
             ".data",
             ".debug",
             ".edata",
             ".eh_fram",
-            ".idata",
+            ".enigma",
             ".gdata",
+            ".idata",
+            ".mpress",
+            ".nate",
             ".ndata",
             ".pdata",
             ".rdata",
@@ -42,9 +46,11 @@ class PackerUnknownPESectionName(Signature):
             ".rsrc",
             ".shared",
             ".text",
+            ".titan",
             ".tls",
-            ".xdata",
             ".upx",
+            ".vmp",
+            ".xdata",
         ]
 
         for section in self.results.get("static", {}).get("pe", {}).get("sections", []):
