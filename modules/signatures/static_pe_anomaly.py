@@ -2,8 +2,10 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
-from lib.cuckoo.common.abstracts import Signature
+import re
 from datetime import datetime
+
+from lib.cuckoo.common.abstracts import Signature
 
 class PEAnomaly(Signature):
     name = "static_pe_anomaly"
