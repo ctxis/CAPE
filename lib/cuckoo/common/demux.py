@@ -9,12 +9,12 @@ import logging
 from lib.cuckoo.common.config import Config
 from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.exceptions import CuckooDemuxError
-from sflock.exception import UnpackException
 
 try:
     from sflock import unpack
     from sflock.unpack.office import OfficeFile
     from sflock.abstracts import File as sfFile
+    from sflock.exception import UnpackException
     HAS_SFLOCK = True
 except ImportError:
     print("You must install sflock\n"\
