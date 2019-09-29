@@ -14,6 +14,7 @@ try:
     from sflock import unpack
     from sflock.unpack.office import OfficeFile
     from sflock.abstracts import File as sfFile
+    from sflock.exception import UnpackException
     HAS_SFLOCK = True
 except ImportError:
     print("You must install sflock\n"\
@@ -22,6 +23,8 @@ except ImportError:
     HAS_SFLOCK = False
 
 log = logging.getLogger()
+cuckoo_conf = Config()
+tmp_path = cuckoo_conf.cuckoo.get("tmppath", "/tmp")
 
 demux_extensions_list = [
     "", ".exe", ".dll", ".com", ".jar", ".pdf", ".msi", ".bin", ".scr", ".zip", ".tar", ".gz", ".tgz", ".rar", ".htm", ".html", ".hta",
@@ -55,10 +58,6 @@ def options2passwd(options):
 
 def demux_office(filename, password):
     retlist = []
-
-    options = Config()
-    aux_options = Config("auxiliary")
-    tmp_path = options.cuckoo.get("tmppath", "/tmp")
 
     basename = os.path.basename(filename)
     target_path = os.path.join(tmp_path, "cuckoo-tmp/msoffice-crypt-tmp")
@@ -102,16 +101,18 @@ def demux_sflock(filename, options):
         if tmp_pass:
             password = tmp_pass
 
-        unpacked = unpack(filename, password=password)
+        try:
+            unpacked = unpack(filename, password=password)
+        except UnpackException:
+            unpacked = unpack(filename)
+
         if unpacked.package in whitelist_extensions:
             return [filename]
         if unpacked.children:
-            cuckoo_conf = Config()
             for sf_child in unpacked.children:
                 base, ext = os.path.splitext(sf_child.filename)
                 ext = ext.lower()
                 if ext in demux_extensions_list or is_valid_type(sf_child.magic):
-                    tmp_path = cuckoo_conf.cuckoo.get("tmppath", "/tmp")
                     target_path = os.path.join(tmp_path, "cuckoo-sflock")
                     if not os.path.exists(target_path):
                         os.mkdir(target_path)
