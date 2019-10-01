@@ -227,7 +227,7 @@ $(document).ready( function() {
                                             <option value="internet"{% if route == "internet" %} selected{% endif %}>Internet (dirty line, {{ internet }})</option>
                                         {% endif %}
                                         {% if inetsim %}
-                                            <option value="inetsim" >inetsim</option>
+                                            <option value="inetsim" >inetsim/fakenet-ng</option>
                                         {% endif %}
                                         {% if tor %}
                                             <option value="tor" >tor</option>
@@ -374,6 +374,12 @@ $(document).ready( function() {
                                                 <tr>
                                                     <td><code>Dl&Exec add headers example</code></td>
                                                     <td>dnl_user_agent: "CAPE the best", dnl_referer: google</td>
+                                                    <td><code>servicedesc - for service package</code></td>
+                                                    <td>Service description</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td><code>arguments - for service package</code></td>
+                                                    <td>Service arguments</td>
                                                 </tr>
                                             </tbody>
                                         </table>

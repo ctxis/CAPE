@@ -110,44 +110,6 @@ def load_vms_tags():
 
     return all_tags
 
-def download_file(content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static):
-    onesuccess = False
-
-    if not content:
-        try:
-            r = requests.get(url, params=params, headers=headers, verify=False)
-        except requests.exceptions.RequestException as e:
-            return "error", render(request, "error.html", {"error": "Error completing connection to {1}: {0}".format(e, service)})
-
-        if r.status_code == 200:
-            content = r.content
-        elif r.status_code == 403:
-            return "error", render(request, "error.html", {"error": "API key provided is not a valid {0} key or is not authorized for {0} downloads".format(service)})
-
-    if not content:
-        return "error", render(request, "error.html", {"error": "Error downloading file from {}".format(service)})
-
-    try:
-        f = open(filename, 'wb')
-        f.write(content)
-        f.close()
-    except:
-        return "error", render(request, "error.html", {"error": "Error writing {} download file to temporary path".format(service)})
-
-    onesuccess = True
-
-    for gw in task_gateways:
-        options = update_options(gw, orig_options)
-
-        for entry in task_machines:
-            task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
-                                                         machine=entry, custom=custom, memory=memory, enforce_timeout=enforce_timeout, tags=tags, clock=clock, static=static)
-            if isinstance(task_ids, list):
-                task_ids.extend(task_ids_new)
-    if not onesuccess:
-        return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
-    return "ok", task_ids
-
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def index(request, resubmit_hash=False):
@@ -305,7 +267,7 @@ def index(request, resubmit_hash=False):
                 url = 'local'
                 params = {}
 
-                status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local", path, package, timeout, options, priority, machine, gateway,
+                status, task_ids = download_file(False, content, request, db, task_ids, url, params, headers, "Local", path, package, timeout, options, priority, machine, gateway,
                                                  clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static)
 
                 if status != "ok":
@@ -522,12 +484,12 @@ def index(request, resubmit_hash=False):
                         headers = {'x-apikey': settings.VTDL_INTEL_KEY}
 
                     if not content:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers,
+                        status, task_ids = download_file(False, content, request, db, task_ids, url, params, headers,
                                                          "VirusTotal", filename, package, timeout, options, priority,
                                                          machine, gateway, clock, custom, memory, enforce_timeout,
                                                          referrer, tags, orig_options, task_gateways, task_machines, static)
                     else:
-                        status, task_ids = download_file(content, request, db, task_ids, url, params, headers, "Local",
+                        status, task_ids = download_file(False, content, request, db, task_ids, url, params, headers, "Local",
                                                          filename, package, timeout, options, priority, machine,
                                                          gateway, clock, custom, memory, enforce_timeout, referrer,
                                                          tags, orig_options, task_gateways, task_machines, static)

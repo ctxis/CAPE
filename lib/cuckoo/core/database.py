@@ -927,7 +927,7 @@ class Database(object):
             memory=False, enforce_timeout=False, clock=None,
             shrike_url=None, shrike_msg=None,
             shrike_sid=None, shrike_refer=None, parent_id=None,
-            sample_parent_id=None):
+            sample_parent_id=None, static=False):
         """Add a task to database.
         @param obj: object to add (File or URL).
         @param timeout: selected timeout.
@@ -942,6 +942,7 @@ class Database(object):
         @param clock: virtual machine clock time
         @param parent_id: parent task id
         @param sample_parent_id: original sample in case of archive
+        @param static: try static extraction first
         @return: cursor or None.
         """
         session = self.Session()
@@ -964,7 +965,8 @@ class Database(object):
                             file_size=fileobj.get_size(),
                             file_type=file_type,
                             ssdeep=fileobj.get_ssdeep(),
-                            parent=sample_parent_id)
+                            parent=sample_parent_id,
+            )
             session.add(sample)
 
             try:
@@ -1051,7 +1053,7 @@ class Database(object):
                  priority=1, custom="", machine="", platform="", tags=None,
                  memory=False, enforce_timeout=False, clock=None, shrike_url=None,
                  shrike_msg=None, shrike_sid=None, shrike_refer=None, parent_id=None,
-                 sample_parent_id=None):
+                 sample_parent_id=None, static=False):
         """Add a task to database from file path.
         @param file_path: sample path.
         @param timeout: selected timeout.
@@ -1066,6 +1068,7 @@ class Database(object):
         @param clock: virtual machine clock time
         @param parent_id: parent analysis id
         @param sample_parent_id: sample parent id, if archive
+        @param static: try static extraction first
         @return: cursor or None.
         """
         if not file_path or not os.path.exists(file_path):

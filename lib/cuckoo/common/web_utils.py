@@ -1,4 +1,3 @@
-
 import os
 import sys
 import json
@@ -8,7 +7,6 @@ import hashlib
 import requests
 
 from random import choice
-
 _current_dir = os.path.abspath(os.path.dirname(__file__))
 CUCKOO_ROOT = os.path.normpath(os.path.join(_current_dir, "..", "..", ".."))
 sys.path.append(CUCKOO_ROOT)
@@ -23,7 +21,6 @@ from lib.cuckoo.common.utils import get_ip_address
 cfg = Config("cuckoo")
 socks5_conf = Config("socks5")
 machinery = Config(cfg.cuckoo.machinery)
-disable_x64 = cfg.cuckoo.get("disable_x64", False)
 
 hashes = {
     32: hashlib.md5,
@@ -86,24 +83,6 @@ def get_file_content(paths):
             break
     return content
 
-
-def fix_section_permission(path):
-   if HAVE_PEFILE:
-       try:
-           pe = pefile.PE(path)
-           for id in range(len(pe.sections)):
-               if pe.sections[id].Name.rstrip("\0") == ".rdata" and hex(pe.sections[id].Characteristics)[:3] == "0x4":
-                   log.info("section found")
-                   pe.sections[id].Characteristics += pefile.SECTION_CHARACTERISTICS["IMAGE_SCN_MEM_WRITE"]
-                   log.info(pe.sections[id].Characteristics)
-                   pe.write(filename=path)
-           pe.close()
-           log.info("clsoe")
-       except Exception as e:
-           log.info(e)
-   else:
-       log.info("[-] Missed dependency pefile")
-
 def get_magic_type(data):
     try:
         if os.path.exists(data):
@@ -114,7 +93,6 @@ def get_magic_type(data):
         print(e)
 
     return False
-
 
 # Func to download from services
 def download_file(api, content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_machines, static, fhash=False):
@@ -167,14 +145,6 @@ def download_file(api, content, request, db, task_ids, url, params, headers, ser
             return "error", render(request, "error.html", {"error": "Error writing {} download file to temporary path".format(service)})
 
     onesuccess = True
-    if filename:
-        if disable_x64 is True:
-            magic_type = get_magic_type(filename)
-            if magic_type and ("x86-64" in magic_type or "PE32+" in magic_type):
-                if len(request.FILES) == 1:
-                    return "error", render(request, "error.html",
-                            {"error": "Sorry no x64 support yet"})
-
     orig_options, timeout, enforce_timeout = recon(filename, orig_options, timeout, enforce_timeout)
     if "pony" in filename:
         fix_section_permission(filename)
@@ -191,7 +161,6 @@ def download_file(api, content, request, db, task_ids, url, params, headers, ser
         else:
             return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
     return "ok", task_ids
-
 
 def _download_file(route, url, options):
     socks5s = _load_socks5_operational()

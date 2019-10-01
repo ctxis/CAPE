@@ -84,9 +84,62 @@ plugx = {
     'exe': 'PlugX',
 }
 
-
 class SubmitCAPE(Report):
-    def process_cape_yara(self, cape_yara, detections):
+    def process_cape_yara(self, cape_yara, results, detections):
+
+        if 'disable_cape=1' in self.task_options:
+            return
+
+        if cape_yara["meta"].has_key("cape_options"):
+            self.task_options = self.task_options + ',disable_cape=1,file-offsets=1,' + cape_yara["meta"]["cape_options"]
+
+            yara_options = cape_yara["meta"]["cape_options"].split(',')
+
+            address = 0
+            for option in yara_options:
+                name, value = option.split('=')
+                if value.startswith('$'):
+                    address = cape_yara["addresses"].get(value.strip('$'))
+                    if address:
+                        self.task_options = self.task_options.replace(value, str(address), 1)
+
+            if not address:
+                return
+
+            if 'procdump=1' in self.task_options:
+                self.task_options = self.task_options.replace(u"procdump=1", u"procdump=0", 1)
+
+            parent_id = int(results["info"]["id"])
+            if results.get("info", {}).get("options", {}).get("main_task_id", ""):
+                parent_id = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
+
+            self.task_custom = "Parent_Task_ID:%s" % results["info"]["id"]
+            if results.get("info", {}).get("custom"):
+                self.task_custom = "%s Parent_Custom:%s" % (self.task_custom, results["info"]["custom"])
+
+            if self.task["package"] in ('Compression', 'Extraction', 'Injection'):
+                self.task["package"] = 'exe'
+
+            task_id = self.submit_task(
+                self.task["target"],
+                self.task["package"],
+                self.task["timeout"],
+                self.task_options,
+                self.task["priority"]+1,   # increase priority to expedite related submission
+                self.task["machine"],
+                self.task["platform"],
+                self.task["memory"],
+                self.task["enforce_timeout"],
+                None,
+                None,
+                parent_id,
+            )
+            if task_id:
+                children = []
+                children.append([task_id, self.task["package"]])
+                results["CAPE_children"] = children
+
+            return
 
         if cape_yara["name"] == "Sedreco" and 'Sedreco' not in detections:
             encrypt1 = cape_yara["addresses"].get("encrypt1")
@@ -301,21 +354,22 @@ class SubmitCAPE(Report):
             return
 
         self.task_options = self.task["options"]
-        if self.task_options and 'disable_cape=1' in self.task_options:
+        if not self.task_options:
             return
 
         parent_package = results["info"].get("package")
 
         # Initial static hits from CAPE's yara signatures
         for entry in results.get("target", {}).get("file", {}).get("cape_yara", []):
-            self.process_cape_yara(entry, detections)
+            self.process_cape_yara(entry, results, detections)
 
         for pattern in ("procdump", "CAPE", "dropped"):
-            if pattern in results and results[pattern]:
-                for file in results.get(pattern, []):
-                    if "cape_yara" in file:
-                        for entry in file["cape_yara"]:
-                            self.process_cape_yara(entry, detections)
+            for file in results.get(pattern, []) or []:
+                if "cape_yara" in file:
+                    for entry in file["cape_yara"]:
+                        self.process_cape_yara(entry, results, detections)
+        if 'disable_cape=1' in self.task_options:
+            return
 
         # Dynamic CAPE hits
         # Packers, injection or other generic dumping
@@ -406,8 +460,7 @@ class SubmitCAPE(Report):
 
         parent_id = int(results["info"]["id"])
         if results.get("info", {}).get("options", {}).get("main_task_id", ""):
-            parent_id = int(results.get("info", {}).get(
-                "options", {}).get("main_task_id", ""))
+            parent_id = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
 
         if package and package != parent_package:
             self.task_custom = "Parent_Task_ID:%s" % results["info"]["id"]

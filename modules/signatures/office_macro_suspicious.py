@@ -23,6 +23,7 @@ class OfficeMacroSuspicious(Signature):
     categories = ["office"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
+    ttp = ["T1064"]
 
     def run(self):
         ret = False
@@ -46,6 +47,7 @@ class OfficeMacroIOC(Signature):
     categories = ["office"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
+    ttp = ["T1064"]
 
     def run(self):
         ret = False
@@ -66,6 +68,8 @@ class OfficeMacroAutoExecution(Signature):
     categories = ["office"]
     authors = ["Kevin Ross"]
     minimum = "1.3"
+    ttp = ["T1064"]
+
 
     def run(self):
         ret = False
@@ -76,5 +80,26 @@ class OfficeMacroAutoExecution(Signature):
                         for string, description in self.results["static"]["office"]["Macro"]["Analysis"]["AutoExec"]:
                             self.data.append({string : description})
                         ret = True
+
+        return ret
+
+class OfficeMacroMaliciousPredition(Signature):
+    name = "office_macro_malicious_prediction"
+    description = "A machine learning model classified an Office macro as malicious"
+    severity = 3
+    categories = ["office", "macro"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    ttp = ["T1064"]
+
+    def run(self):
+        ret = False
+        if "mmbot" in self.results:
+            if "prediction" in self.results["mmbot"]:
+                prediction = self.results["mmbot"]["prediction"]
+                confidence = self.results["mmbot"]["confidence"]
+                if prediction == "malicious":
+                    self.data.append({"mmbot" : "prediction: %s confidence: %s" % (prediction,confidence)})
+                    ret= True
 
         return ret

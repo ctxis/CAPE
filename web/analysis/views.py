@@ -22,12 +22,11 @@ import subprocess
 from bson.binary import Binary
 from django.conf import settings
 from wsgiref.util import FileWrapper
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_safe
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-
 from django.core.exceptions import PermissionDenied
 from urllib import quote
 sys.path.append(settings.CUCKOO_PATH)
@@ -805,9 +804,8 @@ def report(request, task_id):
         for root, dirs, files in os.walk(debugger_log_path):
             for name in files:
                 if name.endswith('.log'):
-                    report["debugger_logs"][int(name.strip('.log'))] = open(os.path.join(root, name), "r").read()
-
-
+                    with open(os.path.join(root, name), "r") as f:
+                        report["debugger_logs"][int(name.strip('.log'))] = f.read()
 
     if settings.MOLOCH_ENABLED and "suricata" in report:
         suricata = report["suricata"]
@@ -879,10 +877,14 @@ def report(request, task_id):
         vba2graph = True
 
     bingraph = False
-    bingraph_svg_content = ""
-    bingraph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "bingraph", "ent.svg")
-    if os.path.exists(bingraph_svg_path):
-        bingraph_svg_content = open(bingraph_svg_path, "rb").read()
+    bingraph_dict_content = {}
+    bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "bingraph")
+    if os.path.exists(bingraph_path):
+        for file in os.listdir(bingraph_path):
+            tmp_file = os.path.join(bingraph_path, file)
+            with open(tmp_file, "r") as f:
+                bingraph_dict_content.setdefault(os.path.basename(tmp_file).split("-")[0], f.read())
+    if bingraph_dict_content:
         bingraph = True
 
     if HAVE_REQUEST and enabledconf["distributed"]:
@@ -907,7 +909,7 @@ def report(request, task_id):
             "config": enabledconf,
             "graphs": {
                 "vba2graph": {"enabled": vba2graph, "content": vba2graph_svg_content},
-                "bingraph": {"enabled": bingraph, "content": bingraph_svg_content},
+                "bingraph": {"enabled": bingraph, "content": bingraph_dict_content},
 
             },
         }
@@ -1511,12 +1513,10 @@ def comments(request, task_id):
     else:
         return render(request, "error.html",
                                   {"error": "Invalid Method"})
-
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def configdownload(request, task_id, cape_name):
 
     db = Database()
-    cd = "text/plain"
     task = db.view_task(task_id)
     if not task:
         return render(request, "error.html", {"error": "Task ID {} does not existNone".format(task_id)})
@@ -1524,7 +1524,7 @@ def configdownload(request, task_id, cape_name):
     rtmp = None
     if enabledconf["mongodb"]:
         rtmp = results_db.analysis.find_one({"info.id": int(task_id)}, sort=[("_id", pymongo.DESCENDING)])
-    if es_as_db:
+    elif es_as_db:
         rtmp = es.search(index=fullidx, doc_type="analysis", q="info.id: \"%s\"" % str(task_id))["hits"]["hits"]
         if len(rtmp) > 1:
             rtmp = rtmp[-1]["_source"]
@@ -1532,28 +1532,21 @@ def configdownload(request, task_id, cape_name):
             rtmp = rtmp[0]["_source"]
         else:
             pass
+    else:
+        return render(request, "error.html",
+                      {"error": "WebGui storage Mongo/ES disabled"})
 
     if rtmp:
-        if "CAPE" in rtmp:
+        if rtmp.get("CAPE", False):
             try:
                 rtmp["CAPE"] = json.loads(zlib.decompress(rtmp["CAPE"]))
             except:
                 # In case compress results processing module is not enabled
                 pass
             for cape in rtmp["CAPE"]:
-                if "cape_name" in cape and cape["cape_name"] == cape_name:
-                    filepath = tempfile.NamedTemporaryFile(delete=False)
-                    for key in cape["cape_config"]:
-                        filepath.write("{}\t{}\n".format(key, cape["cape_config"][key]))
-                    filepath.close()
-                    filename = cape['cape_name'] + "_config.txt"
-                    newpath = os.path.join(os.path.dirname(filepath.name), filename)
-                    shutil.move(filepath.name, newpath)
+                if cape.get("cape_name", "") == cape_name:
                     try:
-                        resp = StreamingHttpResponse(FileWrapper(open(newpath), 8192), content_type=cd)
-                        resp["Content-Length"] = os.path.getsize(newpath)
-                        resp["Content-Disposition"] = "attachment; filename=" + filename
-                        return resp
+                        return JsonResponse(cape["cape_config"])
                     except Exception as e:
                         return render(request, "error.html", {"error": "{}".format(e)})
         else:
@@ -1561,3 +1554,5 @@ def configdownload(request, task_id, cape_name):
     else:
         return render(request, "error.html",
                       {"error": "Could not retrieve results for task {} from db.".format(task_id)})
+
+    return render(request, "error.html", {"error": "Config not fond"})

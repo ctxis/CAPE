@@ -1,3 +1,4 @@
+#encoding: utf-8
 # Copyright (C) 2010-2015 Cuckoo Foundation, Optiv, Inc. (brad.spengler@optiv.com).
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
@@ -35,7 +36,9 @@ from lib.cuckoo.core.resultserver import ResultServer
 from django.core.validators import URLValidator
 
 log = logging.getLogger(__name__)
+machinery_name = Config().cuckoo.machinery
 repconf = Config("reporting")
+machinery_conf = Config(machinery_name)
 
 try:
     import libvirt
@@ -60,11 +63,10 @@ if repconf.mitre.enabled:
         mitre = Attck(attack_file)
         HAVE_MITRE = True
     except ImportError:
-        HAVE_MITRE = False
         log.error("Missed pyattck dependency")
+        HAVE_MITRE = False
 else:
     HAVE_MITRE = False
-
 
 
 myresolver = dns.resolver.Resolver()
@@ -72,7 +74,6 @@ myresolver.timeout = 5.0
 myresolver.lifetime = 5.0
 myresolver.domain = dns.name.Name("google-public-dns-a.google.com")
 myresolver.nameserver = ['8.8.8.8']
-
 
 class Auxiliary(object):
     """Base abstract class for auxiliary modules."""
@@ -676,8 +677,7 @@ class Processing(object):
         """
         self.analysis_path = analysis_path
         self.log_path = os.path.join(self.analysis_path, "analysis.log")
-        self.file_path = os.path.realpath(os.path.join(self.analysis_path,
-                                                       "binary"))
+        self.file_path = os.path.realpath(os.path.join(self.analysis_path, "binary"))
         self.dropped_path = os.path.join(self.analysis_path, "files")
         self.procdump_path = os.path.join(self.analysis_path, "procdump")
         self.CAPE_path = os.path.join(self.analysis_path, "CAPE")
@@ -698,6 +698,7 @@ class Processing(object):
         @raise NotImplementedError: this method is abstract.
         """
         raise NotImplementedError
+
 
 class Signature(object):
     """Base class for Cuckoo signatures."""
@@ -736,15 +737,40 @@ class Signature(object):
         self._current_call_dict = None
         self._current_call_raw_cache = None
         self._current_call_raw_dict = None
+        self.hostname2ips = dict()
+        self.machinery_conf = machinery_conf
 
         if not hasattr(Signature, "_alexadb") and os.path.exists(os.path.join(CUCKOO_ROOT, "data", "alexa.json")):
             # initialize only once
             Signature._alexadb = json.loads(open(os.path.join(CUCKOO_ROOT, "data", "alexa.json"), "rb").read())
 
+    def set_path(self, analysis_path):
+        """Set analysis folder path.
+        @param analysis_path: analysis folder path.
+        """
+        self.analysis_path = analysis_path
+        self.conf_path = os.path.join(self.analysis_path, "analysis.conf")
+        self.file_path = os.path.realpath(os.path.join(self.analysis_path, "binary"))
+        self.dropped_path = os.path.join(self.analysis_path, "files")
+        self.procdump_path = os.path.join(self.analysis_path, "procdump")
+        self.CAPE_path = os.path.join(self.analysis_path, "CAPE")
+        self.reports_path = os.path.join(self.analysis_path, "reports")
+        self.shots_path = os.path.join(self.analysis_path, "shots")
+        self.pcap_path = os.path.join(self.analysis_path, "dump.pcap")
+        self.pmemory_path = os.path.join(self.analysis_path, "memory")
+        self.memory_path = os.path.join(self.analysis_path, "memory.dmp")
+
+        try:
+            create_folder(folder=self.reports_path)
+        except CuckooOperationalError as e:
+            CuckooReportError(e)
+
+
     def yara_detected(self, name):
+
         target = self.results.get("target", {})
         if target.get("category") in ("file", "static") and target.get("file"):
-            for block in self.results["target"]["file"]["yara"]:
+            for block in self.results["target"]["file"].get("yara", list()):
                 if re.findall(name, block["name"], re.I):
                     return "sample", self.results["target"]["file"]["path"], block
 
@@ -753,7 +779,6 @@ class Signature(object):
                 for block in self.results.get(keyword, []):
                     for sub_keyword in ("yara", "cape_yara"):
                         for sub_block in block.get(sub_keyword, []):
-                            log.debug((keyword, sub_keyword, sub_block["name"]))
                             if re.findall(name, sub_block["name"], re.I):
                                 if keyword in ("procdump", "dropped", "extracted", "procmemory"):
                                     if block.get("file", False):
@@ -773,7 +798,7 @@ class Signature(object):
 
     def add_statistic(self, name, field, value):
         if name not in self.results["statistics"]["signatures"]:
-            self.results["statistics"]["signatures"][name] = { }
+            self.results["statistics"]["signatures"][name] = {}
 
         self.results["statistics"]["signatures"][name][field] = value
 
@@ -788,13 +813,14 @@ class Signature(object):
         # in case if bsons too big
         if os.path.exists(logs):
             pids += [pidb.replace(".bson", "") for pidb in os.listdir(logs) if ".bson" in pidb]
-        # in case injection is not followed
+
+        # in case if injection not follows
         if "procmemory" in self.results and self.results["procmemory"] is not None:
             pids += [str(block["pid"]) for block in self.results["procmemory"]]
         if "procdump" in self.results and self.results["procdump"] is not None:
             pids += [str(block["pid"]) for block in self.results["procdump"]]
-        log.debug(list(set(pids)))
 
+        log.info(list(set(pids)))
         return ",".join(list(set(pids)))
 
     def advanced_url_parse(self, url):
@@ -832,7 +858,7 @@ class Signature(object):
                 except dns.resolver.NXDOMAIN:
                     ips.append(rdata.address)
         except dns.resolver.NoAnswer:
-            print "IPs: No se puede obtener"
+            print("IPs: Impossible to get response")
         except Exception as e:
             log.info(e)
 
@@ -922,6 +948,17 @@ class Signature(object):
                     return subject
 
         return None
+
+    def check_process_name(self, pattern, all=False):
+        if "behavior" in self.results and "processes" in self.results["behavior"]:
+            for process in self.results["behavior"]["processes"]:
+                if re.findall(pattern, process["process_name"], re.I):
+                    if all:
+                        return process
+                    else:
+                        return True
+        return False
+
 
     def check_file(self, pattern, regex=False, all=False):
         """Checks for a file being opened.
@@ -1084,7 +1121,6 @@ class Signature(object):
                                  regex=regex,
                                  all=all,
                                  ignorecase=True)
-
 
     def check_executed_command(self, pattern, regex=False, all=False, ignorecase=True):
         """Checks for a command being executed.
@@ -1474,7 +1510,9 @@ class Signature(object):
                 EXTRA_SUFFIXES = ('bit',)
                 tld_res = tldextract.TLDExtract(extra_suffixes=EXTRA_SUFFIXES, suffix_list_urls=None)(pattern)
             except Exception as e:
+                logging.error(e)
                 return False
+
             if tld_res.domain + "." + tld_res.suffix in self._alexadb:
                 # no subdomain, mean alexa match
                 if tld_res.subdomain == "":
@@ -1554,6 +1592,7 @@ class Signature(object):
             families=self.families
         )
 
+
 class Report(object):
     """Base abstract class for reporting module."""
     order = 1
@@ -1575,6 +1614,9 @@ class Report(object):
         self.analysis_path = analysis_path
         self.conf_path = os.path.join(self.analysis_path, "analysis.conf")
         self.file_path = os.path.realpath(os.path.join(self.analysis_path, "binary"))
+        self.dropped_path = os.path.join(self.analysis_path, "files")
+        self.procdump_path = os.path.join(self.analysis_path, "procdump")
+        self.CAPE_path = os.path.join(self.analysis_path, "CAPE")
         self.reports_path = os.path.join(self.analysis_path, "reports")
         self.shots_path = os.path.join(self.analysis_path, "shots")
         self.pcap_path = os.path.join(self.analysis_path, "dump.pcap")
@@ -1603,6 +1645,7 @@ class Report(object):
         @raise NotImplementedError: this method is abstract.
         """
         raise NotImplementedError
+
 
 class Feed(object):
     """Base abstract class for feeds."""

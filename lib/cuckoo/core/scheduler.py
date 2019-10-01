@@ -8,7 +8,6 @@ import shutil
 import logging
 import threading
 import Queue
-from datetime import datetime
 try:
     import re2 as re
 except ImportError:
@@ -22,12 +21,12 @@ from lib.cuckoo.common.exceptions import CuckooCriticalError
 from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.utils import create_folder, get_memdump_path, free_space_monitor
 from lib.cuckoo.core.database import Database, TASK_COMPLETED, TASK_REPORTED
-from lib.cuckoo.core.database import TASK_FAILED_ANALYSIS
 from lib.cuckoo.core.guest import GuestManager
 from lib.cuckoo.core.plugins import list_plugins, RunAuxiliary, RunProcessing
 from lib.cuckoo.core.plugins import RunSignatures, RunReporting, GetFeeds
 from lib.cuckoo.core.resultserver import ResultServer
 from lib.cuckoo.core.rooter import rooter, vpns, _load_socks5_operational
+from lib.cuckoo.common.utils import convert_to_printable
 
 try:
     import pefile
@@ -111,7 +110,7 @@ class AnalysisManager(threading.Thread):
         sha256 = File(self.task.target).get_sha256()
         if sha256 != sample.sha256:
             log.error("Task #{0}: Target file has been modified after submission: "
-                      "'{1}'".format(self.task.id, self.task.target))
+                      "'{1}'".format(self.task.id, convert_to_printable(self.task.target)))
             return False
 
         return True
@@ -120,7 +119,7 @@ class AnalysisManager(threading.Thread):
         """Store a copy of the file being analyzed."""
         if not os.path.exists(self.task.target):
             log.error("Task #{0}: The file to analyze does not exist at path '{1}', "
-                      "analysis aborted".format(self.task.id, self.task.target))
+                      "analysis aborted".format(self.task.id, convert_to_printable(self.task.target)))
             return False
 
         sha256 = File(self.task.target).get_sha256()
@@ -135,7 +134,7 @@ class AnalysisManager(threading.Thread):
                 shutil.copy(self.task.target, self.binary)
             except (IOError, shutil.Error) as e:
                 log.error("Task #{0}: Unable to store file from '{1}' to '{2}', "
-                          "analysis aborted".format(self.task.id, self.task.target, self.binary))
+                          "analysis aborted".format(self.task.id, convert_to_printable(self.task.target), self.binary))
                 return False
 
         try:
@@ -236,9 +235,10 @@ class AnalysisManager(threading.Thread):
         """Start analysis."""
         succeeded = False
         dead_machine = False
+        self.socks5s = _load_socks5_operational()
 
         log.info("Task #{0}: Starting analysis of {1} '{2}'".format(
-                 self.task.id, self.task.category.upper(), self.task.target))
+                 self.task.id, self.task.category.upper(), convert_to_printable(self.task.target)))
 
         # Initialize the analysis folders.
         if not self.init_storage():
@@ -305,7 +305,6 @@ class AnalysisManager(threading.Thread):
             # Start the machine.
             machinery.start(self.machine.label)
 
-            self.socks5s = _load_socks5_operational()
             # Enable network routing.
             self.route_network()
 
@@ -421,24 +420,21 @@ class AnalysisManager(threading.Thread):
         if self.task.category == "file" and self.cfg.cuckoo.delete_original:
             if not os.path.exists(self.task.target):
                 log.warning("Task #{0}: Original file does not exist anymore: "
-                            "'{1}': File not found.".format(self.task.id, self.task.target)
-                           )
+                            "'{1}': File not found.".format(self.task.id, convert_to_printable(self.task.target)))
             else:
                 try:
                     os.remove(self.task.target)
 
                 except OSError as e:
                     log.error("Task #{0}: Unable to delete original file at "
-                              "path '{1}': {2}".format(self.task.id, self.task.target, e)
-                             )
+                              "path '{1}': {2}".format(self.task.id, convert_to_printable(self.task.target, e)))
 
         # If the target is a file and the user enabled the delete copy of
         # the binary option, then delete the copy.
         if self.task.category == "file" and self.cfg.cuckoo.delete_bin_copy:
             if not os.path.exists(self.binary):
                 log.warning("Task #{0}: Copy of the original file does not exist anymore: '{1}': "
-                            "File not found".format(self.task.id, self.binary)
-                           )
+                            "File not found".format(self.task.id, self.binary))
             else:
                 try:
                     os.remove(self.binary)
@@ -447,8 +443,7 @@ class AnalysisManager(threading.Thread):
                               "'{1}': {2}".format(self.task.id, self.binary, e))
 
         log.info("Task #{0}: reports generation completed (path={1})".format(
-                    self.task.id, self.storage)
-                )
+                    self.task.id, self.storage))
 
         return True
 
