@@ -145,9 +145,6 @@ def download_file(api, content, request, db, task_ids, url, params, headers, ser
             return "error", render(request, "error.html", {"error": "Error writing {} download file to temporary path".format(service)})
 
     onesuccess = True
-    orig_options, timeout, enforce_timeout = recon(filename, orig_options, timeout, enforce_timeout)
-    if "pony" in filename:
-        fix_section_permission(filename)
 
     for entry in task_machines:
         task_ids_new = db.demux_sample_and_add_to_db(file_path=filename, package=package, timeout=timeout, options=options, priority=priority,
