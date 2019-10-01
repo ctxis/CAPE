@@ -216,7 +216,7 @@ $(document).ready( function() {
                                             <option value="internet"{% if route == "internet" %} selected{% endif %}>Internet (dirty line, {{ internet }})</option>
                                         {% endif %}
                                         {% if inetsim %}
-                                            <option value="inetsim" >inetsim</option>
+                                            <option value="inetsim" >inetsim/fakenet-ng</option>
                                         {% endif %}
                                         {% if tor %}
                                             <option value="tor" >tor</option>
@@ -359,6 +359,14 @@ $(document).ready( function() {
                                                 <tr>
                                                     <td><code>referrer</code></td>
                                                     <td>Specify the referrer to be used for URL tasks, overriding the default Google referrer</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>servicedesc - for service package</code></td>
+                                                    <td>Service description</td>
+                                                </tr>
+                                                 <tr>
+                                                    <td><code>arguments - for service package</code></td>
+                                                    <td>Service arguments</td>
                                                 </tr>
                                             </tbody>
                                         </table>
