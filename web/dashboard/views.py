@@ -3,10 +3,8 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import sys
-import time
 
 from django.conf import settings
-from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_safe
 from django.contrib.auth.decorators import login_required
@@ -14,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 sys.path.append(settings.CUCKOO_PATH)
 
 from lib.cuckoo.core.database import Database, TASK_PENDING, TASK_RUNNING
-from lib.cuckoo.core.database import TASK_COMPLETED, TASK_RECOVERED
+from lib.cuckoo.core.database import TASK_COMPLETED, TASK_RECOVERED, TASK_DISTRIBUTED
 from lib.cuckoo.core.database import TASK_REPORTED, TASK_FAILED_ANALYSIS
 from lib.cuckoo.core.database import TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING
 
@@ -44,6 +42,7 @@ def index(request):
     states = (
         TASK_PENDING,
         TASK_RUNNING,
+        TASK_DISTRIBUTED,
         TASK_COMPLETED,
         TASK_RECOVERED,
         TASK_REPORTED,
@@ -73,5 +72,4 @@ def index(request):
         report["estimate_hour"] = int(hourly)
         report["estimate_day"] = int(24 * hourly)
 
-    return render(request, "dashboard/index.html",
-                              {"report" : report})
+    return render(request, "dashboard/index.html", {"report": report})

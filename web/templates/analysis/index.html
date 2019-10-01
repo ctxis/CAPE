@@ -256,6 +256,8 @@
                                 <span class="text-muted">pending</span>
                             {% elif analysis.status == "running" %}
                                 <span class="text-warning">running</span>
+                            {% elif analysis.status == "distributed" %}
+                                <span class="text-warning">distributed</span>
                             {% elif analysis.status == "completed" %}
                                 <span class="text-info">processing</span>
                             {% elif analysis.status == "reported" %}
