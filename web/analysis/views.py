@@ -1546,7 +1546,7 @@ def configdownload(request, task_id, cape_name):
                 # In case compress results processing module is not enabled
                 pass
             for cape in rtmp.get("CAPE", []):
-                if isinstance(cape, dict) and cape.get("cape_name", "") == cape_name:
+                if cape.get("cape_name", "") == cape_name:
                     try:
                         return JsonResponse(cape["cape_config"])
                     except Exception as e:
