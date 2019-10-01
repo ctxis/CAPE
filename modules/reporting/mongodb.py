@@ -72,6 +72,30 @@ class MongoDB(Report):
 
         return sorted(totals.items(), key=lambda item: item[1], reverse=True)
 
+    @classmethod
+    def ensure_valid_utf8(cls, obj):
+        """Ensures that all strings are valid UTF-8 encoded, which is
+        required by MongoDB to be able to store the JSON documents.
+        @param obj: analysis results dictionary.
+        """
+        if not obj:
+            return
+
+        items = []
+        if isinstance(obj, dict):
+            items = obj.iteritems()
+        elif isinstance(obj, list):
+            items = enumerate(obj)
+
+        for k, v in items:
+            if isinstance(v, str):
+                try:
+                    v.decode('utf-8')
+                except UnicodeDecodeError:
+                    obj[k] = u''.join(unichr(ord(_)) for _ in v).encode('utf-8')
+            else:
+                cls.ensure_valid_utf8(v)
+
     def run(self, results):
         """Writes report.
         @param results: analysis results dictionary.
@@ -201,6 +225,7 @@ class MongoDB(Report):
                 self.db.analysis.remove({"_id": ObjectId(analysis["_id"])})
             log.debug("Deleted previous MongoDB data for Task %s" % report["info"]["id"])
 
+        self.ensure_valid_utf8(report)
 
         # Store the report and retrieve its object id.
         try:
@@ -243,4 +268,3 @@ class MongoDB(Report):
                         error_saved = False
 
         self.conn.close()
-    
