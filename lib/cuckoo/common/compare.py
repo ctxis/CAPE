@@ -29,7 +29,10 @@ def combine_behavior_percentages(stats):
     for tid in stats:
         sums[tid] = {}
         for cat in cats:
-            sums[tid][cat] = sum(j.get(cat, 0) for j in stats[tid].values())
+            try:
+                sums[tid][cat] = sum(j.get(cat, 0) for j in stats[tid].values())
+            except ZeroDivisionError:
+                pass
 
     totals = dict((k, sum(v.values())) for k, v in sums.items())
 
@@ -37,8 +40,10 @@ def combine_behavior_percentages(stats):
     for tid in stats:
         percentages[tid] = {}
         for cat in cats:
-            percentages[tid][cat] = round(sums[tid][cat] * 1.0 / totals[tid] * 100, 2)
-
+            try:
+                percentages[tid][cat] = round(sums[tid][cat] * 1.0 / totals[tid] * 100, 2)
+            except ZeroDivisionError:
+                pass
     return percentages
 
 def iter_task_process_logfiles(tid):
