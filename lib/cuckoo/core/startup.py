@@ -276,19 +276,18 @@ def connect_to_es():
     es = None
     delidx = None
     # Check if ElasticSearch is enabled and delete that data if it is.
-    if rep_config.elasticsearchdb and rep_config.elasticsearchdb.enabled and not rep_config.elasticsearchdb.searchonly:
-        from elasticsearch import Elasticsearch
-        delidx = rep_config.elasticsearchdb.index + "-*"
-        try:
-            es = Elasticsearch(
-                     hosts = [{
-                         "host": rep_config.elasticsearchdb.host,
-                         "port": rep_config.elasticsearchdb.port,
-                     }],
-                     timeout = 60
-                 )
-        except:
-            log.warning("Unable to connect to ElasticSearch")
+    from elasticsearch import Elasticsearch
+    delidx = rep_config.elasticsearchdb.index + "-*"
+    try:
+        es = Elasticsearch(
+                    hosts = [{
+                        "host": rep_config.elasticsearchdb.host,
+                        "port": rep_config.elasticsearchdb.port,
+                    }],
+                    timeout = 60
+                )
+    except:
+        log.warning("Unable to connect to ElasticSearch")
 
     return es, delidx
 
@@ -319,7 +318,9 @@ def cuckoo_clean():
     except:
         log.warning("Unable to drop MongoDB database: %s", mdb)
 
-    es, delidx = connect_to_es()
+    es = False
+    if rep_config.elasticsearchdb and rep_config.elasticsearchdb.enabled and not rep_config.elasticsearchdb.searchonly:
+        es, delidx = connect_to_es()
     if not es:
         print("Can't connect to ElasticSearch")
         return
