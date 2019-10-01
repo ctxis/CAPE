@@ -412,6 +412,21 @@ curl {{ config.api.url }}/api/files/get/sha256/[sha256 hash]/</pre></td>
             <tr class="collapse" id="cuckoostatus">
               <td colspan="5"><pre>curl {{ config.api.url }}/api/cuckoo/status/</pre></td>
             </tr>
+            <tr>
+                <td>Extracted Sample Config</td>
+                {% if config.capeconfig.enabled %}
+                <td><span class="label label-success">Yes</span></td>
+                {% else %}
+                <td><span class="label label-danger">No</span></td>
+                {% endif %}
+                <td><ul><li>RPS: {{ config.capeconfig.rps }}</li>
+                        <li>RPM: {{ config.capeconfig.rpm }}</li></ul></td>
+                <td>View the CAPE extracted sample config. Return object will be JSON.</td>
+                <td><a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#capeconfig">Example</a></td>
+            </tr>
+            <tr class="collapse" id="capeconfig">
+              <td colspan="5"><pre>curl {{ config.api.url }}/api/tasks/get/config/[task_id]/</pre></td>
+            </tr>
         </tbody>
     </table>
     {% else %}
