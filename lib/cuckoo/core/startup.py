@@ -273,6 +273,8 @@ def connect_to_mongo():
     return conn, mdb
 
 def connect_to_es():
+    es = None
+    delidx = None
     # Check if ElasticSearch is enabled and delete that data if it is.
     if rep_config.elasticsearchdb and rep_config.elasticsearchdb.enabled and not rep_config.elasticsearchdb.searchonly:
         from elasticsearch import Elasticsearch
