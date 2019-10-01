@@ -115,11 +115,7 @@ def helper_percentages_elastic(es_obj, tid1, tid2, idx, ignore_categories=["misc
 
     for tid in [tid1, tid2]:
         counts[tid] = {}
-        results = es_obj.search(
-                          index=idx,
-                          doc_type="analysis",
-                          q="info.id: \"%s\"" % tid,
-                      )["hits"]["hits"]
+        results = es_obj.search(index=idx, doc_type="analysis", q="info.id: \"%s\"" % tid)["hits"]["hits"]
         if results:
             pids_calls = results[-1]["_source"]
         else:
@@ -133,14 +129,11 @@ def helper_percentages_elastic(es_obj, tid1, tid2, idx, ignore_categories=["misc
             counts[tid][pid] = {}
 
             for coid in pdoc["calls"]:
-                chunk = es_obj.search(
-                                index=idx,
-                                doc_type="calls",
-                                q="_id: \"%s\"" % coid,
-                            )["hits"]["hits"][-1]["_source"]
+                chunk = es_obj.search(index=idx, doc_type="calls", q="_id: \"%s\"" % coid)["hits"]["hits"][-1]["_source"]
                 category_counts = behavior_categories_percent(chunk["calls"])
                 for cat, count in category_counts.items():
-                    if cat in ignore_categories: continue
+                    if cat in ignore_categories:
+                        continue
                     counts[tid][pid][cat] = counts[tid][pid].get(cat, 0) + count
 
     return combine_behavior_percentages(counts)
@@ -148,19 +141,11 @@ def helper_percentages_elastic(es_obj, tid1, tid2, idx, ignore_categories=["misc
 def helper_summary_elastic(es_obj, tid1, tid2, idx):
     summaries = dict()
     left_sum, right_sum = None, None
-    buf = es_obj.search(
-                  index=idx,
-                  doc_type="analysis",
-                  q="info.id: \"%s\"" % tid1,
-                 )["hits"]["hits"]
+    buf = es_obj.search(index=idx, doc_type="analysis", q="info.id: \"%s\"" % tid1)["hits"]["hits"]
     if buf:
         left_sum = buf[-1]["_source"]
 
-    buf = es_obj.search(
-                  index=idx,
-                  doc_type="analysis",
-                  q="info.id: \"%s\"" % tid2,
-                 )["hits"]["hits"]
+    buf = es_obj.search( index=idx, doc_type="analysis", q="info.id: \"%s\"" % tid2)["hits"]["hits"]
     if buf:
         right_sum = buf[-1]["_source"]
 
@@ -172,10 +157,13 @@ def helper_summary_elastic(es_obj, tid1, tid2, idx):
 def get_similar_summary(left_sum, right_sum):
     ret = dict()
     for summary in left_sum["behavior"]["summary"]:
-        for item in left_sum["behavior"]["summary"][summary]:
-            if item in right_sum["behavior"]["summary"][summary]:
-                if summary not in ret.keys():
-                    ret[summary] = list()
-                ret[summary].append(item)
+        try:
+            for item in left_sum["behavior"]["summary"][summary]:
+                if item in right_sum["behavior"]["summary"][summary]:
+                    if summary not in ret.keys():
+                        ret[summary] = list()
+                    ret[summary].append(item)
+        except Exception as e:
+            pass
 
     return ret
