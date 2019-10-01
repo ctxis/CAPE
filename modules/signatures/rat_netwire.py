@@ -1,5 +1,4 @@
 from lib.cuckoo.common.abstracts import Signature
-log = logging.getLogger(__name__)
 
 matches = (
 	"HKEY_CURRENT_USER\\Software\\NetWire\\HostId",
