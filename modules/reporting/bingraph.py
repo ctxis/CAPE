@@ -2,7 +2,6 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
-
 import os
 import logging
 from lib.cuckoo.common.config import Config
@@ -62,7 +61,7 @@ class BinGraph(Report):
 
             for key in ("dropped", "procdump", "CAPE"):
                 for block in results.get(key, []) or []:
-                    if block["size"] != 0 and block["type"].startswith("PE32") and \
+                    if block.get("size", 0) != 0 and block.get("type", "").startswith("PE32") and \
                             not os.path.exists(os.path.join(bingraph_path, "{}-ent.svg".format(block["sha256"]))):
                         bingraph_args_dict.update({
                             "prefix": block["sha256"],
