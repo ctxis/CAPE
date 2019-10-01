@@ -225,7 +225,8 @@ class MongoDB(Report):
                 self.db.analysis.remove({"_id": ObjectId(analysis["_id"])})
             log.debug("Deleted previous MongoDB data for Task %s" % report["info"]["id"])
 
-        self.ensure_valid_utf8(report)
+        #temp disable
+        #self.ensure_valid_utf8(report)
 
         # Store the report and retrieve its object id.
         try:
