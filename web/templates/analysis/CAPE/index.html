@@ -1,4 +1,5 @@
 {% if analysis.CAPE|length > 0 %}
+    {% load key_tags %}
     {% for file in analysis.CAPE %}
         {% if file.cape_config %}
         <div class="panel panel-default">
@@ -6,7 +7,7 @@
                 <tr>
                     <th style="border-top: 0; width: 15%;">Type</th>
                     <td style="border-top: 0; word-wrap: break-word;"><b>{{file.cape_name}} Config</b></td>
-                </tr>                
+                </tr>
                 {% for key, value in file.cape_config.items %}
                     <tr>
                         <th style="border-top: 0; width: 15%;"><b>{{key}}</b></th>
@@ -62,12 +63,12 @@
                 </tr>
                 {% endif %}
             </table>
-        </div> 
+        </div>
         </tr>
         {% endif %}
         {% if file.related_tasks %}
             <div class="alert alert-success">The triggered CAPE job X can be viewed <a href="{% url "report" task_id %}">here</a></div>
-        {% endif %}        
+        {% endif %}
     {% endfor %}
     {% for file in analysis.CAPE %}
         {% if not file.cape_config %}
@@ -76,7 +77,7 @@
                 <tr>
                     <th style="border-top: 0; width: 15%;">Type</th>
                     <td style="border-top: 0; word-wrap: break-word;"><b>{{file.cape_type}}</b></td>
-                </tr>                
+                </tr>
                 <tr>
                     <th>Size</th>
                     <td>{{file.size}} bytes</td>
@@ -85,13 +86,13 @@
                     <tr>
                         <th>Virtual Address</th>
                         <td>{{file.virtual_address}}</td>
-                    </tr>                
+                    </tr>
                 {% endif %}
                 {% if file.cape_type_code == 5 %}
                     <tr>
                         <th>Section Handle</th>
                         <td>{{file.section_handle}}</td>
-                    </tr>                
+                    </tr>
                 {% endif %}
                 {% if file.cape_type_code == 3 or file.cape_type_code == 4 %}
                     <tr>
@@ -101,11 +102,11 @@
                     <tr>
                         <th>Target PID</th>
                         <td>{{file.target_pid}}</td>
-                    </tr>                
+                    </tr>
                     <tr>
                         <th>Target Path</th>
                         <td>{{file.target_path}}</td>
-                    </tr>                
+                    </tr>
                     <tr>
                         <th>Injecting Process</th>
                         <td>{{file.process_name}}</td>
@@ -113,11 +114,11 @@
                     <tr>
                         <th>Injecting PID</th>
                         <td>{{file.pid}}</td>
-                    </tr>                
+                    </tr>
                     <tr>
                         <th>Path</th>
                         <td>{{file.process_path}}</td>
-                    </tr>                
+                    </tr>
                 {% else %}
                     {% if file.process_name %}
                     <tr>
@@ -135,7 +136,7 @@
                     <tr>
                         <th>Path</th>
                         <td>{{file.process_path}}</td>
-                    </tr>                
+                    </tr>
                     {% endif %}
                 {% endif %}
                 <tr>
@@ -188,7 +189,7 @@
                         None matched
                     {% endif %}
                     </td>
-                </tr>                
+                </tr>
                 {% if file.dropdir %}
                 <tr>
                     <th></th>
@@ -216,8 +217,12 @@
                 </tr>
                 {% endif %}
             </table>
+            {% if graphs.bingraph.enabled and graphs.bingraph.content|getkey:file.sha256 %}
+                <h4>BinGraph</h4>
+                {{ graphs.bingraph.content|getkey:file.sha256|safe }}
+            {% endif %}
         </div>
-        {% endif %}        
+        {% endif %}
     {% endfor %}
 {% else %}
     <div class="alert alert-info"><b>Sorry!</b> No CAPE files.</div>

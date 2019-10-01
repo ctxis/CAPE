@@ -879,10 +879,14 @@ def report(request, task_id):
         vba2graph = True
 
     bingraph = False
-    bingraph_svg_content = ""
-    bingraph_svg_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "bingraph", "ent.svg")
-    if os.path.exists(bingraph_svg_path):
-        bingraph_svg_content = open(bingraph_svg_path, "rb").read()
+    bingraph_dict_content = {}
+    bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "bingraph")
+    if os.path.exists(bingraph_path):
+        for file in os.listdir(bingraph_path):
+            tmp_file = os.path.join(bingraph_path, file)
+            with open(tmp_file, "r") as f:
+                bingraph_dict_content.setdefault(os.path.basename(tmp_file).split("-")[0], f.read())
+    if bingraph_dict_content:
         bingraph = True
 
     if HAVE_REQUEST and enabledconf["distributed"]:
@@ -907,7 +911,7 @@ def report(request, task_id):
             "config": enabledconf,
             "graphs": {
                 "vba2graph": {"enabled": vba2graph, "content": vba2graph_svg_content},
-                "bingraph": {"enabled": bingraph, "content": bingraph_svg_content},
+                "bingraph": {"enabled": bingraph, "content": bingraph_dict_content},
 
             },
         }
