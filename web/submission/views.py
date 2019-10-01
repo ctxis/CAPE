@@ -31,8 +31,12 @@ from lib.cuckoo.common.web_utils import get_magic_type, download_file, disable_x
 
 # this required for hash searches
 FULL_DB = False
-repconf = Config("reporting")
 HAVE_DIST = False
+
+aux_conf = Config("auxiliary")
+repconf = Config("reporting")
+cfg = Config("cuckoo")
+processing_cfg = Config("processing")
 
 if repconf.distributed.enabled:
     try:
@@ -548,12 +552,11 @@ def index(request, resubmit_hash=False):
             return render(request, "error.html",
                           {"error": "Error adding task to Cuckoo's database."})
     else:
-        cfg = Config("cuckoo")
         enabledconf = dict()
         enabledconf["vt"] = settings.VTDL_ENABLED
         enabledconf["kernel"] = settings.OPT_ZER0M0N
-        enabledconf["memory"] = Config("processing").memory.get("enabled")
-        enabledconf["procmemory"] = Config("processing").procmemory.get("enabled")
+        enabledconf["memory"] = cfg.memory.get("enabled")
+        enabledconf["procmemory"] = processing_cfg.procmemory.get("enabled")
         if aux_conf.gateways:
             enabledconf["gateways"] = True
         else:
@@ -568,7 +571,7 @@ def index(request, resubmit_hash=False):
 
         if not enabledconf["tags"]:
             # Get enabled machinery
-            machinery = Config("cuckoo").cuckoo.get("machinery")
+            machinery = cfg.cuckoo.get("machinery")
             # load multi machinery tags:
             if machinery == "multi":
                 for mmachinery in Config(machinery).multi.get("machinery").split(","):

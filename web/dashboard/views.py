@@ -55,8 +55,6 @@ def index(request):
     for state in states:
         report["states_count"][state] = db.count_tasks(state)
 
-    offset = None
-
     # For the following stats we're only interested in completed tasks.
     tasks = db.count_tasks(status=TASK_COMPLETED)
     tasks += db.count_tasks(status=TASK_REPORTED)

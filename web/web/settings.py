@@ -60,10 +60,10 @@ MOLOCH_NODE = moloch_cfg.get("node", None)
 MOLOCH_ENABLED = moloch_cfg.get("enabled", False)
 
 GATEWAYS = aux_cfg.get("gateways")
-VTDL_ENABLED = vtdl_cfg.get("enabled",False)
-VTDL_PRIV_KEY = vtdl_cfg.get("dlprivkey",None)
-VTDL_INTEL_KEY = vtdl_cfg.get("dlintelkey",None)
-VTDL_PATH = vtdl_cfg.get("dlpath",None)
+VTDL_ENABLED = vtdl_cfg.get("enabled", False)
+VTDL_PRIV_KEY = vtdl_cfg.get("dlprivkey", None)
+VTDL_INTEL_KEY = vtdl_cfg.get("dlintelkey", None)
+VTDL_PATH = vtdl_cfg.get("dlpath", None)
 
 TEMP_PATH = cuckoo_cfg.cuckoo.get("tmppath", "/tmp")
 
@@ -92,7 +92,7 @@ DEBUG = True
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME'  : 'siteauth.sqlite'
+            'NAME': 'siteauth.sqlite'
             }
         }
 
@@ -163,11 +163,11 @@ STATICFILES_FINDERS = (
 # Template class for starting w. django 1.10
 TEMPLATES = [
     {
-        "BACKEND" : "django.template.backends.django.DjangoTemplates",
-        "DIRS" : [
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
             "templates",
         ],
-        "OPTIONS" : {
+        "OPTIONS": {
             "debug": True,
             "context_processors": [
                 'django.contrib.auth.context_processors.auth',
