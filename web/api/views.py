@@ -2170,7 +2170,7 @@ def tasks_config(request, task_id):
             buf = None
 
     if buf:
-        if buf.get("CAPE", False):
+        if isinstance(buf, dict) and buf.get("CAPE", False):
             try:
                 buf["CAPE"] = json.loads(decompress(buf["CAPE"]))
             except:
@@ -2178,7 +2178,7 @@ def tasks_config(request, task_id):
                 pass
             data = []
             for cape in buf["CAPE"]:
-                if cape.get("cape_config", False):
+                if isinstance(cape, dict) and cape.get("cape_config", False):
                     data.append(cape)
 
             if data:
