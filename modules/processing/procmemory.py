@@ -44,11 +44,10 @@ class ProcessMemory(Processing):
                 process_name = ""
                 process_path = ""
                 process_id = int(os.path.splitext(os.path.basename(dmp_path))[0])
-                if "behavior" in self.results and "processes" in self.results["behavior"]:
-                    for process in self.results["behavior"]["processes"]:
-                        if process_id == process["process_id"]:
-                            process_name = process["process_name"]
-                            process_path = process["module_path"]
+                for process in self.results.get("behavior", {}).get("processes", []) or []:
+                    if process_id == process["process_id"]:
+                        process_name = process["process_name"]
+                        process_path = process["module_path"]
 
                 procdump = ProcDump(dmp_path, pretty=True)
 
