@@ -31,10 +31,9 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-SCHEMA_VERSION = "e4954d358c80"
+SCHEMA_VERSION = "36926b59dfbb"
 TASK_PENDING = "pending"
 TASK_RUNNING = "running"
-TASK_DISTRIBUTED = "distributed"
 TASK_COMPLETED = "completed"
 TASK_RECOVERED = "recovered"
 TASK_REPORTED = "reported"
@@ -273,7 +272,7 @@ class Task(Base):
                       nullable=False)
     started_on = Column(DateTime(timezone=False), nullable=True)
     completed_on = Column(DateTime(timezone=False), nullable=True)
-    status = Column(Enum(TASK_PENDING, TASK_RUNNING, TASK_COMPLETED, TASK_DISTRIBUTED,
+    status = Column(Enum(TASK_PENDING, TASK_RUNNING, TASK_COMPLETED,
                          TASK_REPORTED, TASK_RECOVERED, TASK_FAILED_ANALYSIS,
                          TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING, name="status_type"),
                     server_default=TASK_PENDING,
@@ -598,9 +597,9 @@ class Database(object):
             if status != TASK_DISTRIBUTED_COMPLETED:
                 row.status = status
 
-            if status in (TASK_RUNNING, TASK_DISTRIBUTED):
+            if status == TASK_RUNNING:
                 row.started_on = datetime.now()
-            elif status in (TASK_COMPLETED, TASK_DISTRIBUTED_COMPLETED):
+            elif status == TASK_COMPLETED or status == TASK_DISTRIBUTED_COMPLETED:
                 row.completed_on = datetime.now()
 
             session.commit()
@@ -883,7 +882,7 @@ class Database(object):
     @classlock
     def register_sample(self, obj):
         sample_id = None
-        if isinstance(obj, File) or isinstance(obj, PCAP) or isinstance(obj, Static):
+        if isinstance(obj, File) or isinstance(obj, PCAP):
             session = self.Session()
             fileobj = File(obj.file_path)
             file_type = fileobj.get_type()
@@ -989,9 +988,9 @@ class Database(object):
             # analyzed by default on VM types that can't handle them
             if "PE32+" in file_type and not machine:
                 if tags:
-                    tags += ",x64"
+                    tags += ",64_bit"
                 else:
-                    tags = "x64"
+                    tags = "64_bit"
 
             task = Task(obj.file_path)
             task.sample_id = sample.id
