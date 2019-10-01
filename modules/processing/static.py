@@ -62,12 +62,6 @@ try:
 except ImportError:
     HAVE_VBA2GRAPH = False
 
-try:
-    from lib.cuckoo.common.graphs.binGraph.binGraph import generate_graphs as bingraph_gen
-    HAVE_BINGRAPH = True
-except ImportError:
-    HAVE_BINGRAPH = False
-
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.constants import CUCKOO_ROOT
 from lib.cuckoo.common.objects import File
@@ -1596,16 +1590,6 @@ class Static(Processing):
                 static = WindowsScriptFile(self.file_path).run()
             elif package == "js" or package == "vbs":
                 static = EncodedScriptFile(self.file_path).run()
-
-            if HAVE_BINGRAPH and processing_conf.binGraph.enabled:
-                try:
-                    bingraph_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(self.results["info"]["id"]), "bingraph")
-                    if not os.path.exists(bingraph_path):
-                        os.makedirs(bingraph_path)
-                    if not os.listdir(bingraph_path):
-                        bingraph_gen("", self.file_path, bingraph_path)
-                except Exception as e:
-                    log.info(e)
 
         elif self.task["category"] == "url":
             enabled_whois = self.options.get("whois", True)
