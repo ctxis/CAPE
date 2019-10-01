@@ -2133,9 +2133,9 @@ def cuckoo_status(request):
         )
     return jsonize(resp, response=True)
 
-if apiconf.cuckoostatus.get("enabled"):
-    raterps = apiconf.cuckoostatus.get("rps")
-    raterpm = apiconf.cuckoostatus.get("rpm")
+if apiconf.capeconfig.get("enabled"):
+    raterps = apiconf.capeconfig.get("rps")
+    raterpm = apiconf.capeconfig.get("rpm")
     rateblock = limiter
 @ratelimit(key="ip", rate=raterps, block=rateblock)
 @ratelimit(key="ip", rate=raterpm, block=rateblock)
@@ -2144,7 +2144,12 @@ def tasks_config(request, task_id):
         resp = {"error": True, "error_value": "Method not allowed"}
         return jsonize(resp, response=True)
 
+    if not apiconf.capeconfig.get("enabled"):
+        resp = {"error": True,
+                "error_value": "IOC download API is disabled"}
+        return jsonize(resp, response=True)
     check = validate_task(task_id)
+
     if check["error"]:
         return jsonize(check, response=True)
 
@@ -2163,9 +2168,6 @@ def tasks_config(request, task_id):
             buf = tmp[0]["_source"]
         else:
             buf = None
-    else:
-        resp = {"error": True, "error_value": "WebGui storage Mongo/ES disabled"}
-        return jsonize(resp, response=True)
 
     if buf:
         if buf.get("CAPE", False):
