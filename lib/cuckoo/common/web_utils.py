@@ -95,7 +95,7 @@ def get_magic_type(data):
     return False
 
 # Func to download from services
-def download_file(api, content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_machines, static, fhash=False):
+def download_file(api, content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static, fhash=False):
     onesuccess = False
     if not content:
         try:
