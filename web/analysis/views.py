@@ -19,7 +19,6 @@ import tempfile
 import zlib
 
 import subprocess
-from bson.binary import Binary
 from django.conf import settings
 from wsgiref.util import FileWrapper
 from django.http import HttpResponse, StreamingHttpResponse, JsonResponse
@@ -1124,6 +1123,7 @@ def filereport(request, task_id, category):
 
             return response
 
+        """
         elif enabledconf["distributed"]:
             # check for memdump on slave
             try:
@@ -1134,9 +1134,8 @@ def filereport(request, task_id, category):
                     return redirect(url.replace(":8090", ":8000")+"api/tasks/get/report/"+str(dist_task_id)+"/"+category+"/", permanent=True)
             except Exception as e:
                 print(e)
-
-    return render(request, "error.html",
-                              {"error": "File not found"})
+        """
+    return render(request, "error.html", {"error": "File not found"}, status=404)
 
 @require_safe
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
@@ -1513,6 +1512,7 @@ def comments(request, task_id):
     else:
         return render(request, "error.html",
                                   {"error": "Invalid Method"})
+
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def configdownload(request, task_id, cape_name):
 
@@ -1523,9 +1523,11 @@ def configdownload(request, task_id, cape_name):
 
     rtmp = None
     if enabledconf["mongodb"]:
-        rtmp = results_db.analysis.find_one({"info.id": int(task_id)}, sort=[("_id", pymongo.DESCENDING)])
+        rtmp = results_db.analysis.find_one({"info.id": int(task_id)}, sort=[
+                                            ("_id", pymongo.DESCENDING)])
     elif es_as_db:
-        rtmp = es.search(index=fullidx, doc_type="analysis", q="info.id: \"%s\"" % str(task_id))["hits"]["hits"]
+        rtmp = es.search(index=fullidx, doc_type="analysis",
+                         q="info.id: \"%s\"" % str(task_id))["hits"]["hits"]
         if len(rtmp) > 1:
             rtmp = rtmp[-1]["_source"]
         elif len(rtmp) == 1:
@@ -1543,12 +1545,14 @@ def configdownload(request, task_id, cape_name):
             except:
                 # In case compress results processing module is not enabled
                 pass
-            for cape in rtmp["CAPE"]:
-                if cape.get("cape_name", "") == cape_name:
+            for cape in rtmp.get("CAPE", []):
+                if isinstance(cape, dict) and cape.get("cape_name", "") == cape_name:
                     try:
                         return JsonResponse(cape["cape_config"])
                     except Exception as e:
                         return render(request, "error.html", {"error": "{}".format(e)})
+                else:
+                   return render(request, "error.html", {"error": "data doesn't exist"}, status=404)
         else:
             return render(request, "error.html", {"error": "CAPE for task {} does not exist.".format(task_id)})
     else:
