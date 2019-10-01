@@ -15,7 +15,7 @@ dpkt
 nose
 dnspython
 pytz
-requests
+requests[socks]
 python-magic
 geoip
 pillow
@@ -30,7 +30,6 @@ git+https://github.com/kbandla/pydeep.git
 pyvmomi>=6.0
 imagehash
 pyinstaller
-requests
 sqlalchemy
 # upx
 maec
