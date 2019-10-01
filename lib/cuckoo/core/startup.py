@@ -322,7 +322,6 @@ def cuckoo_clean():
     if rep_config.elasticsearchdb and rep_config.elasticsearchdb.enabled and not rep_config.elasticsearchdb.searchonly:
         es, delidx = connect_to_es()
     if not es:
-        print("Can't connect to ElasticSearch")
         return
     analyses = es.search(
         index=delidx,
