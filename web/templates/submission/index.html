@@ -75,6 +75,9 @@ $(document).ready( function() {
                         {% if config.vt %}
                         <li><a href="#vtdl" data-toggle="tab"><span class="glyphicon glyphicon-cloud-download"></span> VirusTotal Download</a></li>
                         {% endif %}
+                        {% if config.dlnexec %}
+                            <li><a href="#dlurl" data-toggle="tab"><span class="glyphicon glyphicon glyphicon-download-alt"></span> DL&Exec</a></li>
+                        {% endif %}
                         <li><a href="#pcap" data-toggle="tab"><span class="glyphicon glyphicon-transfer"></span> PCAP</a></li>
                         <li><a href="#static" data-toggle="tab"><span class="glyphicon glyphicon-tasks"></span> Static</a></li>
                     {% endif %}
@@ -119,6 +122,14 @@ $(document).ready( function() {
                             <div class="input-group col-md-12">
                                 <label class="sr-only" form="form_vtdl">VirusTotal Download</label>
                                 <input type="text" class="form-control" id="form_vtdl" name="vtdl" placeholder="Enter a hash or a comma or whitespace separated hash list" />
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if config.dlnexec %}
+                        <div class="tab-pane fade" id="dlurl">
+                            <div class="input-group col-md-12">
+                                <label class="sr-only" form="form_url">URL</label>
+                                <input type="text" class="form-control" id="form_url" name="dlnexec" placeholder="URL to download sample from" />
                             </div>
                         </div>
                         {% endif %}
@@ -361,6 +372,8 @@ $(document).ready( function() {
                                                     <td>Specify the referrer to be used for URL tasks, overriding the default Google referrer</td>
                                                 </tr>
                                                 <tr>
+                                                    <td><code>Dl&Exec add headers example</code></td>
+                                                    <td>dnl_user_agent: "CAPE the best", dnl_referer: google</td>
                                                     <td><code>servicedesc - for service package</code></td>
                                                     <td>Service description</td>
                                                 </tr>

@@ -93,10 +93,10 @@
                         </td>
                         <td>
                         {{analysis.machine}}
-                        </td>                      
+                        </td>
                         <td>
                         {{analysis.package}}
-                        </td>                      
+                        </td>
                         <td>
                         {{analysis.filename}}
                         </td>
@@ -182,7 +182,7 @@
                         {% endif %}
                         <td>
                             {% if analysis.malscore != None %}
-                                <span 
+                                <span
                                 {% if analysis.malscore <= 2.0 %}
                                 class="label label-success"
                                 {% elif analysis.malscore <= 6.0 %}
@@ -461,7 +461,7 @@
                         {% endif %}
                         <td>
                             {% if analysis.malscore != None %}
-                                <span 
+                                <span
                                 {% if analysis.malscore <= 2.0 %}
                                 class="label label-success"
                                 {% elif analysis.malscore <= 6.0 %}

@@ -21,18 +21,22 @@ from django.contrib.auth.decorators import login_required
 sys.path.append(settings.CUCKOO_PATH)
 
 from lib.cuckoo.common.config import Config
-from lib.cuckoo.common.utils import store_temp_file, validate_referrer
+from lib.cuckoo.common.utils import store_temp_file, validate_referrer, sanitize_filename, get_user_filename, generate_fake_name
 from lib.cuckoo.common.quarantine import unquarantine
 from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.core.database import Database
 from lib.cuckoo.core.rooter import vpns, _load_socks5_operational
-from lib.cuckoo.common.web_utils import get_magic_type, download_file, get_file_content
+from lib.cuckoo.common.web_utils import get_magic_type, download_file, disable_x64, get_file_content, fix_section_permission, _download_file
 
 # this required for hash searches
 FULL_DB = False
-repconf = Config("reporting")
 HAVE_DIST = False
+
+aux_conf = Config("auxiliary")
+repconf = Config("reporting")
+cfg = Config("cuckoo")
+processing_cfg = Config("processing")
 
 if repconf.distributed.enabled:
     try:
@@ -45,12 +49,13 @@ if repconf.distributed.enabled:
 
 if repconf.mongodb.enabled:
     import pymongo
-    results_db = pymongo.MongoClient( repconf.mongodb.host,
-                                port=repconf.mongodb.port,
-                                username=repconf.mongodb.get("username", None),
-                                password=repconf.mongodb.get("password", None),
-                                authSource=repconf.mongodb.db
-                                )[repconf.mongodb.db]
+    results_db = pymongo.MongoClient(
+        repconf.mongodb.host,
+        port=repconf.mongodb.port,
+        username=repconf.mongodb.get("username", None),
+        password=repconf.mongodb.get("password", None),
+        authSource=repconf.mongodb.db
+        )[repconf.mongodb.db]
     FULL_DB = True
 
 
@@ -413,6 +418,38 @@ def index(request, resubmit_hash=False):
                                          clock=clock)
                     if task_id:
                         task_ids.append(task_id)
+        elif "dlnexec" in request.POST and request.POST.get("dlnexec").strip():
+            url = request.POST.get("dlnexec").strip()
+            if not url:
+                return render(request, "error.html",
+                              {"error": "You specified an invalid URL!"})
+
+            url = url.replace("hxxps://", "https://").replace("hxxp://", "http://").replace("[.]", ".")
+            response = _download_file(request.POST.get("route", None), url, options)
+            if not response:
+                 return render(request, "error.html",
+                               {"error": "Was impossible to retrieve url"})
+
+            name = os.path.basename(url)
+            if not "." in name:
+                name = get_user_filename(options, custom) or generate_fake_name()
+            path = store_temp_file(response, name)
+
+            for entry in task_machines:
+                task_id = db.demux_sample_and_add_to_db(
+                    file_path=path,
+                    package=package,
+                    timeout=timeout,
+                    options=options,
+                    priority=priority,
+                    machine=entry,
+                    custom=custom,
+                    memory=memory,
+                    enforce_timeout=enforce_timeout,
+                    tags=tags,
+                    clock=clock)
+                if task_id:
+                    task_ids += task_id
         elif settings.VTDL_ENABLED and "vtdl" in request.POST and request.POST.get("vtdl", False) and request.POST.get("vtdl")[0] != '':
             vtdl = request.POST.get("vtdl")
             if (not settings.VTDL_PRIV_KEY and not settings.VTDL_INTEL_KEY) or not settings.VTDL_PATH:
@@ -477,18 +514,18 @@ def index(request, resubmit_hash=False):
             return render(request, "error.html",
                           {"error": "Error adding task to Cuckoo's database."})
     else:
-        cfg = Config("cuckoo")
         enabledconf = dict()
         enabledconf["vt"] = settings.VTDL_ENABLED
         enabledconf["kernel"] = settings.OPT_ZER0M0N
-        enabledconf["memory"] = Config("processing").memory.get("enabled")
-        enabledconf["procmemory"] = Config("processing").procmemory.get("enabled")
-        if Config("auxiliary").gateways:
+        enabledconf["memory"] = cfg.memory.get("enabled")
+        enabledconf["procmemory"] = processing_cfg.procmemory.get("enabled")
+        if aux_conf.gateways:
             enabledconf["gateways"] = True
         else:
             enabledconf["gateways"] = False
         enabledconf["tags"] = False
         enabledconf["dist_master_storage_only"] = repconf.distributed.master_storage_only
+        enabledconf["dlnexec"] = settings.DLNEXEC
 
         all_tags = load_vms_tags()
         if all_tags:
@@ -496,7 +533,7 @@ def index(request, resubmit_hash=False):
 
         if not enabledconf["tags"]:
             # Get enabled machinery
-            machinery = Config("cuckoo").cuckoo.get("machinery")
+            machinery = cfg.cuckoo.get("machinery")
             # load multi machinery tags:
             if machinery == "multi":
                 for mmachinery in Config(machinery).multi.get("machinery").split(","):
@@ -542,19 +579,19 @@ def index(request, resubmit_hash=False):
 
         socks5s = _load_socks5_operational()
         return render(request, "submission/index.html",
-                                  {"packages": sorted(packages),
-                                   "machines": machines,
-                                   "vpns": vpns.values(),
-                                   "socks5s": socks5s.values(),
-                                   "route": cfg.routing.route,
-                                   "internet": cfg.routing.internet,
-                                   "inetsim": cfg.routing.inetsim,
-                                   "tor": cfg.routing.tor,
-                                   "gateways": settings.GATEWAYS,
-                                   "config": enabledconf,
-                                   "resubmit": resubmit_hash,
-                                   "tags": sorted(list(set(all_tags))),
-                                })
+            {"packages": sorted(packages),
+            "machines": machines,
+            "vpns": vpns.values(),
+            "socks5s": socks5s.values(),
+            "route": cfg.routing.route,
+            "internet": cfg.routing.internet,
+            "inetsim": cfg.routing.inetsim,
+            "tor": cfg.routing.tor,
+            "gateways": settings.GATEWAYS,
+            "config": enabledconf,
+            "resubmit": resubmit_hash,
+            "tags": sorted(list(set(all_tags))),
+        })
 
 @conditional_login_required(login_required, settings.WEB_AUTHENTICATION)
 def status(request, task_id):

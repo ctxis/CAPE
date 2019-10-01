@@ -25,49 +25,49 @@ if vpn.vpn.enabled:
         entry = vpn.get(name)
         vpn.vpn[entry.name] = entry
 
-cfg = Config("reporting")
-
-# Error handling for database backends
-if not cfg.mongodb.get("enabled") and not cfg.elasticsearchdb.get("enabled"):
-    raise Exception("No database backend reporting module is enabled! Please enable either ElasticSearch or MongoDB.")
-
-if cfg.mongodb.get("enabled") and cfg.elasticsearchdb.get("enabled") and \
-    not cfg.elasticsearchdb.get("searchonly"):
-    raise Exception("Both database backend reporting modules are enabled. Please only enable ElasticSearch or MongoDB.")
-
+cuckoo_cfg = Config()
+repconf = Config("reporting")
 aux_cfg =  Config("auxiliary")
 vtdl_cfg = aux_cfg.virustotaldl
+
+# Error handling for database backends
+if not repconf.mongodb.get("enabled") and not repconf.elasticsearchdb.get("enabled"):
+    raise Exception("No database backend reporting module is enabled! Please enable either ElasticSearch or MongoDB.")
+
+if repconf.mongodb.get("enabled") and repconf.elasticsearchdb.get("enabled") and \
+    not repconf.elasticsearchdb.get("searchonly"):
+    raise Exception("Both database backend reporting modules are enabled. Please only enable ElasticSearch or MongoDB.")
 
 # Enable Django authentication for website
 WEB_AUTHENTICATION = False
 
 # Get connection options from reporting.conf.
-MONGO_HOST = cfg.mongodb.get("host", "127.0.0.1")
-MONGO_PORT = cfg.mongodb.get("port", 27017)
-MONGO_DB = cfg.mongodb.get("db", "cuckoo")
-MONGO_USER = cfg.mongodb.get("username", None)
-MONGO_PASS = cfg.mongodb.get("password", None)
+MONGO_HOST = repconf.mongodb.get("host", "127.0.0.1")
+MONGO_PORT = repconf.mongodb.get("port", 27017)
+MONGO_DB = repconf.mongodb.get("db", "cuckoo")
+MONGO_USER = repconf.mongodb.get("username", None)
+MONGO_PASS = repconf.mongodb.get("password", None)
 
+ELASTIC_HOST = repconf.elasticsearchdb.get("host", "127.0.0.1")
+ELASTIC_PORT = repconf.elasticsearchdb.get("port", 9200)
+ELASTIC_INDEX = repconf.elasticsearchdb.get("index", "cuckoo")
 
-ELASTIC_HOST = cfg.elasticsearchdb.get("host", "127.0.0.1")
-ELASTIC_PORT = cfg.elasticsearchdb.get("port", 9200)
-ELASTIC_INDEX = cfg.elasticsearchdb.get("index", "cuckoo")
-
-moloch_cfg = Config("reporting").moloch
-aux_cfg =  Config("auxiliary")
-vtdl_cfg = Config("auxiliary").virustotaldl
+moloch_cfg = repconf.moloch
+vtdl_cfg = aux_cfg.virustotaldl
 
 MOLOCH_BASE = moloch_cfg.get("base", None)
 MOLOCH_NODE = moloch_cfg.get("node", None)
 MOLOCH_ENABLED = moloch_cfg.get("enabled", False)
 
 GATEWAYS = aux_cfg.get("gateways")
-VTDL_ENABLED = vtdl_cfg.get("enabled",False)
-VTDL_PRIV_KEY = vtdl_cfg.get("dlprivkey",None)
-VTDL_INTEL_KEY = vtdl_cfg.get("dlintelkey",None)
-VTDL_PATH = vtdl_cfg.get("dlpath",None)
+VTDL_ENABLED = vtdl_cfg.get("enabled", False)
+VTDL_PRIV_KEY = vtdl_cfg.get("dlprivkey", None)
+VTDL_INTEL_KEY = vtdl_cfg.get("dlintelkey", None)
+VTDL_PATH = vtdl_cfg.get("dlpath", None)
 
-TEMP_PATH = Config().cuckoo.get("tmppath", "/tmp")
+TEMP_PATH = cuckoo_cfg.cuckoo.get("tmppath", "/tmp")
+
+DLNEXEC = aux_cfg.dlnexec.get("enabled", False)
 
 ipaddy_re = re.compile(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")
 
@@ -77,8 +77,8 @@ if GATEWAYS:
         if "," in e:
             continue
         elif ipaddy_re.match(GATEWAYS[e]):
-            GATEWAYS_IP_MAP[GATEWAYS[e]]=e  
- 
+            GATEWAYS_IP_MAP[GATEWAYS[e]]=e
+
 
 # Enabled/Disable Zer0m0n tickbox on the submission page
 OPT_ZER0M0N = False
@@ -92,7 +92,7 @@ DEBUG = True
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME'  : 'siteauth.sqlite'
+            'NAME': 'siteauth.sqlite'
             }
         }
 
@@ -163,11 +163,11 @@ STATICFILES_FINDERS = (
 # Template class for starting w. django 1.10
 TEMPLATES = [
     {
-        "BACKEND" : "django.template.backends.django.DjangoTemplates",
-        "DIRS" : [
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
             "templates",
         ],
-        "OPTIONS" : {
+        "OPTIONS": {
             "debug": True,
             "context_processors": [
                 'django.contrib.auth.context_processors.auth',

@@ -26,8 +26,9 @@ from lib.cuckoo.common.constants import CUCKOO_ROOT, CUCKOO_VERSION
 from lib.cuckoo.common.quarantine import unquarantine
 from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
-from lib.cuckoo.common.utils import store_temp_file, delete_folder, sanitize_filename
-from lib.cuckoo.common.utils import convert_to_printable, validate_referrer, get_user_filename
+from lib.cuckoo.common.utils import store_temp_file, delete_folder, sanitize_filename, generate_fake_name
+from lib.cuckoo.common.utils import convert_to_printable, validate_referrer
+from lib.cuckoo.common.web_utils import _download_file
 from lib.cuckoo.core.database import Database, Task
 from lib.cuckoo.core.database import TASK_REPORTED
 from lib.cuckoo.common.web_utils import download_file, get_file_content, jsonize
@@ -162,6 +163,125 @@ def index(request):
 
     return render(request, "api/index.html",
                              {"config": parsed})
+
+
+if apiconf.urlcreate.get("enabled"):
+    raterps = apiconf.urlcreate.get("rps", None)
+    raterpm = apiconf.urlcreate.get("rpm", None)
+    rateblock = True
+
+
+@ratelimit(key="ip", rate=raterps, block=rateblock)
+@ratelimit(key="ip", rate=raterpm, block=rateblock)
+@csrf_exempt
+def tasks_create_dlnexec(request):
+    resp = {}
+    if request.method == "POST":
+        if not apiconf.dlnexeccreate.get("enabled"):
+            resp = {"error": True, "error_value": "DL&Exec Create API is Disabled"}
+            return jsonize(resp, response=True)
+
+        resp["error"] = False
+        url = request.POST.get("dlnexec", None)
+        package = request.POST.get("package", "")
+        timeout = force_int(request.POST.get("timeout"))
+        priority = force_int(request.POST.get("priority"))
+        options = request.POST.get("options", "")
+        machine = request.POST.get("machine", "")
+        platform = request.POST.get("platform", "")
+        tags = request.POST.get("tags", None)
+        custom = request.POST.get("custom", "")
+        memory = bool(request.POST.get("memory", False))
+        clock = request.POST.get("clock", None)
+        enforce_timeout = bool(request.POST.get("enforce_timeout", False))
+        referrer = validate_referrer(request.POST.get("referrer", None))
+        shrike_url = request.POST.get("shrike_url", None)
+        shrike_msg = request.POST.get("shrike_msg", None)
+        shrike_sid = request.POST.get("shrike_sid", None)
+        shrike_refer = request.POST.get("shrike_refer", None)
+
+        task_ids = []
+        task_machines = []
+        vm_list = []
+        for vm in db.list_machines():
+            vm_list.append(vm.label)
+
+        if not url:
+            resp = {"error": True, "error_value": "URL value is empty"}
+            return jsonize(resp, response=True)
+
+        if machine.lower() == "all":
+            if not apiconf.filecreate.get("allmachines"):
+                resp = {"error": True,
+                        "error_value": "Machine=all is disabled using the API"}
+                return jsonize(resp, response=True)
+            for entry in vm_list:
+                task_machines.append(entry)
+        else:
+            # Check if VM is in our machines table
+            if machine == "" or machine in vm_list:
+                task_machines.append(machine)
+            # Error if its not
+            else:
+                resp = {"error": True,
+                        "error_value": ("Machine '{0}' does not exist. "
+                                        "Available: {1}".format(machine,
+                                                                ", ".join(vm_list)))}
+                return jsonize(resp, response=True)
+
+        if referrer:
+            if options:
+                options += ","
+            options += "referrer=%s" % (referrer)
+
+        orig_options = options
+
+        url = url.replace("hxxps://", "https://").replace("hxxp://", "http://").replace("[.]", ".")
+        response = _download_file(request.POST.get("route", None), url, options)
+        if not response:
+            return jsonize({"error": "Was impossible to retrieve url"}, response=True)
+
+        name = os.path.basename(url)
+        if not "." in name:
+            name = get_user_filename(options, custom) or generate_fake_name()
+
+        path = store_temp_file(response, name)
+
+        for entry in task_machines:
+            task_ids = db.demux_sample_and_add_to_db(
+                                file_path=path,
+                                package=package,
+                                timeout=timeout,
+                                priority=priority,
+                                options=options,
+                                machine=entry,
+                                platform=platform,
+                                tags=tags,
+                                custom=custom,
+                                memory=memory,
+                                enforce_timeout=enforce_timeout,
+                                clock=clock,
+                                shrike_url=shrike_url,
+                                shrike_msg=shrike_msg,
+                                shrike_sid=shrike_sid,
+                                shrike_refer=shrike_refer
+            )
+
+        if len(task_ids):
+            resp["data"] = {}
+            resp["data"]["task_ids"] = task_ids
+            resp["data"]["message"] = "Task ID {0} has been submitted".format(
+                str(task_ids[0]))
+            if apiconf.urlcreate.get("status"):
+                resp["url"] = ["{0}/submit/status/{1}".format(
+                    apiconf.api.get("url"), task_ids[0])]
+        else:
+            resp = {"error": True,
+                    "error_value": "Error adding task to database"}
+    else:
+        resp = {"error": True, "error_value": "Method not allowed"}
+
+    return jsonize(resp, response=True)
 
 # Queue up a file for analysis
 if apiconf.filecreate.get("enabled"):

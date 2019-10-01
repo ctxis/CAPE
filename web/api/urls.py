@@ -10,6 +10,7 @@ urlpatterns = [
     url(r"^tasks/create/file/$", views.tasks_create_file),
     url(r"^tasks/create/url/$", views.tasks_create_url),
     url(r"^tasks/create/vtdl/$", views.tasks_vtdl),
+    url(r"^tasks/create/dlnexec/$", views.tasks_create_dlnexec),
     url(r"^tasks/search/md5/(?P<md5>([a-fA-F\d]{32}))/$", views.tasks_search),
     url(r"^tasks/search/sha1/(?P<sha1>([a-fA-F\d]{40}))/$", views.tasks_search),
     url(r"^tasks/search/sha256/(?P<sha256>([a-fA-F\d]{64}))/$", views.tasks_search),
@@ -45,7 +46,7 @@ urlpatterns = [
     url(r"^machines/list/$", views.machines_list),
     url(r"^machines/view/(?P<name>[\w$-/:-?{-~!^_`\[\]]+)/$", views.machines_view),
     url(r"^cuckoo/status/$", views.cuckoo_status),
-    url(r"^tasks/get/rollingsuri/(?P<window>\d+)/$", views.tasks_rollingsuri),  
+    url(r"^tasks/get/rollingsuri/(?P<window>\d+)/$", views.tasks_rollingsuri),
     url(r"^tasks/get/rollingshrike/(?P<window>\d+)/$", views.tasks_rollingshrike),
-    url(r"^tasks/get/rollingshrike/(?P<window>\d+)/(?P<msgfilter>[\w$-/:-?{-~!^_`\[\]\s\x5c]+)/$", views.tasks_rollingshrike) 
+    url(r"^tasks/get/rollingshrike/(?P<window>\d+)/(?P<msgfilter>[\w$-/:-?{-~!^_`\[\]\s\x5c]+)/$", views.tasks_rollingshrike)
 ]
