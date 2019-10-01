@@ -31,9 +31,10 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-SCHEMA_VERSION = "36926b59dfbb"
+SCHEMA_VERSION = "e4954d358c80"
 TASK_PENDING = "pending"
 TASK_RUNNING = "running"
+TASK_DISTRIBUTED = "distributed"
 TASK_COMPLETED = "completed"
 TASK_RECOVERED = "recovered"
 TASK_REPORTED = "reported"
@@ -272,7 +273,7 @@ class Task(Base):
                       nullable=False)
     started_on = Column(DateTime(timezone=False), nullable=True)
     completed_on = Column(DateTime(timezone=False), nullable=True)
-    status = Column(Enum(TASK_PENDING, TASK_RUNNING, TASK_COMPLETED,
+    status = Column(Enum(TASK_PENDING, TASK_RUNNING, TASK_COMPLETED, TASK_DISTRIBUTED,
                          TASK_REPORTED, TASK_RECOVERED, TASK_FAILED_ANALYSIS,
                          TASK_FAILED_PROCESSING, TASK_FAILED_REPORTING, name="status_type"),
                     server_default=TASK_PENDING,
@@ -597,9 +598,9 @@ class Database(object):
             if status != TASK_DISTRIBUTED_COMPLETED:
                 row.status = status
 
-            if status == TASK_RUNNING:
+            if status in (TASK_RUNNING, TASK_DISTRIBUTED):
                 row.started_on = datetime.now()
-            elif status == TASK_COMPLETED or status == TASK_DISTRIBUTED_COMPLETED:
+            elif status in (TASK_COMPLETED, TASK_DISTRIBUTED_COMPLETED):
                 row.completed_on = datetime.now()
 
             session.commit()
@@ -882,7 +883,7 @@ class Database(object):
     @classlock
     def register_sample(self, obj):
         sample_id = None
-        if isinstance(obj, File) or isinstance(obj, PCAP):
+        if isinstance(obj, File) or isinstance(obj, PCAP) or isinstance(obj, Static):
             session = self.Session()
             fileobj = File(obj.file_path)
             file_type = fileobj.get_type()
@@ -927,7 +928,7 @@ class Database(object):
             memory=False, enforce_timeout=False, clock=None,
             shrike_url=None, shrike_msg=None,
             shrike_sid=None, shrike_refer=None, parent_id=None,
-            sample_parent_id=None):
+            sample_parent_id=None, static=False):
         """Add a task to database.
         @param obj: object to add (File or URL).
         @param timeout: selected timeout.
@@ -942,6 +943,7 @@ class Database(object):
         @param clock: virtual machine clock time
         @param parent_id: parent task id
         @param sample_parent_id: original sample in case of archive
+        @param static: try static extraction first
         @return: cursor or None.
         """
         session = self.Session()
@@ -964,7 +966,8 @@ class Database(object):
                             file_size=fileobj.get_size(),
                             file_type=file_type,
                             ssdeep=fileobj.get_ssdeep(),
-                            parent=sample_parent_id)
+                            parent=sample_parent_id,
+            )
             session.add(sample)
 
             try:
@@ -986,9 +989,9 @@ class Database(object):
             # analyzed by default on VM types that can't handle them
             if "PE32+" in file_type and not machine:
                 if tags:
-                    tags += ",64_bit"
+                    tags += ",x64"
                 else:
-                    tags = "64_bit"
+                    tags = "x64"
 
             task = Task(obj.file_path)
             task.sample_id = sample.id
@@ -1051,7 +1054,7 @@ class Database(object):
                  priority=1, custom="", machine="", platform="", tags=None,
                  memory=False, enforce_timeout=False, clock=None, shrike_url=None,
                  shrike_msg=None, shrike_sid=None, shrike_refer=None, parent_id=None,
-                 sample_parent_id=None):
+                 sample_parent_id=None, static=False):
         """Add a task to database from file path.
         @param file_path: sample path.
         @param timeout: selected timeout.
@@ -1066,6 +1069,7 @@ class Database(object):
         @param clock: virtual machine clock time
         @param parent_id: parent analysis id
         @param sample_parent_id: sample parent id, if archive
+        @param static: try static extraction first
         @return: cursor or None.
         """
         if not file_path or not os.path.exists(file_path):
