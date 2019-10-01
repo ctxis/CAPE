@@ -88,7 +88,10 @@ class MongoDB(Report):
             items = enumerate(obj)
 
         for k, v in items:
-            if isinstance(v, str):
+            # This type check is intentionally not done using isinstance(),
+            # because bson.binary.Binary *is* a subclass of bytes/str, and
+            # we do not want to convert that.
+            if type(v) is str:
                 try:
                     v.decode('utf-8')
                 except UnicodeDecodeError:
@@ -225,8 +228,7 @@ class MongoDB(Report):
                 self.db.analysis.remove({"_id": ObjectId(analysis["_id"])})
             log.debug("Deleted previous MongoDB data for Task %s" % report["info"]["id"])
 
-        #temp disable
-        #self.ensure_valid_utf8(report)
+        self.ensure_valid_utf8(report)
 
         # Store the report and retrieve its object id.
         try:
