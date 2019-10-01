@@ -2182,7 +2182,7 @@ def tasks_config(request, task_id):
                     data.append(cape)
 
             if data:
-                resp = {"error": False, "data": data}
+                resp = {"error": False, "configs": data}
             else:
                 resp = {"error": True, "error_value": "CAPE config for task {} does not exist.".format(task_id)}
             return jsonize(resp, response=True)
