@@ -517,7 +517,7 @@ def index(request, resubmit_hash=False):
         enabledconf = dict()
         enabledconf["vt"] = settings.VTDL_ENABLED
         enabledconf["kernel"] = settings.OPT_ZER0M0N
-        enabledconf["memory"] = cfg.memory.get("enabled")
+        enabledconf["memory"] = processing_cfg.memory.get("enabled")
         enabledconf["procmemory"] = processing_cfg.procmemory.get("enabled")
         if aux_conf.gateways:
             enabledconf["gateways"] = True
