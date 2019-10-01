@@ -117,7 +117,7 @@ class SubmitCAPE(Report):
             if results.get("info", {}).get("custom"):
                 self.task_custom = "%s Parent_Custom:%s" % (self.task_custom, results["info"]["custom"])
 
-            if self.task["package"] == 'Compression' or self.task["package"] == 'Extraction' or self.task["package"] == 'Injection':
+            if self.task["package"] in ('Compression', 'Extraction', 'Injection'):
                 self.task["package"] = 'exe'
 
             task_id = self.submit_task(
@@ -364,11 +364,10 @@ class SubmitCAPE(Report):
             self.process_cape_yara(entry, results, detections)
 
         for pattern in ("procdump", "CAPE", "dropped"):
-            if pattern in results and results[pattern]:
-                for file in results.get(pattern, []):
-                    if "cape_yara" in file:
-                        for entry in file["cape_yara"]:
-                            self.process_cape_yara(entry, results, detections)
+            for file in results.get(pattern, []) or []:
+                if "cape_yara" in file:
+                    for entry in file["cape_yara"]:
+                        self.process_cape_yara(entry, results, detections)
         if 'disable_cape=1' in self.task_options:
             return
 
