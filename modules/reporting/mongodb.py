@@ -38,12 +38,13 @@ class MongoDB(Report):
         db = self.options.get("db", "cuckoo")
 
         try:
-            self.conn = MongoClient( host,
-                                port=port,
-                                username=self.options.get("username", None),
-                                password=self.options.get("password", None),
-                                authSource=db
-                                )
+            self.conn = MongoClient(
+                host,
+                port=port,
+                username=self.options.get("username", None),
+                password=self.options.get("password", None),
+                authSource=db
+            )
             self.db = self.conn[db]
         except TypeError:
             raise CuckooReportError("Mongo connection port must be integer")
@@ -126,21 +127,19 @@ class MongoDB(Report):
         # reporting modules.
         report = dict(results)
 
-        if not "network" in report:
+        if "network" not in report:
             report["network"] = {}
 
         # Add screenshot paths
         report["shots"] = []
         shots_path = os.path.join(self.analysis_path, "shots")
         if os.path.exists(shots_path):
-            shots = [shot for shot in os.listdir(shots_path)
-                     if shot.endswith(".jpg")]
+            shots = [shot for shot in os.listdir(shots_path) if shot.endswith(".jpg")]
             for shot_file in sorted(shots):
-                shot_path = os.path.join(self.analysis_path, "shots",
-                                         shot_file)
+                shot_path = os.path.join(self.analysis_path, "shots", shot_file)
                 screenshot = File(shot_path)
                 if screenshot.valid():
-                    # Strip the extension as it's added later 
+                    # Strip the extension as it's added later
                     # in the Django view
                     report["shots"].append(shot_file.replace(".jpg", ""))
 
@@ -148,42 +147,35 @@ class MongoDB(Report):
         # those chunks back in the report. In this way we should defeat the
         # issue with the oversized reports exceeding MongoDB's boundaries.
         # Also allows paging of the reports.
-        if "behavior" in report and "processes" in report["behavior"]:
-            new_processes = []
-            for process in report["behavior"]["processes"]:
-                new_process = dict(process)
+        new_processes = []
 
-                chunk = []
-                chunks_ids = []
-                # Loop on each process call.
-                for index, call in enumerate(process["calls"]):
-                    # If the chunk size is 100 or if the loop is completed then
-                    # store the chunk in MongoDB.
-                    if len(chunk) == 100:
-                        to_insert = {"pid": process["process_id"],
-                                     "calls": chunk}
-                        chunk_id = self.db.calls.insert(to_insert)
-                        chunks_ids.append(chunk_id)
-                        # Reset the chunk.
-                        chunk = []
-
-                    # Append call to the chunk.
-                    chunk.append(call)
-
-                # Store leftovers.
-                if chunk:
+        for process in report.get("behavior", {}).get("processes", []) or []:
+            new_process = dict(process)
+            chunk = []
+            chunks_ids = []
+            # Loop on each process call.
+            for index, call in enumerate(process["calls"]):
+                # If the chunk size is 100 or if the loop is completed then
+                # store the chunk in MongoDB.
+                if len(chunk) == 100:
                     to_insert = {"pid": process["process_id"], "calls": chunk}
                     chunk_id = self.db.calls.insert(to_insert)
                     chunks_ids.append(chunk_id)
-
-                # Add list of chunks.
-                new_process["calls"] = chunks_ids
-                new_processes.append(new_process)
-
-            # Store the results in the report.
-            report["behavior"] = dict(report["behavior"])
-            report["behavior"]["processes"] = new_processes
-
+                    # Reset the chunk.
+                    chunk = []
+                # Append call to the chunk.
+                chunk.append(call)
+            # Store leftovers.
+            if chunk:
+                to_insert = {"pid": process["process_id"], "calls": chunk}
+                chunk_id = self.db.calls.insert(to_insert)
+                chunks_ids.append(chunk_id)
+            # Add list of chunks.
+            new_process["calls"] = chunks_ids
+            new_processes.append(new_process)
+        # Store the results in the report.
+        report["behavior"] = dict(report["behavior"])
+        report["behavior"]["processes"] = new_processes
         # Calculate the mlist_cnt for display if present to reduce db load
         if "signatures" in results:
             for entry in results["signatures"]:
@@ -195,20 +187,14 @@ class MongoDB(Report):
         # Other info we want quick access to from the web UI
         if results.has_key("virustotal") and results["virustotal"] and results["virustotal"].has_key("positives") and results["virustotal"].has_key("total"):
             report["virustotal_summary"] = "%s/%s" % (results["virustotal"]["positives"],results["virustotal"]["total"])
-        if results.has_key("suricata") and results["suricata"]:
-            if results["suricata"].has_key("tls") and len(results["suricata"]["tls"]) > 0:
-                report["suri_tls_cnt"] = len(results["suricata"]["tls"])
-            if results["suricata"].has_key("alerts") and len(results["suricata"]["alerts"]) > 0:
-                report["suri_alert_cnt"] = len(results["suricata"]["alerts"])
-            if results["suricata"].has_key("files") and len(results["suricata"]["files"]) > 0:
-                report["suri_file_cnt"] = len(results["suricata"]["files"])
-            if results["suricata"].has_key("http") and len(results["suricata"]["http"]) > 0:
-                report["suri_http_cnt"] = len(results["suricata"]["http"])
-            if results["suricata"].has_key("ssh") and len(results["suricata"]["ssh"]) > 0:
-                report["suri_ssh_cnt"] = len(results["suricata"]["ssh"])
-            if results["suricata"].has_key("dns") and len(results["suricata"]["dns"]) > 0:
-                report["suri_dns_cnt"] = len(results["suricata"]["dns"])
-        
+        if results.get("suricata", False):
+
+            keywords = ("tls", "alerts", "files", "http", "ssh", "dns")
+            keywords_dict = ("suri_tls_cnt", "suri_alert_cnt", "suri_file_cnt", "suri_http_cnt", "suri_ssh_cnt", "suri_dns_cnt")
+            for keyword, keyword_value in zip(keywords, keywords_dict):
+                if results["suricata"].get(keyword, 0):
+                    report[keyword_value] = len(results["suricata"][keyword])
+
         # Create an index based on the info.id dict key. Increases overall scalability
         # with large amounts of data.
         # Note: Silently ignores the creation if the index already exists.
@@ -216,7 +202,7 @@ class MongoDB(Report):
 
         #trick for distributed api
         if results.get("info", {}).get("options", {}).get("main_task_id", ""):
-            report["info"]["id"] = int(results.get("info", {}).get("options", {}).get("main_task_id", ""))
+            report["info"]["id"] = int(results["info"]["options"]["main_task_id"])
 
         analyses = self.db.analysis.find({"info.id": int(report["info"]["id"])})
         if analyses.count() > 0:
