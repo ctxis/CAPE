@@ -1,5 +1,6 @@
 <script src="{{ STATIC_URL }}js/hexdump.js"></script>
 {% if analysis.procdump|length > 0 %}
+    {% load key_tags %}
     {% for file in analysis.procdump %}
         <div class="panel panel-default">
             <table class="table table-striped" style="table-layout: fixed;">
@@ -96,6 +97,10 @@
                 </tr>
                 {% endif %}
             </table>
+            {% if graphs.bingraph.enabled and graphs.bingraph.content|getkey:file.sha256 %}
+                <h4>BinGraph</h4>
+                {{ graphs.bingraph.content|getkey:file.sha256|safe }}
+            {% endif %}
         </div>
     {% endfor %}
 {% else %}

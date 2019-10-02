@@ -72,9 +72,9 @@ class MISP(Report):
             malfamily = " - {}".format(results["malfamily"])
 
         comment = "{} {}{}".format(self.options.get("title", ""), results.get('info', {}).get('id'), malfamily)
-        
 
-        if results.get("target", {}).get("url", "") and results["target"]["url"] not in whitelist:                      
+
+        if results.get("target", {}).get("url", "") and results["target"]["url"] not in whitelist:
             iocs.append({"uri": results["target"]["url"]})
             filtered_iocs.append(results["target"]["url"])
 
@@ -95,6 +95,20 @@ class MISP(Report):
                     if "user-agent" in req and req["user-agent"] not in filtered_iocs:
                         iocs.append({"ua": req["user-agent"]})
                         filtered_iocs.append(req["user-agent"])
+
+            for block in results["network"].get("dns", []): #Added DNS
+                if block.get("request", "") and (block["request"] not in whitelist and block["request"] not in filtered_iocs):
+                    iocs.append({"domain": block["request"]})
+                    filtered_iocs.append(block["request"])
+
+            for i in range(0,len(results["CAPE"])): #Added CAPE Addresses
+                for section in results["CAPE"][i]:
+                    try:
+                        if(results["CAPE"][i]["cape_config"]["address"]):
+                            for ip in results["CAPE"][i]["cape_config"]["address"]:
+                                iocs.append({"ip": ip.split(":")[0]})
+                    except:
+                        pass
 
         if self.options.get("ids_files", False) and "suricata" in results.keys():
             for surifile in results["suricata"]["files"]:
@@ -119,7 +133,6 @@ class MISP(Report):
                                 "sha1": entry["sha1"],
                                 "sha256": entry["sha256"]
                     })
-                    
 
         if self.options.get("registry", False) and "behavior" in results and "summary" in results["behavior"]:
             if "read_keys" in results["behavior"].get("summary", {}):
@@ -128,9 +141,19 @@ class MISP(Report):
                         iocs.append({"regkey": regkey})
                         filtered_iocs.append(regkey)
 
-        if iocs:
-          
-            event = self.misp.new_event(distribution, threat_level_id, analysis, comment, date=datetime.now().strftime('%Y-%m-%d'), published=True)
+        if iocs and malfamily:
+            event = self.misp.new_event(0,4,0,"[Malware] Automated Analysis by CAPE")
+            self.misp.tag(event["Event"]["uuid"], ''.join(e for e in malfamily if e.isalnum()).replace("-",""))
+
+            for ttp in results["ttps"]: #Added TTPs
+                with open('/opt/CAPE/data/mitre_attack.json') as json_file:
+                     data = json.load(json_file)
+                     for i in data["objects"]:
+                         try:
+                             if (i["external_references"][0]["external_id"] == ttp):
+                                 self.misp.tag(event["Event"]["uuid"],'misp-galaxy:mitre-attack-pattern="'+i["name"]+' - '+ttp+'"')
+                         except:
+                             pass
 
             # Add Payload delivery hash about the details of the analyzed file
             self.misp.add_hashes(event, category='Payload delivery',
@@ -140,7 +163,7 @@ class MISP(Report):
                                         sha256=results.get('target').get('file').get('sha256'),
                                         ssdeep=results.get('target').get('file').get('ssdeep'),
                                         comment='File: {} uploaded to cuckoo'.format(results.get('target').get('file').get('name')))
-          
+
             for thread_id in xrange(int(self.threads)):
                 thread = threading.Thread(target=self.cuckoo2misp_thread, args=(iocs, event))
                 thread.daemon = True
@@ -262,3 +285,4 @@ class MISP(Report):
 
         except Exception as e:
             log.error("Failed to generate JSON report: %s" % e)
+

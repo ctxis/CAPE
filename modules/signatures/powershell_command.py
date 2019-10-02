@@ -334,3 +334,25 @@ class PowerShellNetworkConnection(Signature):
             return True
         else:
             return False
+
+class PowerShellScriptBlockLogging(Signature):
+    name = "powershell_scriptblock_logging"
+    description = "Suspicious behavior was detected in a PowerShell process by script block logging"
+    severity = 3
+    confidence = 80
+    categories = ["powershell"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    ttp = ["T1086"]
+
+    def run(self):
+        ret = False
+        if "curtain" in self.results:
+            for pid, detection in self.results["curtain"].iteritems():
+                if len(detection["behaviors"]) > 0:
+                    joined = ', '.join(detection["behaviors"])
+                    ret = True
+                    self.data.append({pid : joined})
+
+        return ret

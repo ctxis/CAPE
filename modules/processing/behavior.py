@@ -6,7 +6,6 @@ import os
 import logging
 import datetime
 import struct
-import itertools
 
 from lib.cuckoo.common.abstracts import Processing
 from lib.cuckoo.common.config import Config
@@ -14,6 +13,7 @@ from lib.cuckoo.common.netlog import BsonParser
 from lib.cuckoo.common.utils import convert_to_printable, pretty_print_arg, pretty_print_retval, logtime, default_converter
 
 log = logging.getLogger(__name__)
+cfg = Config()
 
 def fix_key(key):
     """Fix a registry key to have it normalized.
@@ -49,13 +49,12 @@ class ParseProcessLog(list):
         self.api_count = 0
         self.call_id = 0
         self.conversion_cache = {}
-        self.cfg = Config()
-        self.api_limit = self.cfg.processing.analysis_call_limit  # Limit of API calls per process
+        self.api_limit = cfg.processing.analysis_call_limit  # Limit of API calls per process
 
         if os.path.exists(log_path) and os.stat(log_path).st_size > 0:
             self.parse_first_and_reset()
 
-        if self.cfg.processing.ram_boost:
+        if cfg.processing.ram_boost:
             self.api_call_cache = []
             self.api_pointer = 0
 
@@ -181,7 +180,7 @@ class ParseProcessLog(list):
         """ Just accessing the cache
         """
 
-        if self.cfg.processing.ram_boost:
+        if cfg.processing.ram_boost:
             res = self.api_call_cache[self.api_pointer]
             if res is None:
                 self.reset()
@@ -259,7 +258,7 @@ class ParseProcessLog(list):
 
     def begin_reporting(self):
         self.reporting_mode = True
-        if self.cfg.processing.ram_boost:
+        if cfg.processing.ram_boost:
             idx = 0
             while True:
                 ent = self.api_call_cache[idx]
@@ -346,7 +345,6 @@ class Processes:
     def __init__(self, logs_path):
         """@param  logs_path: logs path."""
         self._logs_path = logs_path
-        self.cfg = Config()
 
     def run(self):
         """Run analysis.
@@ -371,7 +369,7 @@ class Processes:
                 continue
 
             # Skipping the current log file if it's too big.
-            if os.stat(file_path).st_size > self.cfg.processing.analysis_size_limit:
+            if os.stat(file_path).st_size > cfg.processing.analysis_size_limit:
                 log.warning("Behavioral log {0} too big to be processed, skipped.".format(file_name))
                 continue
 

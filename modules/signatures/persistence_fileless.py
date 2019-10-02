@@ -17,7 +17,7 @@ from lib.cuckoo.common.abstracts import Signature
 
 class PersistenceRegistryScript(Signature):
     name = "persistence_registry_script"
-    description = "Stores JavaScript or a script command in the registry, likely for persistence or configuration"
+    description = "Stores JavaScript or a script command in the registry, likely for fileless persistence"
     severity = 3
     categories = ["persistence"]
     authors = ["Kevin Ross"]
@@ -30,15 +30,12 @@ class PersistenceRegistryScript(Signature):
         Signature.__init__(self, *args, **kwargs)
         self.registry_writes = dict()
         self.scripts = [
-            "cscript ",
-            "cscript.exe",
+            "cscript",
             "hta ",
             "hta.exe",
             "javascript:",
-            "powershell ",
-            "powershell.exe",
-            "wscript ",
-            "script.exe",
+            "powershell",
+            "wscript",
         ]
 
     filter_apinames = set(["RegSetValueExA", "RegSetValueExW", "NtSetValueKey"])

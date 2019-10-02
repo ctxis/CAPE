@@ -30,7 +30,7 @@ class ProcDump(Processing):
                 continue
             with open(file_path + "_info.txt", 'r') as f:
                 metastring = f.readline()
-            file_info = File(file_path=file_path,guest_paths=metastring, file_name=file_name).get_all()
+            file_info = File(file_path=file_path, guest_paths=metastring, file_name=file_name).get_all()
             metastrings = metastring.split(",")
             file_info["process_path"] = metastrings[2]
             file_info["module_path"] = metastrings[3]
@@ -40,7 +40,7 @@ class ProcDump(Processing):
             type_strings = file_info["type"].split()
             if type_strings[0] == ("PE32+"):
                 file_info["cape_type"] += ": 64-bit "
-            elif type_strings[2] == ("PE32"):
+            elif type_strings[0] == ("PE32"):
                 file_info["cape_type"] += ": 32-bit "
             if type_strings[2] == ("(DLL)"):
                 file_info["cape_type"] += "DLL"
@@ -64,7 +64,7 @@ class ProcDump(Processing):
                     file_info["data"] = convert_to_printable(filedata[:buf] + " <truncated>")
                 else:
                     file_info["data"] = convert_to_printable(filedata)
-                
+
             procdump_files.append(file_info)
 
         return procdump_files

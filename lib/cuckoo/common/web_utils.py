@@ -6,12 +6,21 @@ import logging
 import hashlib
 import requests
 
+from random import choice
 _current_dir = os.path.abspath(os.path.dirname(__file__))
 CUCKOO_ROOT = os.path.normpath(os.path.join(_current_dir, "..", "..", ".."))
 sys.path.append(CUCKOO_ROOT)
 
-from django.shortcuts import redirect, render
 from django.http import HttpResponse
+from django.shortcuts import redirect, render
+from lib.cuckoo.common.config import Config
+from lib.cuckoo.core.rooter import _load_socks5_operational
+from lib.cuckoo.common.utils import get_ip_address
+
+
+cfg = Config("cuckoo")
+socks5_conf = Config("socks5")
+machinery = Config(cfg.cuckoo.machinery)
 
 hashes = {
     32: hashlib.md5,
@@ -20,8 +29,35 @@ hashes = {
     128: hashlib.sha512,
 }
 
+user_agents = [
+    "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+    "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko",
+    "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
+]
+
+try:
+   import pefile
+   HAVE_PEFILE = True
+except ImportError:
+   HAVE_PEFILE = False
+
 log = logging.getLogger(__name__)
 
+if cfg.cuckoo.machinery == "multi":
+    for mmachinery in Config("multi").multi.get("machinery").split(","):
+        try:
+            iface = getattr(Config(mmachinery), mmachinery).interface
+            break
+        except Exception as e:
+            log.error(e)
+else:
+    iface = getattr(machinery, cfg.cuckoo.machinery).interface
+
+try:
+    iface_ip = get_ip_address(iface)
+except Exception as e:
+    print(e)
+    iface_ip = "127.0.0.1"
 
 # Same jsonize function from api.py except we can now return Django
 # HttpResponse objects as well. (Shortcut to return errors)
@@ -47,7 +83,6 @@ def get_file_content(paths):
             break
     return content
 
-
 def get_magic_type(data):
     try:
         if os.path.exists(data):
@@ -59,8 +94,8 @@ def get_magic_type(data):
 
     return False
 
-
-def download_file(api, content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, gateway, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static, fhash=False):
+# Func to download from services
+def download_file(api, content, request, db, task_ids, url, params, headers, service, filename, package, timeout, options, priority, machine, clock, custom, memory, enforce_timeout, referrer, tags, orig_options, task_gateways, task_machines, static, fhash=False):
     onesuccess = False
     if not content:
         try:
@@ -123,3 +158,42 @@ def download_file(api, content, request, db, task_ids, url, params, headers, ser
         else:
             return "error", render(request, "error.html", {"error": "Provided hash not found on {}".format(service)})
     return "ok", task_ids
+
+def _download_file(route, url, options):
+    socks5s = _load_socks5_operational()
+    proxies = dict()
+    response = False
+    headers = {
+        "User-Agent": choice(user_agents)
+    }
+
+    print(socks5s)
+    if route:
+        if route == "tor":
+            proxies = {
+                "http": "socks5://127.0.0.1:9050",
+                "https": "socks5://127.0.0.1:9050",
+            }
+
+        elif route in socks5s:
+            proxies={
+                "http": "socks5://{}:{}".format(socks5s[route]["host"], socks5s[route]["port"]),
+                "https": "socks5://{}:{}".format(socks5s[route]["host"], socks5s[route]["port"]),
+            }
+
+
+    # load headers
+    for option in options.split(","):
+        if option.startswith("dne_"):
+            key, value = option.split("=")
+            headers[key.replace("dne_", "")] = value
+
+    try:
+        response = requests.get(url, headers=headers, proxies=proxies)
+        if response and response.status_code == 200:
+            return response.content
+    except Exception as e:
+        log.error(e)
+        print(e)
+
+    return response
