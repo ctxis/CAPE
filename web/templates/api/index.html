@@ -427,6 +427,36 @@ curl {{ config.api.url }}/api/files/get/sha256/[sha256 hash]/</pre></td>
             <tr class="collapse" id="capeconfig">
               <td colspan="5"><pre>curl {{ config.api.url }}/api/tasks/get/config/[task_id]/</pre></td>
             </tr>
+            <tr>
+                <td>CAPE Payload Files</td>
+                {% if config.payloadfiles.enabled %}
+                <td><span class="label label-success">Yes</span></td>
+                {% else %}
+                <td><span class="label label-danger">No</span></td>
+                {% endif %}
+                <td><ul><li>RPS: {{ config.payloadfiles.rps }}</li>
+                        <li>RPM: {{ config.payloadfiles.rpm }}</li></ul></td>
+                <td>View the CAPE extracted sample config. Return object will be JSON.</td>
+                <td><a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#capepayloadfiles">Example</a></td>
+            </tr>
+            <tr class="collapse" id="capepayloadfiles">
+              <td colspan="5"><pre>curl {{ config.api.url }}/api/tasks/get/payloadfiles/[task_id]/</pre></td>
+            </tr>
+            <tr>
+                <td>CAPE Procdump Files</td>
+                {% if config.procdumpfiles.enabled %}
+                <td><span class="label label-success">Yes</span></td>
+                {% else %}
+                <td><span class="label label-danger">No</span></td>
+                {% endif %}
+                <td><ul><li>RPS: {{ config.configfiles.rps }}</li>
+                        <li>RPM: {{ config.configfiles.rpm }}</li></ul></td>
+                <td>View the CAPE extracted sample config. Return object will be JSON.</td>
+                <td><a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#capeprocdumpfiles">Example</a></td>
+            </tr>
+            <tr class="collapse" id="capeprocdumpfiles">
+              <td colspan="5"><pre>curl {{ config.api.url }}/api/tasks/get/procdumpfiles/[task_id]/</pre></td>
+            </tr>
         </tbody>
     </table>
     {% else %}
