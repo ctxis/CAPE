@@ -59,11 +59,12 @@ if enabledconf["mongodb"]:
     import pymongo
     from bson.objectid import ObjectId
     #results_db = pymongo.MongoClient(settings.MONGO_HOST, settings.MONGO_PORT)[settings.MONGO_DB]
-    results_db = pymongo.MongoClient( settings.MONGO_HOST,
-                                  port=settings.MONGO_PORT,
-                                  username=settings.MONGO_USER,
-                                  password=settings.MONGO_PASS,
-                                  authSource=settings.MONGO_DB)[settings.MONGO_DB]
+    results_db = pymongo.MongoClient(
+        settings.MONGO_HOST,
+        port=settings.MONGO_PORT,
+        username=settings.MONGO_USER,
+        password=settings.MONGO_PASS,
+        authSource=settings.MONGO_DB)[settings.MONGO_DB]
 es_as_db = False
 if enabledconf["elasticsearchdb"]:
     from elasticsearch import Elasticsearch
@@ -72,11 +73,7 @@ if enabledconf["elasticsearchdb"]:
         es_as_db = True
     baseidx = Config("reporting").elasticsearchdb.index
     fullidx = baseidx + "-*"
-    es = Elasticsearch(hosts = [{
-             "host": settings.ELASTIC_HOST,
-             "port": settings.ELASTIC_PORT,
-         }],
-         timeout = 60)
+    es = Elasticsearch(hosts=[{"host": settings.ELASTIC_HOST, "port": settings.ELASTIC_PORT,}], timeout=60)
 
 maxsimilar = int(Config("reporting").malheur.maxsimilar)
 
@@ -123,11 +120,7 @@ def get_analysis_info(db, id=-1, task=None):
                )
 
     if es_as_db:
-        rtmp = es.search(
-                   index=fullidx,
-                   doc_type="analysis",
-                   q="info.id: \"%s\"" % str(new["id"])
-               )["hits"]["hits"]
+        rtmp = es.search(index=fullidx, doc_type="analysis", q="info.id: \"%s\"" % str(new["id"]) )["hits"]["hits"]
         if len(rtmp) > 1:
             rtmp = rtmp[-1]["_source"]
         elif len(rtmp) == 1:
@@ -764,38 +757,20 @@ def report(request, task_id):
         esdata = {"index": query["_index"], "id": query["_id"]}
         report["es"] = esdata
     if not report:
-        return render(request, "error.html",
-                                  {"error": "The specified analysis does not exist"})
+        return render(request, "error.html", {"error": "The specified analysis does not exist"})
 
-    # If compressed, decompress CAPE data
-    if "CAPE" in report and report["CAPE"]:
-        try:
-            report["CAPE"] = json.loads(zlib.decompress(report["CAPE"]))
-        except:
-            # In case compressresults processing module is not enabled
-            pass
+    if enabledconf["compressresults"]:
+        for keyword in ("CAPE", "procdump", "enhanced", "summary"):
+            # If compressed, decompress data
+            if report.get(keyword, False):
+                try:
+                    report[keyword] = json.loads(zlib.decompress(report[keyword]))
+                except Exception as e:
+                    pass
 
     children = 0
-    if "CAPE_children" in report:
-        children = report["CAPE_children"]
-
-    # If compressed, decompress procdump, behaviour analysis (enhanced & summary)
-    if "procdump" in report:
-        try:
-            report["procdump"] = json.loads(zlib.decompress(report["procdump"]))
-        except:
-            pass
-
-    if "enhanced" in report["behavior"]:
-        try:
-            report["behavior"]["enhanced"] = json.loads(zlib.decompress(report["behavior"]["enhanced"]))
-        except:
-            pass
-    if "summary" in report["behavior"]:
-        try:
-            report["behavior"]["summary"] = json.loads(zlib.decompress(report["behavior"]["summary"]))
-        except:
-            pass
+    if "CAPE_childrens" in report:
+        children = report["CAPE_childrens"]
 
     debugger_log_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "debugger")
     if os.path.exists(debugger_log_path):
