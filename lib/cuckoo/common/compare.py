@@ -2,10 +2,13 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
-import os
 import zlib
 import json
 import collections
+
+from lib.cuckoo.common.config import Config
+
+repconf = Config("reporting")
 
 def behavior_categories_percent(calls):
     catcounts = collections.defaultdict(lambda: 0)
@@ -127,24 +130,16 @@ def helper_summary_elastic(es_obj, tid1, tid2, idx):
 
 def get_similar_summary(left_sum, right_sum):
     ret = dict()
-    try:
-        left_sum["behavior"]["summary"] = json.loads(zlib.decompress(left_sum["behavior"]["summary"]))
-    except:
-        pass
 
-    try:
+    if repconf.compressresults.enabled:
+        left_sum["behavior"]["summary"] = json.loads(zlib.decompress(left_sum["behavior"]["summary"]))
         right_sum["behavior"]["summary"] = json.loads(zlib.decompress(right_sum["behavior"]["summary"]))
-    except:
-        pass
 
     for summary in left_sum["behavior"]["summary"]:
-        try:
-            for item in left_sum["behavior"]["summary"][summary]:
-                if item in right_sum["behavior"]["summary"][summary]:
-                    if summary not in ret.keys():
-                        ret[summary] = list()
-                    ret[summary].append(item)
-        except Exception as e:
-            pass
+        for item in left_sum["behavior"]["summary"][summary]:
+            if item in right_sum["behavior"]["summary"][summary]:
+                if summary not in ret.keys():
+                    ret[summary] = list()
+                ret[summary].append(item)
 
     return ret
