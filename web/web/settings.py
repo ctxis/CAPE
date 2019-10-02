@@ -27,8 +27,9 @@ if vpn.vpn.enabled:
 
 cuckoo_cfg = Config()
 repconf = Config("reporting")
-aux_cfg =  Config("auxiliary")
+aux_cfg = Config("auxiliary")
 vtdl_cfg = aux_cfg.virustotaldl
+zip_cfg = aux_cfg.zipped_download
 
 # Error handling for database backends
 if not repconf.mongodb.get("enabled") and not repconf.elasticsearchdb.get("enabled"):
@@ -68,6 +69,8 @@ VTDL_PATH = vtdl_cfg.get("dlpath", None)
 TEMP_PATH = cuckoo_cfg.cuckoo.get("tmppath", "/tmp")
 
 DLNEXEC = aux_cfg.dlnexec.get("enabled", False)
+
+ZIP_PWD = zip_cfg.get("zip_pwd", "infected")
 
 ipaddy_re = re.compile(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")
 
