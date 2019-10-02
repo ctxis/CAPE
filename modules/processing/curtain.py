@@ -108,6 +108,12 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Disables Windows Defender"] = [["DisableBehaviorMonitoring"],["DisableBlockAtFirstSeen"],["DisableIntrusionPreventionSystem"],["DisableIOAVProtection"],["DisablePrivacyMode"],["DisableRealtimeMonitoring"],["DisableScriptScanning"],["LowThreatDefaultAction"],["ModerateThreatDefaultAction"],["SevereThreatDefaultAction]"]]
 
+    behaviorCol["CobaltStrike"] = [["func_get_proc_address kernel32.dll VirtualAlloc", "$DoIt"]]
+
+    behaviorCol["Modifies PowerShell Logging"] = [["EnableScriptBlockInvocationLogging"], ["EnableScriptBlockLogging"]]
+
+    behaviorCol["Token Manipulation"] = [["CreateProcessWithTokenA"],["CreateProcessWithTokenW"],["AdjustTokenPrivileges"],["DuplicateToken"],["OpenProcessToken"],["WTSQueryUserToken"]]
+
     for event in entry:
         for message in entry[event]:
             message = entry[event][message]
