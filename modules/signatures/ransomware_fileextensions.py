@@ -84,6 +84,14 @@ class RansomwareExtensions(Signature):
             (".*\.serpent$", ["Serpent"]),
             (".*\.REVENGE$", ["Revenge"]),
             (".*\.RYK$", ["Ryuk"]),
+            (".*\.FTCODE$", ["FTCode"]),
+            (".*\.Lazarus$", ["Ouroboros"]),
+            (".*\.Lazarus+$", ["Ouroboros"]),
+            (".*\.KRONOS$", ["Ouroboros"]),
+            (".*\.Yatron$", ["Yatron"]),
+            (".*\.HCY$", ["HildaCrypt"]),
+            (".*\.guarded$", ["GarrantyDecrypt"]),
+            (".*\.lilocked$", ["Lilocked"]),
         ]
 
         for indicator in indicators:
