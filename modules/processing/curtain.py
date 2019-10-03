@@ -104,7 +104,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["AMSI Bypass"] = [["Management.Automation.AMSIUtils", "amsiInitFailed"], ["Expect100Continue"]]
 
-    behaviorCol["Clear Logs"] = [["GlobalSession.ClearLog"]]
+    behaviorCol["Clears Logs"] = [["GlobalSession.ClearLog"], ["Clear-EventLog"], ["Remove-EventLog"]]
 
     behaviorCol["Disables Windows Defender"] = [["DisableBehaviorMonitoring"],["DisableBlockAtFirstSeen"],["DisableIntrusionPreventionSystem"],["DisableIOAVProtection"],["DisablePrivacyMode"],["DisableRealtimeMonitoring"],["DisableScriptScanning"],["LowThreatDefaultAction"],["ModerateThreatDefaultAction"],["SevereThreatDefaultAction]"]]
 
