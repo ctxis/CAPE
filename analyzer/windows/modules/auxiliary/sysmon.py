@@ -40,7 +40,7 @@ class Sysmon(threading.Thread, Auxiliary):
         time.sleep(5)
 
         if os.path.exists("C:\\sysmon.xml"):
-            upload_to_host("C:\\sysmon.xml", "sysmon/%s.sysmon.xml" % time.time())
+            upload_to_host("C:\\sysmon.xml", "sysmon/%s.sysmon.xml" % time.time(), False)
         else:
             log.error("Sysmon log file not found in guest machine")
 
