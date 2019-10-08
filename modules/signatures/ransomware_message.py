@@ -131,3 +131,27 @@ class RansomwareMessage(Signature):
             return True
 
         return False
+
+class RansomwareMessageMultipleLocations(Signature):
+    name = "ransomware_message_multiple_locations"
+    description = "Drops the same text/html file across a large number of filesystem locations commonly seen in ransomware"
+    severity = 3
+    confidence = 50
+    categories = ["ransomware"]
+    authors = ["Kevin Ross"]
+    minimum = "1.3"
+    evented = True
+    match = True
+    ttp = ["T1486"]
+
+    def run(self):
+        ret = False
+        if "dropped" in self.results:
+            for dropped in self.results["dropped"]:
+                filename = dropped["name"]
+                if "ASCII text" in dropped["type"] or filename.endswith(".txt") or filename.endswith(".html"):
+                    if len(dropped["guest_paths"]) > 50:
+                        ret = True
+                        self.data.append({"filename" : filename})
+
+        return ret
