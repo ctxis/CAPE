@@ -149,9 +149,9 @@ class RansomwareMessageMultipleLocations(Signature):
         if "dropped" in self.results:
             for dropped in self.results["dropped"]:
                 filename = dropped["name"]
-                if "ASCII text" in dropped["type"] or filename.endswith(".txt") or filename.endswith(".html"):
+                if "ASCII text" in dropped["type"] or filename.endswith((".txt", ".html")):
                     if len(dropped["guest_paths"]) > 50:
                         ret = True
-                        self.data.append({"filename" : filename})
+                        self.data.append({"filename": filename})
 
         return ret
