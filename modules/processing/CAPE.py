@@ -358,8 +358,8 @@ class CAPE(Processing):
                     ConfigItem = "Gate URL " + str(index+1)
                     cape_config["cape_config"].update({ConfigItem: [value]})
                 append_file = False
-            # QakBot
 
+            # QakBot
             qakbot_map = {
                 "10": "Botnet name",
                 "11": "Number of C2 servers",
@@ -604,7 +604,7 @@ class CAPE(Processing):
                     ssdeep_grade = pydeep.compare(file_info["ssdeep"], cape_file["ssdeep"])
                     if ssdeep_grade >= ssdeep_threshold:
                         append_file = False
-                if file_info.get("entrypoint", False) and file.info.get("ep_bytes", False):
+                if file_info.get("entrypoint", False) and file_info.get("ep_bytes", False):
                     if file_info["entrypoint"] == cape_file.get("entrypoint", False) and \
                        file_info["ep_bytes"] == cape_file.get("ep_bytes", False):
                            append_file = False
@@ -630,7 +630,7 @@ class CAPE(Processing):
                 for dir_name, dir_names, file_names in os.walk(getattr(self, folder)):
                     for file_name in file_names:
                         file_path = os.path.join(dir_name, file_name)
-                            # We want to exclude duplicate files from display in ui
+                        # We want to exclude duplicate files from display in ui
                         if folder not in ("procdump_path", "dropped_path") and len(file_name) <= 64:
                             self.process_file(file_path, CAPE_output, True)
                         else:
