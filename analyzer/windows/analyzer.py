@@ -1252,7 +1252,7 @@ class Analyzer:
         # for a second to ensure they see it before they're terminated
         KERNEL32.Sleep(1000)
 
-        # Tell all processes to flush their logs and exit
+        # Tell all processes to complete their monitoring
         if not kernel_analysis:
             for pid in PROCESS_LIST:
                 proc = Process(pid=pid)
@@ -1265,7 +1265,7 @@ class Analyzer:
                     log.info("Terminate event set for process %d.", proc.pid)
                 if self.config.terminate_processes:
                     # Try to terminate remaining active processes.
-                    # (This setting may render full system memory dumps less useful.)
+                    # (This setting may render full system memory dumps less useful!)
                     if not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
                         log.info("Terminating process %d before shutdown.", proc.pid)
                         proc_counter = 0
