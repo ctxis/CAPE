@@ -31,7 +31,7 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-SCHEMA_VERSION = "36926b59dfbb"
+SCHEMA_VERSION = "30d0230de7cd"
 TASK_PENDING = "pending"
 TASK_RUNNING = "running"
 TASK_COMPLETED = "completed"
@@ -260,7 +260,7 @@ class Task(Base):
     machine = Column(String(255), nullable=True)
     package = Column(String(255), nullable=True)
     tags = relationship("Tag", secondary=tasks_tags, backref="tasks", lazy="subquery")
-    options = Column(String(255), nullable=True)
+    options = Column(String(1024), nullable=True)
     platform = Column(String(255), nullable=True)
     memory = Column(Boolean, nullable=False, default=False)
     enforce_timeout = Column(Boolean, nullable=False, default=False)
