@@ -394,7 +394,7 @@ class Curtain(Processing):
         curtLog = os.path.join(self.analysis_path, "curtain")
         if not os.path.exists(curtLog):
             return
-        curtLog = os.listdir(curtLog)
+        curtLog = [f for f in os.listdir(curtLog) if not f.endswith("_info.txt")]
         curtLog.sort()
 
         root = False
