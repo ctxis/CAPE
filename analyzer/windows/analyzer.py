@@ -1174,6 +1174,7 @@ class Analyzer:
             pid_check = False
 
         time_counter = 0
+        time_start = datetime.now()
         kernel_analysis = self.config.get_options().get("kernel_analysis", False)
 
         if kernel_analysis != False:
@@ -1182,8 +1183,8 @@ class Analyzer:
         emptytime = None
 
         while True:
-            time_counter += 1
-            if time_counter >= int(self.config.timeout):
+            time_counter = datetime.now() - time_start
+            if time_counter.total_seconds() >= int(self.config.timeout):
                 log.info("Analysis timeout hit (%d seconds), terminating analysis.", self.config.timeout)
                 ANALYSIS_TIMED_OUT = True
                 break
