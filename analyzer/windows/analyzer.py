@@ -645,6 +645,7 @@ class PipeHandler(Thread):
                             # make sure process is aware of the termination
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
+                            PROCESS_LIST.remove(process_id)
 
                     PROCESS_LOCK.release()
                 # Handle notification of capemon loading in a process
