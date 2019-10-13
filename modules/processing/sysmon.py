@@ -10,6 +10,15 @@ log = logging.getLogger(__name__)
 __author__  = "@FernandoDoming"
 __version__ = "1.0.0"
 
+def parseXmlToJson(xml):
+    response = {}
+    for child in list(xml):
+        if len(list(child)) > 0:
+            response[child.tag] = parseXmlToJson(child)
+        else:
+            response[child.tag] = child.text or ''
+    return response
+
 class Sysmon(Processing):
 
     def remove_noise(self, data):
@@ -40,7 +49,7 @@ class Sysmon(Processing):
         self.key = "sysmon"
 
         # Determine oldest sysmon log and remove the rest
-        lastlog = os.listdir("%s/sysmon/" % self.analysis_path)
+        lastlog = [f for f in os.listdir("%s/sysmon/" % self.analysis_path) if not f.endswith("_info.txt")]
         lastlog.sort()
         lastlog = lastlog[-1]
         # Leave only the most recent file
@@ -57,11 +66,21 @@ class Sysmon(Processing):
         )
 
         data = None
-        try:
-            xml = open("%s/sysmon/sysmon.xml" % self.analysis_path).read()
-            xml = xml.decode("latin1").encode("utf8")
-            data = xmltodict.parse(xml)["Events"]["Event"]
-        except Exception as e:
-            raise CuckooProcessingError("Failed parsing sysmon.xml: %s" % e.message)
 
-        return self.remove_noise(data)
+        try:
+            tree = ET.parse("%s/sysmon/sysmon.xml" % self.analysis_path)
+            root = tree.getroot()
+            data = parseXmlToJson(root.attrib)
+        except Exception as e:
+            raise CuckooProcessingError("Failed parsing sysmon.xml with ET: %s" % e.message)
+            pass
+
+        if root is False:
+            return
+
+        data = self.remove_noise(data)
+
+        log.info(data)
+
+        return data
+ 

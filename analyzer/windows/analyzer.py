@@ -645,6 +645,7 @@ class PipeHandler(Thread):
                             # make sure process is aware of the termination
                             KERNEL32.SetEvent(event_handle)
                             KERNEL32.CloseHandle(event_handle)
+                            PROCESS_LIST.remove(process_id)
 
                     PROCESS_LOCK.release()
                 # Handle notification of capemon loading in a process
@@ -1173,6 +1174,7 @@ class Analyzer:
             pid_check = False
 
         time_counter = 0
+        time_start = datetime.now()
         kernel_analysis = self.config.get_options().get("kernel_analysis", False)
 
         if kernel_analysis != False:
@@ -1181,8 +1183,8 @@ class Analyzer:
         emptytime = None
 
         while True:
-            time_counter += 1
-            if time_counter >= int(self.config.timeout):
+            time_counter = datetime.now() - time_start
+            if time_counter.total_seconds() >= int(self.config.timeout):
                 log.info("Analysis timeout hit (%d seconds), terminating analysis.", self.config.timeout)
                 ANALYSIS_TIMED_OUT = True
                 break
@@ -1250,7 +1252,7 @@ class Analyzer:
         # for a second to ensure they see it before they're terminated
         KERNEL32.Sleep(1000)
 
-        # Tell all processes to flush their logs and exit
+        # Tell all processes to complete their monitoring
         if not kernel_analysis:
             for pid in PROCESS_LIST:
                 proc = Process(pid=pid)
@@ -1263,7 +1265,7 @@ class Analyzer:
                     log.info("Terminate event set for process %d.", proc.pid)
                 if self.config.terminate_processes:
                     # Try to terminate remaining active processes.
-                    # (This setting may render full system memory dumps less useful.)
+                    # (This setting may render full system memory dumps less useful!)
                     if not pid in CRITICAL_PROCESS_LIST and not proc.is_critical():
                         log.info("Terminating process %d before shutdown.", proc.pid)
                         proc_counter = 0

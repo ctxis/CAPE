@@ -230,7 +230,7 @@ class Process:
         """
         log.info("Starting kernel analysis")
         log.info("Installing driver")
-        if is_os_64bit(): 
+        if is_os_64bit():
             sys_file = os.path.join(os.getcwd(), "dll", "zer0m0n_x64.sys")
         else:
             sys_file = os.path.join(os.getcwd(), "dll", "zer0m0n.sys")
@@ -312,7 +312,7 @@ class Process:
                     pid_vboxtray = proc_info.th32ProcessID
                     log.info("VBoxTray.exe found !")
                     flag = 0
-                flag = KERNEL32.Process32Next(snapshot, byref(proc_info)) 
+                flag = KERNEL32.Process32Next(snapshot, byref(proc_info))
             bytes_returned = c_ulong(0)
             msg = str(self.pid)+"_"+str(ppid)+"_"+str(os.getpid())+"_"+str(pi.dwProcessId)+"_"+str(pid_vboxservice)+"_"+str(pid_vboxtray)+'\0'
             KERNEL32.DeviceIoControl(hFile, IOCTL_PID, msg, len(msg), None, 0, byref(bytes_returned), None)
@@ -408,17 +408,26 @@ class Process:
             self.open()
 
         event_name = TERMINATE_EVENT + str(self.pid)
-        event_handle = KERNEL32.OpenEventA(EVENT_MODIFY_STATE, False, event_name)
-        if event_handle:
+        self.terminate_event_handle = KERNEL32.OpenEventA(EVENT_MODIFY_STATE, False, event_name)
+        if self.terminate_event_handle:
             # make sure process is aware of the termination
-            KERNEL32.SetEvent(event_handle)
-            if KERNEL32.WaitForSingleObject(event_handle, 5000) == 0x00000080:   #WAIT_ABANDONED
-                log.error("Wait for reply to terminate_event timed out for pid %d", self.pid)
-            else:
-                log.info("Successfully received reply to terminate_event, pid %d", self.pid)
-            KERNEL32.CloseHandle(event_handle)
+            KERNEL32.SetEvent(self.terminate_event_handle)
+            log.info("Terminate event set for process %d", self.pid)
+            KERNEL32.CloseHandle(self.terminate_event_handle)
         else:
-            log.error("Failed to open terminate event for pid %d", self.pid)
+            log.error("Failed to open terminate event for process %d", self.pid)
+            return
+
+        # recreate event for monitor 'reply'
+        self.terminate_event_handle = KERNEL32.CreateEventA(0, False, False, event_name)
+        if not self.terminate_event_handle:
+            log.error("Failed to create terminate-reply event for process %d", self.pid)
+            return
+
+        KERNEL32.WaitForSingleObject(self.terminate_event_handle, 0xFFFFFFFF)
+        log.info("Termination confirmed for process %d", self.pid)
+        KERNEL32.CloseHandle(self.terminate_event_handle)
+        return
 
     def terminate(self):
         """Terminate process.

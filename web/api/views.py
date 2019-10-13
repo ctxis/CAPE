@@ -29,15 +29,16 @@ from lib.cuckoo.common.quarantine import unquarantine
 from lib.cuckoo.common.saztopcap import saz_to_pcap
 from lib.cuckoo.common.exceptions import CuckooDemuxError
 from lib.cuckoo.common.utils import store_temp_file, delete_folder, sanitize_filename, generate_fake_name
-from lib.cuckoo.common.utils import convert_to_printable, validate_referrer
+from lib.cuckoo.common.utils import convert_to_printable, validate_referrer, get_user_filename, get_options
 from lib.cuckoo.common.web_utils import _download_file
 from lib.cuckoo.core.database import Database, Task
 from lib.cuckoo.core.database import TASK_REPORTED
+from lib.cuckoo.common.objects import File
 from lib.cuckoo.common.web_utils import download_file, get_file_content, jsonize
 
 # Config variables
 apiconf = Config("api")
-limiter = apiconf.api.get("ratelimit")
+limiter = apiconf.api.get("ratelimit", False)
 repconf = Config("reporting")
 
 if repconf.mongodb.enabled:
@@ -414,6 +415,13 @@ def tasks_create_file(request):
                     except:
                         pass
 
+                    try:
+                        File(path).get_type()
+                    except TypeError:
+                        resp = {"error": True,
+                            "error_value": "Error submitting file - bad file type"}
+                        return jsonize(resp, response=True)
+
                 else:
                     path = tmp_path
 
@@ -487,6 +495,13 @@ def tasks_create_file(request):
                     os.remove(tmp_path)
                 except:
                     pass
+
+                try:
+                    File(path).get_type()
+                except TypeError:
+                    resp = {"error": True,
+                            "error_value": "Error submitting file - bad file type"}
+                    return jsonize(resp, response=True)
             else:
                 path = tmp_path
 
@@ -709,6 +724,11 @@ def tasks_vtdl(request):
         task_machines = []
         vm_list = []
         task_ids = []
+        opt_apikey = False
+
+        opts = get_options(options)
+        if opts:
+            opt_apikey = opts.get("apikey", False)
 
         for vm in db.list_machines():
             vm_list.append(vm.label)
@@ -739,8 +759,10 @@ def tasks_vtdl(request):
             resp = {"error": True, "error_value": "vtdl (hash list) value is empty"}
             return jsonize(resp, response=True)
 
-        if (not settings.VTDL_PRIV_KEY and not settings.VTDL_INTEL_KEY) or not settings.VTDL_PATH:
-            resp = {"error": True, "error_value": "You specified VirusTotal but must edit the file and specify your VTDL_PRIV_KEY or VTDL_INTEL_KEY variable and VTDL_PATH base directory"}
+        if (not settings.VTDL_PRIV_KEY and not settings.VTDL_INTEL_KEY) or not settings.VTDL_PATH or not opt_apikey:
+            resp = {"error": True, "error_value": "You specified VirusTotal but must edit the file and specify your "
+                                                  "VTDL_PRIV_KEY or VTDL_INTEL_KEY variable and VTDL_PATH "
+                                                  "base directory"}
             return jsonize(resp, response=True)
         else:
             base_dir = tempfile.mkdtemp(prefix='cuckoovtdl', dir=settings.VTDL_PATH)
@@ -763,7 +785,9 @@ def tasks_vtdl(request):
                 if paths:
                     content = get_file_content(paths)
                 if not content:
-                    if settings.VTDL_PRIV_KEY:
+                    if opt_apikey:
+                        headers = {'x-apikey': opt_apikey}
+                    elif settings.VTDL_PRIV_KEY:
                         headers = {'x-apikey': settings.VTDL_PRIV_KEY}
                     elif settings.VTDL_INTEL_KEY:
                         headers = {'x-apikey': settings.VTDL_INTEL_KEY}
@@ -1472,8 +1496,10 @@ def tasks_iocs(request, task_id, detail=None):
     if "target" in buf.keys():
         data["target"] = buf["target"]
         if data["target"]["category"] == "file":
-            del data["target"]["file"]["path"]
-            del data["target"]["file"]["guest_paths"]
+            if "path" in data["target"]["file"]:
+                del data["target"]["file"]["path"]
+            if "guest_paths" in data["target"]["file"]:
+                del data["target"]["file"]["guest_paths"]
     data["network"] = {}
     if "network" in buf.keys() and buf["network"]:
         data["network"]["traffic"] = {}
@@ -1599,6 +1625,8 @@ def tasks_iocs(request, task_id, detail=None):
             data["files"]["read"] = buf["behavior"]["summary"]["read_files"]
         if "read_keys" in buf["behavior"]["summary"]:
             data["registry"]["read"] = buf["behavior"]["summary"]["read_keys"]
+        if "resolved_apis" in buf["behavior"]["summary"]:
+            data["resolved_apis"] = buf["behavior"]["summary"]["resolved_apis"]
 
     if buf["network"] and "http" in buf["network"]:
         data["network"]["http"] = {}
@@ -1804,7 +1832,6 @@ if apiconf.rollingsuri.get("enabled"):
     raterps = apiconf.rollingsuri.get("rps")
     raterpm = apiconf.rollingsuri.get("rpm")
     rateblock = True
-
 @ratelimit(key="ip", rate=raterps, block=rateblock)
 @ratelimit(key="ip", rate=raterpm, block=rateblock)
 
@@ -1839,7 +1866,6 @@ if apiconf.rollingshrike.get("enabled"):
     raterps = apiconf.rollingshrike.get("rps")
     raterpm = apiconf.rollingshrike.get("rpm")
     rateblock = True
-
 @ratelimit(key="ip", rate=raterps, block=rateblock)
 @ratelimit(key="ip", rate=raterpm, block=rateblock)
 

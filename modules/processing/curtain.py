@@ -104,7 +104,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["AMSI Bypass"] = [["Management.Automation.AMSIUtils", "amsiInitFailed"], ["Expect100Continue"]]
 
-    behaviorCol["Clear Logs"] = [["GlobalSession.ClearLog"]]
+    behaviorCol["Clears Logs"] = [["GlobalSession.ClearLog"], ["Clear-EventLog"], ["Remove-EventLog"]]
 
     behaviorCol["Disables Windows Defender"] = [["DisableBehaviorMonitoring"],["DisableBlockAtFirstSeen"],["DisableIntrusionPreventionSystem"],["DisableIOAVProtection"],["DisablePrivacyMode"],["DisableRealtimeMonitoring"],["DisableScriptScanning"],["LowThreatDefaultAction"],["ModerateThreatDefaultAction"],["SevereThreatDefaultAction]"]]
 
@@ -113,6 +113,8 @@ def buildBehaviors(entry, behaviorTags):
     behaviorCol["Modifies PowerShell Logging"] = [["EnableScriptBlockInvocationLogging"], ["EnableScriptBlockLogging"]]
 
     behaviorCol["Token Manipulation"] = [["CreateProcessWithTokenA"],["CreateProcessWithTokenW"],["AdjustTokenPrivileges"],["DuplicateToken"],["OpenProcessToken"],["WTSQueryUserToken"]]
+
+    behaviorCol["Modifies Shadowcopy"] = [["Win32_Shadowcopy"]]
 
     for event in entry:
         for message in entry[event]:
@@ -392,7 +394,7 @@ class Curtain(Processing):
         curtLog = os.path.join(self.analysis_path, "curtain")
         if not os.path.exists(curtLog):
             return
-        curtLog = os.listdir(curtLog)
+        curtLog = [f for f in os.listdir(curtLog) if not f.endswith("_info.txt")]
         curtLog.sort()
 
         root = False

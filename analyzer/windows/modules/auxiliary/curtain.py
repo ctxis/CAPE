@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 __author__  = "Jeff White [karttoon] @noottrak"
 __email__   = "jwhite@paloaltonetworks.com"
-__version__ = "1.0.3"
-__date__    = "21FEB2018"
+__version__ = "1.0.4"
+__date__    = "11OCT2019"
 
 class Curtain(Thread, Auxiliary):
 
@@ -22,7 +22,6 @@ class Curtain(Thread, Auxiliary):
         Auxiliary.__init__(self, options, config)
         self.config = Config(cfg="analysis.conf")
         self.enabled = self.config.curtain
-        self.do_run = self.enabled
         self.startupinfo = subprocess.STARTUPINFO()
         self.startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
@@ -31,8 +30,6 @@ class Curtain(Thread, Auxiliary):
             subprocess.call(["C:\\Windows\\System32\\wevtutil.exe", "query-events", "microsoft-windows-powershell/operational", "/rd:true", "/e:root", "/format:xml", "/uni:true"], startupinfo=self.startupinfo,  stdout=open("C:\\curtain.log", "w"))
         except Exception as e:
             log.error("Curtain - Error collecting PowerShell events - %s " % e)
-
-        time.sleep(5)
 
         if os.path.exists("C:\\curtain.log"):
             upload_to_host("C:\\curtain.log", "curtain/%s.curtain.log" % time.time(), False)
@@ -48,15 +45,11 @@ class Curtain(Thread, Auxiliary):
     def run(self):
         if self.enabled:
             self.clearLogs()
-            while self.do_run:
-                self.collectLogs()
-                time.sleep(15)
             return True
         return False
 
     def stop(self):
         if self.enabled:
-            self.do_run = False
             self.collectLogs()
             return True
         return False
