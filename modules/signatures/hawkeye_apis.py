@@ -120,6 +120,8 @@ class HawkEye_APIs(Signature):
             self.badness += 2
         if self.check_file(pattern=".*\\\\holdermail.txt$", regex=True):
             self.badness += 4
+        if self.check_file(pattern=".*\\\\holderwb.txt$", regex=True):
+            self.badness += 4
         if self.evmatch:
             self.badness += 5
         if self.badness > 5:
