@@ -116,7 +116,7 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Invokes C# .NET Assemblies"] = [["Add-Type"]]
 
-    behaviorCol[""] = [["Win32_Shadowcopy"]]
+    behaviorCol["Modifies Shadowcopy"] = [["Win32_Shadowcopy"]]
 
     for event in entry:
         for message in entry[event]:
