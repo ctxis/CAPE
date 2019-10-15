@@ -114,7 +114,9 @@ def buildBehaviors(entry, behaviorTags):
 
     behaviorCol["Token Manipulation"] = [["CreateProcessWithTokenA"],["CreateProcessWithTokenW"],["AdjustTokenPrivileges"],["DuplicateToken"],["OpenProcessToken"],["WTSQueryUserToken"]]
 
-    behaviorCol["Modifies Shadowcopy"] = [["Win32_Shadowcopy"]]
+    behaviorCol["Invokes C# .NET Assemblies"] = [["Add-Type"]]
+
+    behaviorCol[""] = [["Win32_Shadowcopy"]]
 
     for event in entry:
         for message in entry[event]:
