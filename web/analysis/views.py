@@ -769,8 +769,8 @@ def report(request, task_id):
                     pass
 
     children = 0
-    if "CAPE_childrens" in report:
-        children = report["CAPE_childrens"]
+    if "CAPE_children" in report:
+        children = report["CAPE_children"]
 
     debugger_log_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "debugger")
     if os.path.exists(debugger_log_path):
