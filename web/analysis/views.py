@@ -211,11 +211,11 @@ def index(request, page=1):
     tasks_files_number += db.count_matching_tasks(category="static", not_status=TASK_PENDING) or 0
     tasks_urls_number = db.count_matching_tasks(category="url", not_status=TASK_PENDING) or 0
     tasks_pcaps_number = db.count_matching_tasks(category="pcap", not_status=TASK_PENDING) or 0
-    if pages_files_num:
+    if tasks_files_number:
         pages_files_num = tasks_files_number / TASK_LIMIT + 1
-    if pages_urls_num:
+    if tasks_urls_number:
         pages_urls_num = tasks_urls_number / TASK_LIMIT + 1
-    if pages_pcaps_num:
+    if tasks_pcaps_number:
         pages_pcaps_num = tasks_pcaps_number / TASK_LIMIT + 1
     files_pages = []
     urls_pages = []
@@ -769,8 +769,8 @@ def report(request, task_id):
                     pass
 
     children = 0
-    if "CAPE_childrens" in report:
-        children = report["CAPE_childrens"]
+    if "CAPE_children" in report:
+        children = report["CAPE_children"]
 
     debugger_log_path = os.path.join(CUCKOO_ROOT, "storage", "analyses", str(task_id), "debugger")
     if os.path.exists(debugger_log_path):

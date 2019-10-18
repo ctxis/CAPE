@@ -17,6 +17,7 @@ rule TrickBot
         $code4 = {53 8B 5C 24 18 55 8B 6C 24 10 56 8B 74 24 18 8D 9B 00 00 00 00 8B C1 33 D2 F7 F3 41 8A 04 2A 30 44 31 FF 3B CF 75 EE 5E 5D 5B 5F C3}
         $code5 = {50 0F 31 C7 44 24 04 01 00 00 00 8D 0C C5 00 00 00 00 F7 C1 F8 07 00 00 74 1B 48 C1 E2 20 48 8B C8 48 0B CA 0F B6 C9 C1 E1 03 F7 D9 C1 64 24 04 10 FF C1 75 F7 59 C3}
         $code6 = {53 8B 5C 24 0C 56 8B 74 24 14 B8 ?? ?? ?? ?? F7 E9 C1 FA 02 8B C2 C1 E8 1F 03 C2 6B C0 16 8B D1 2B D0 8A 04 1A 30 04 31 41 3B CF 75 DD 5E 5B 5F C3}
+        $code7 = {B8 ?? ?? 00 00 85 C9 74 32 BE ?? ?? ?? ?? BA ?? ?? ?? ?? BF ?? ?? ?? ?? BB ?? ?? ?? ?? 03 F2 8B 2B 83 C3 04 33 2F 83 C7 04 89 29 83 C1 04 3B DE 0F 43 DA}
     condition:
         any of ($ua*) or all of ($str*) or any of ($code*)
 }

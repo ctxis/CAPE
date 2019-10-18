@@ -15,9 +15,8 @@ class TrickBot(Package):
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "DumpOnAPI.dll"
-        self.options["dll_64"] = "DumpOnAPI_x64.dll"
-        self.options["dump-on-api"] = "SetUnhandledExceptionFilter"
+        self.options["dump-on-api"] = "RtlAddVectoredExceptionHandler"
+        self.options["procdump"] = "0"
 
     def start(self, path):
         args = self.options.get("arguments")
