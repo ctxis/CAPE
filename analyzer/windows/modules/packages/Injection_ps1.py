@@ -2,6 +2,8 @@
 # This file is part of Cuckoo Sandbox - http://www.cuckoosandbox.org
 # See the file 'docs/LICENSE' for copying permission.
 
+import os
+
 from lib.common.abstracts import Package
 
 class Injection_PS1(Package):
@@ -25,4 +27,3 @@ class Injection_PS1(Package):
 
         args = "-NoProfile -ExecutionPolicy bypass -File \"{0}\"".format(path)
         return self.execute(powershell, args, path)
-        
