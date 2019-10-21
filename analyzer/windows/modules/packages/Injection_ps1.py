@@ -3,6 +3,7 @@
 # See the file 'docs/LICENSE' for copying permission.
 
 import os
+
 from lib.common.abstracts import Package
 
 class Injection_PS1(Package):
