@@ -474,6 +474,16 @@ def mcafee_unquarantine(f):
                     # currently we're only returning the first found file in the quarantine file
                     return store_temp_file(decoded[item], malname)
 
+def sentinelone_unquarantine(f):
+    base = os.path.basename(f)
+    realbase, ext = os.path.splitext(base)
+
+    with open(f, "rb") as quarfile:
+        qdata = bytearray_xor(bytearray(quarfile.read()), 0xff)
+        # can't do much about the name for this case
+        return store_temp_file(qdata, realbase)
+
+
 def forefront_unquarantine(f):
     base = os.path.basename(f)
     realbase, ext = os.path.splitext(base)
@@ -492,6 +502,12 @@ def unquarantine(f):
     if ext.lower() == ".bup" or (HAVE_OLEFILE and olefile.isOleFile(f)):
         try:
             return mcafee_unquarantine(f)
+        except:
+            pass
+
+    if ext.lower() == ".mal":
+        try:
+            return sentinelone_unquarantine(f)
         except:
             pass
 
