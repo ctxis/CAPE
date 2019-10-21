@@ -1103,6 +1103,76 @@ class ProcessTree:
 
         return self.tree
 
+
+class EncryptedBuffers:
+    """Generates summary information."""
+
+    key = "encryptedbuffers"
+
+    def __init__(self):
+        self.bufs = []
+
+    def get_argument(self, call, argname, strip=False):
+        for arg in call["arguments"]:
+            if arg["name"] == argname:
+                if strip:
+                    return arg["value"].strip()
+                else:
+                    return arg["value"]
+        return None
+
+    def get_raw_argument(self, call, argname):
+        for arg in call["arguments"]:
+            if arg["name"] == argname:
+                return arg["raw_value"]
+        return None
+
+    def event_apicall(self, call, process):
+        """Generate processes list from streamed calls/processes.
+        @return: None.
+        """
+
+        if call["api"].startswith("SslEncryptPacket"):
+            buf = self.get_argument(call, "Buffer", strip=True)
+            bufsize = self.get_argument(call, "BufferSize")
+            if buf and buf not in self.bufs:
+                self.bufs.append(dict(
+                    process_name=process["process_name"],
+                    pid=process["process_id"],
+                    api_call="SslEncryptPacket",
+                    buffer=buf,
+                    buffer_size=bufsize,
+                ))
+
+        if call["api"].startswith("CryptEncrypt"):
+            key = self.get_argument(call, "CryptKey")
+            buf = self.get_argument(call, "Buffer", strip=True)
+            if buf and buf not in self.bufs:
+                self.bufs.append(dict(
+                    process_name=process["process_name"],
+                    pid=process["process_id"],
+                    api_call="CryptEncrypt",
+                    buffer=buf,
+                    crypt_key=key,
+                ))
+
+        if call["api"].startswith("CryptEncryptMessage"):
+            buf = self.get_argument(call, "Buffer", strip=True)
+            if buf and buf not in self.bufs:
+                self.bufs.append(dict(
+                    process_name=process["process_name"],
+                    pid=process["process_id"],
+                    api_call="CryptEncryptMessage",
+                    buffer=buf,
+                ))
+
+    def run(self):
+        """Get registry keys, mutexes and files.
+        @return: Summary of keys, read keys, written keys, mutexes and files.
+        """
+        return self.bufs
+
+
 class BehaviorAnalysis(Processing):
     """Behavior Analyzer."""
 
@@ -1120,6 +1190,7 @@ class BehaviorAnalysis(Processing):
             ProcessTree(),
             Summary(),
             Enhanced(),
+            EncryptedBuffers(),
         ]
 
         # Iterate calls and tell interested signatures about them
