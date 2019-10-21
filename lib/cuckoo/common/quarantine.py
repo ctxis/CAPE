@@ -127,7 +127,7 @@ def sep_unquarantine(f):
         # in a future commit
         return None
 
-    # Space exists in the header for up to 384 characters of the original ASCII filename 
+    # Space exists in the header for up to 384 characters of the original ASCII filename
     origname = str(bytes(data[4:388])).rstrip('\0')
     origname = os.path.basename(origname)
 
@@ -483,7 +483,6 @@ def sentinelone_unquarantine(f):
         # can't do much about the name for this case
         return store_temp_file(qdata, realbase)
 
-
 def forefront_unquarantine(f):
     base = os.path.basename(f)
     realbase, ext = os.path.splitext(base)
@@ -492,6 +491,12 @@ def forefront_unquarantine(f):
         qdata = bytearray_xor(bytearray(quarfile.read()), 0xff)
         # can't do much about the name for this case
         return store_temp_file(qdata, base)
+
+func_map = {
+    ".quar": mbam_unquarantine,
+    ".mal": sentinelone_unquarantine,
+    ".but": mcafee_unquarantine,
+}
 
 def unquarantine(f):
     base = os.path.basename(f)
@@ -505,44 +510,17 @@ def unquarantine(f):
         except:
             pass
 
-    if ext.lower() == ".mal":
+    if ext.lower() in func_map:
         try:
-            return sentinelone_unquarantine(f)
-        except:
+            return func_map[ext.lower()](f)
+        except Exception as e:
+            print(e)
             pass
 
-    if ext.lower() == ".quar":
+    for func in (kav_unquarantine, trend_unquarantine, sep_unquarantine, mse_unquarantine, forefront_unquarantine):
         try:
-            return mbam_unquarantine(f)
+            quarfile = func(f)
+            if quarfile:
+                return quarfile
         except:
             pass
-
-    try:
-        quarfile = kav_unquarantine(f)
-        if quarfile:
-            return quarfile
-    except:
-        pass
-    
-    try:
-        quarfile = trend_unquarantine(f)
-        if quarfile:
-            return quarfile
-    except:
-        pass
-
-    try:
-        quarfile = sep_unquarantine(f)
-        if quarfile:
-            return quarfile
-    except:
-        pass
-
-    try:
-        quarfile = mse_unquarantine(f)
-        if quarfile:
-            return quarfile
-    except:
-        pass
-
-    return forefront_unquarantine(f)
