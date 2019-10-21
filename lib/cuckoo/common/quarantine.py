@@ -474,16 +474,11 @@ def mcafee_unquarantine(f):
                     # currently we're only returning the first found file in the quarantine file
                     return store_temp_file(decoded[item], malname)
 
-def sentinelone_unquarantine(f):
-    base = os.path.basename(f)
-    realbase, ext = os.path.splitext(base)
-
-    with open(f, "rb") as quarfile:
-        qdata = bytearray_xor(bytearray(quarfile.read()), 0xff)
-        # can't do much about the name for this case
-        return store_temp_file(qdata, realbase)
-
-def forefront_unquarantine(f):
+def xorff_unquarantine(f):
+    """
+       sentinelone
+       forefront
+    """
     base = os.path.basename(f)
     realbase, ext = os.path.splitext(base)
 
@@ -494,7 +489,7 @@ def forefront_unquarantine(f):
 
 func_map = {
     ".quar": mbam_unquarantine,
-    ".mal": sentinelone_unquarantine,
+    ".mal": xorff_unquarantine,
     ".but": mcafee_unquarantine,
 }
 
@@ -517,7 +512,7 @@ def unquarantine(f):
             print(e)
             pass
 
-    for func in (kav_unquarantine, trend_unquarantine, sep_unquarantine, mse_unquarantine, forefront_unquarantine):
+    for func in (kav_unquarantine, trend_unquarantine, sep_unquarantine, mse_unquarantine, xorff_unquarantine):
         try:
             quarfile = func(f)
             if quarfile:
