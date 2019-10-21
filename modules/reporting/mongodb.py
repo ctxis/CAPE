@@ -51,11 +51,16 @@ class MongoDB(Report):
         except ConnectionFailure:
             raise CuckooReportError("Cannot connect to MongoDB")
 
-    def debug_dict_size(self, dct):
+    def debug_dict_size(self, dct, parent_key=False):
         if type(dct) == list:
             dct = dct[0]
 
-        totals = dict((k, 0) for k in dct)
+        if isinstance(dct, str) and parent_key:
+            dct = {parent_key: dct}
+
+        if not isinstance(dct, str):
+            totals = dict((k, 0) for k in dct)
+
         def walk(root, key, val):
             if isinstance(val, dict):
                 for k, v in val.iteritems():
@@ -235,14 +240,19 @@ class MongoDB(Report):
                     try:
                         if type(report[parent_key]) == list:
                             for j, parent_dict in enumerate(report[parent_key]):
-                                child_key, csize = self.debug_dict_size(parent_dict)[0]
+                                child_key, csize = self.debug_dict_size(parent_dict, parent_key)[0]
                                 if csize > size_filter:
-                                    log.warn("results['%s']['%s'] deleted due to size: %s" % (parent_key, child_key, csize))
-                                    del report[parent_key][j][child_key]
+                                    if parent_key == child_key:
+                                        log.warn("results['%s'] deleted due to size: %s" % (parent_key, csize))
+                                        del report[parent_key]
+                                        break
+                                    else:
+                                        log.warn("results['%s']['%s'] deleted due to size: %s" % (parent_key, child_key, csize))
+                                        del report[parent_key][j][child_key]
                         else:
-                            child_key, csize = self.debug_dict_size(report[parent_key])[0]
+                            child_key, csize = self.debug_dict_size(report[parent_key], parent_key)[0]
                             if csize > size_filter:
-                                log.warn("results['%s']['%s'] deleted due to size: %s" % (parent_key, child_key, csize))
+                                log.warn("else - results['%s']['%s'] deleted due to size: %s" % (parent_key, child_key, csize))
                                 del report[parent_key][child_key]
                         try:
                             self.db.analysis.save(report, check_keys=False)
