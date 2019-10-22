@@ -1010,7 +1010,7 @@ class Database(object):
         task.custom = custom
         task.machine = machine
         task.platform = platform
-        task.memory = memory
+        task.memory = bool(memory)
         task.enforce_timeout = enforce_timeout
         task.shrike_url = shrike_url
         task.shrike_msg = shrike_msg
