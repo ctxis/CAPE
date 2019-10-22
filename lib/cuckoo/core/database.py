@@ -988,9 +988,9 @@ class Database(object):
             # analyzed by default on VM types that can't handle them
             if "PE32+" in file_type and not machine:
                 if tags:
-                    tags += ",64_bit"
+                    tags += ",x64"
                 else:
-                    tags = "64_bit"
+                    tags = "x64"
 
             task = Task(obj.file_path)
             task.sample_id = sample.id
