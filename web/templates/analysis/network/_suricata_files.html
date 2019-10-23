@@ -45,7 +45,7 @@
                 </tr>
                 <tr>
                     <th>MD5</th>
-                    <td>{{file.md5}} 
+                    <td>{{file.md5}}
                         {% if file.moloch_md5_url %}
                             <a href={{file.moloch_md5_url}} target="_blank">[MLCH]</a>
                         {% endif %}
@@ -84,7 +84,7 @@
                     <td>
                     {% if file.yara %}
                         <ul style="margin-bottom: 0;">
-                        {% for sign in file.fileinfo.yara %}
+                        {% for sign in file.file_info.yara %}
                             <li>{{sign.name}} - {{sign.meta.description}} 
                                 {% if sign.moloch_yara_url %}
                                     <a href={{file.moloch_yara_url}} target="_blank">[MLCH]</a>
@@ -110,7 +110,12 @@
                 {% if file.id %}
                 <tr>
                     <th></th>
-                    <td><a href="{% url "file" "suricata" analysis.info.id file.id %}" class="btn btn-primary btn-small">Download</a>
+                    <td>
+                    {% if file.fsver == 1 %}
+                    <a class="btn btn-primary btn-small" href="{% url "file" "suricata" analysis.info.id file.id %}">Download</a>
+                    {% elif file.fsver == 2 %}
+                    <a class="btn btn-primary btn-small" href="{% url "file" "suricata" analysis.info.id file.sha256 %}">Download</a>
+                    {% endif %}
                     {% if file.file_info.data %}
                     &emsp;<a class="btn btn-primary btn-small" data-toggle="collapse" data-target="#{{file.sp}}{{file.dp}}{{file.id}}">Display Text</a>
                     {% endif %}
