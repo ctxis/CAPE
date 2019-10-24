@@ -154,6 +154,7 @@ class CommandLineHTTPLink(Signature):
             "hta.exe",
             "powershell",
             "wscript",
+            "msiexec",
         ]
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
@@ -185,6 +186,7 @@ class CommandLineReversedHTTPLink(Signature):
             "hta.exe",
             "powershell",
             "wscript",
+            "msiexec",
         ]
         ret = False
         cmdlines = self.results["behavior"]["summary"]["executed_commands"]
