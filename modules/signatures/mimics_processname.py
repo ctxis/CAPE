@@ -40,6 +40,7 @@ class MasqueradesProcessName(Signature):
             ".*svhoost\.(exe|dll)$",
             ".*scvhost\.(exe|dll)$",
             ".*svschost\.(exe|dll)$",
+            ".*svchostt\.(exe|dll)$",
             ".*spoolsrv\.(exe|dll)$",
             ".*spoolsvc\.(exe|dll)$",
             ".*spoolscv\.(exe|dll)$",
