@@ -988,9 +988,9 @@ class Database(object):
             # analyzed by default on VM types that can't handle them
             if "PE32+" in file_type and not machine:
                 if tags:
-                    tags += ",64_bit"
+                    tags += ",x64"
                 else:
-                    tags = "64_bit"
+                    tags = "x64"
 
             task = Task(obj.file_path)
             task.sample_id = sample.id
@@ -1010,7 +1010,7 @@ class Database(object):
         task.custom = custom
         task.machine = machine
         task.platform = platform
-        task.memory = memory
+        task.memory = bool(memory)
         task.enforce_timeout = enforce_timeout
         task.shrike_url = shrike_url
         task.shrike_msg = shrike_msg

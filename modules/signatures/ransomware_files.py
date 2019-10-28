@@ -137,6 +137,7 @@ class RansomwareFiles(Signature):
             (".*\\\\#README\.lilocked$", ["Lilocked"]),
             (".*\\\\SGUARD-README\.(txt|TXT)$", ["SGuard"]),
             (".*\\\\RyukReadMe\.html$", ["Ryuk"]),
+            (".*\\\\HOW_TO_RECOVER_DATA\.html$", ["MedusaLocker"]),
         ]
 
         for ioc in file_list:

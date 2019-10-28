@@ -29,7 +29,7 @@ class Shellcode(Package):
         self.options["dll"] = "Extraction.dll"
         loaderpath = "bin\\loader.exe"
         #arguments = path
-        arguments = "plugx " + path
+        arguments = "shellcode " + path
         
         # we need to move out of the analyzer directory
         # due to a check in monitor dll

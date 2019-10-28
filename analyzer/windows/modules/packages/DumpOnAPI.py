@@ -15,8 +15,8 @@ class DumpOnAPI(Package):
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "DumpOnAPI.dll"
-        self.options["dll_64"] = "DumpOnAPI_x64.dll"
+        self.options["procdump"] = "0"
+        self.options["disable_cape"] = "1"
 
     def start(self, path):
         args = self.options.get("arguments")
