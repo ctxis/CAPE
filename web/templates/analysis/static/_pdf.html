@@ -3,7 +3,7 @@
     {% load key_tags %}
     {% if graphs.bingraph.enabled %}
         <h4>Binary Entropy</h4>
-        {{ graphs.bingraph.content|safe }}
+        {{ graphs.bingraph.content|getkey:analysis.target.file.sha256|safe }}
     {% endif %}
     {% if analysis.static and analysis.static.pdf %}
         {% if analysis.static.pdf.Info %}
