@@ -461,7 +461,8 @@ class PipeHandler(Thread):
                 elif command == "KSUBVERT":
                     for pid in PROCESS_LIST:
                         log.info("Process with pid %s has terminated", pid)
-                        PROCESS_LIST.remove(pid)
+                        if pid in PROCESS_LIST:
+                            PROCESS_LIST.remove(pid)
 
                 elif command.startswith("INTEROP:"):
                     if not MONITORED_DCOM and ANALYSIS_TIMED_OUT == False:
