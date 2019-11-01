@@ -461,7 +461,8 @@ class PipeHandler(Thread):
                 elif command == "KSUBVERT":
                     for pid in PROCESS_LIST:
                         log.info("Process with pid %s has terminated", pid)
-                        PROCESS_LIST.remove(pid)
+                        if pid in PROCESS_LIST:
+                            PROCESS_LIST.remove(pid)
 
                 elif command.startswith("INTEROP:"):
                     if not MONITORED_DCOM and ANALYSIS_TIMED_OUT == False:
@@ -1206,7 +1207,8 @@ class Analyzer:
                                 if self.options.get("procmemdump"):
                                     Process(pid=pid).upload_memdump()
                                 log.info("Process with pid %s has terminated", pid)
-                                PROCESS_LIST.remove(pid)
+                                if pid in PROCESS_LIST:
+                                    PROCESS_LIST.remove(pid)
 
                         # If none of the monitored processes are still alive, we
                         # can terminate the analysis.

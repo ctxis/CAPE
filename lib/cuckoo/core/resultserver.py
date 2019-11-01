@@ -213,7 +213,9 @@ class ResultHandler(SocketServer.BaseRequestHandler):
     def negotiate_protocol(self):
         # Read until newline.
         buf = self.read_newline()
-
+        #v2 friendly
+        if " " in buf:
+            buff = buf.split(" ")[0]
         if "BSON" in buf:
             self.protocol = BsonParser(self)
         elif "FILE" in buf:
