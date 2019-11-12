@@ -419,7 +419,7 @@ class PipeHandler(Thread):
                 # Parse the prefix for the received notification.
                 # In case of GETPIDS we're gonna return the current process ID
                 # and the process ID of our parent process (agent.py).
-                elif command == "GETPIDS":
+                elif command.startswith("GETPIDS"):
                     hidepids = set()
                     hidepids.update(HIDE_PIDS)
                     hidepids.update([PID, PPID])

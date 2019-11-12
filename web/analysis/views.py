@@ -765,8 +765,13 @@ def report(request, task_id):
             if report.get(keyword, False):
                 try:
                     report[keyword] = json.loads(zlib.decompress(report[keyword]))
-                except Exception as e:
+                except Exception:
                     pass
+        if report.get("behavior", {}).get("summary", {}):
+            try:
+                report["behavior"]["summary"] = json.loads(zlib.decompress(report["behavior"]["summary"]))
+            except Exception:
+                pass
 
     children = 0
     if "CAPE_children" in report:
