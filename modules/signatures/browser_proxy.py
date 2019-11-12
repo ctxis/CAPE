@@ -31,6 +31,7 @@ class ModifyProxy(Signature):
     filter_analysistypes = set(["file"])
 
     def run(self):
+        ignore = False
         # will need to turn this into an evented signature later, as IE will read the existing value of some of these entries
         # and write them back as the same value
         reg_indicators = [
@@ -50,18 +51,18 @@ class ModifyProxy(Signature):
         # Get rid of a PDF false positive
         if "file" in self.results["target"]:
             if "PDF" in self.results["target"]["file"]["type"] or self.results["info"]["package"] == "pdf":
-                del reg_indicators[0]
+                ignore = True
 
-        for indicator in reg_indicators:
-            matches = self.check_write_key(pattern=indicator, regex=True, all=True)
-            if matches:
-                for match in matches:
-                    foundwhite = False
-                    for white in whitelist:
-                        if re.match(white, match, re.IGNORECASE):
-                            foundwhite = True
-                    if not foundwhite:
-                        return True
+        if not ignore:
+            for indicator in reg_indicators:
+                matches = self.check_write_key(pattern=indicator, regex=True, all=True)
+                if matches:
+                    for match in matches:
+                        foundwhite = False
+                        for  white in whitelist:
+                            if re.match(white, match, re.IGNORECASE):
+                                foundwhite = True
+                        if not foundwhite:
+                            return True
 
         return False
-
