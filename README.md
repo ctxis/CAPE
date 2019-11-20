@@ -1,3 +1,7 @@
+### CAPEv2 is out, check it!
+* [CAPEv2](https://github.com/kevoreilly/CAPEv2)
+
+
 ## CAPE: Malware Configuration And Payload Extraction
 
 CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate the process of malware analysis with the goal of extracting payloads and configuration from malware. This allows CAPE to detect malware based on payload signatures, as well as automating many of the goals of malware reverse engineering and threat intelligence.
