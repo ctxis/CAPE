@@ -52,4 +52,4 @@ suricata-update
 git+https://github.com/doomedraven/sflock.git
 socks5man
 git+https://github.com/swimlane/pyattck.git
-pymisp==2.4.111
+pymisp==2.4.111.2
