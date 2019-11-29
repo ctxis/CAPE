@@ -51,6 +51,8 @@ class MISP(Report):
             for req in results["network"].get("http", []):
                 if "uri" in req and req["uri"] not in whitelist:
                     urls.add(req["uri"])
+                if "user-agent" in req:
+                    self.misp.add_useragent(event, req["user-agent"])
 
             domains, ips = {}, set()
             for domain in results.get("network", {}).get("domains", []):
@@ -69,9 +71,6 @@ class MISP(Report):
                         if block["answers"]:
                             domains[block["request"]] = block["answers"][0]["data"]
                             ips.add(domain[block["answers"][0]["data"]])
-
-            if "user-agent" in req:
-                self.misp.add_useragent(event, req["user-agent"])
 
             for i in range(0, len(results["CAPE"])): #Added CAPE Addresses
                 for section in results["CAPE"][i]:
