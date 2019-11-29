@@ -9,15 +9,13 @@
   (4,"Undefined","*undefined* no risk","No risk");
 """
 
-#Updated by doomedraven 29.11.2019 for NaxoneZ
+#Updated by doomedraven 22.11.2019 for NaxoneZ
 #But due to frequent updates on misp server/api/client, im not maintaining it
 #You need it you fix it!
 
 import os
-import json
 import logging
 import warnings
-import subprocess
 import threading
 from collections import deque
 from lib.cuckoo.common.config import Config
@@ -239,17 +237,17 @@ class MISP(Report):
                 """
                 self.misper.setdefault("iocs", list())
 
-                if results.get("target", {}).get("url", "") and results["target"]["url"] not in whitelist:
-                    filtered_iocs.append(results["target"]["url"])
-                    #parsed = urlsplit(results["target"]["url"])
+                #if results.get("target", {}).get("url", "") and results["target"]["url"] not in whitelist:
+                #    filtered_iocs.append(results["target"]["url"])
+                #    #parsed = urlsplit(results["target"]["url"])
 
                 # ToDo migth be outdated!
-                if self.options.get("ids_files", False) and "suricata" in results.keys():
-                    for surifile in results["suricata"]["files"]:
-                        if "file_info" in surifile.keys():
-                            self.misper["iocs"].append({"md5": surifile["file_info"]["md5"]})
-                            self.misper["iocs"].append({"sha1": surifile["file_info"]["sha1"]})
-                            self.misper["iocs"].append({"sha256": surifile["file_info"]["sha256"]})
+                #if self.options.get("ids_files", False) and "suricata" in results.keys():
+                #    for surifile in results["suricata"]["files"]:
+                #        if "file_info" in surifile.keys():
+                #            self.misper["iocs"].append({"md5": surifile["file_info"]["md5"]})
+                #            self.misper["iocs"].append({"sha1": surifile["file_info"]["sha1"]})
+                #            self.misper["iocs"].append({"sha256": surifile["file_info"]["sha256"]})
 
                 if self.options.get("mutexes", False) and "behavior" in results and "summary" in results["behavior"]:
                     if "mutexes" in results.get("behavior", {}).get("summary", {}):
@@ -262,26 +260,5 @@ class MISP(Report):
                         for regkey in results["behavior"]["summary"]["read_keys"]:
                             self.misp.add_regkey(event, regkey)
 
-                if self.misper and "Malicious" not in malfamily and results["ttps"]:
-                    self.misper["target"] = results.get('target').get('file').get('sha256')
-                    self.misper["tags"] = list()
-                    for ttp in results["ttps"]: #Added TTPs
-                        with open(os.path.join(CUCKOO_ROOT, 'data', 'mitre_attack.json')) as json_file:
-                             data = json.load(json_file)
-                             for i in data["objects"]:
-                                 try:
-                                     if i["external_references"][0]["external_id"] == ttp:
-                                         #self.misp.tag(event["Event"]["uuid"],'misp-galaxy:mitre-attack-pattern="'+i["name"]+' - '+ttp+'"')
-                                         self.misper["tags"].append('misp-galaxy:mitre-attack-pattern="'+i["name"]+' - '+ttp+'"')
-                                 except Exception as e:
-                                    pass
-                    # Add Payload delivery hash about the details of the analyzed file
-                    self.misper["iocs"].append({"name": results.get('target').get('file').get('name')})
-                    self.misper["iocs"].append({"md5": results.get('target').get('file').get('md5')})
-                    self.misper["iocs"].append({"sha1": results.get('target').get('file').get('sha1')})
-                    self.misper["iocs"].append({"sha256": results.get('target').get('file').get('sha256')})
-                    self.misper["iocs"].append({"ssdeep": results.get('target').get('file').get('ssdeep')})
-
-                    subprocess.call(["python3", os.path.join(CUCKOO_ROOT, "data", "misp3.py"), json.dumps(self.misper)])
         except Exception as e:
             log.error("Failed to generate JSON report: %s" % e, exc_info=True)
