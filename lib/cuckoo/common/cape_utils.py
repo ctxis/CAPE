@@ -128,10 +128,7 @@ def static_config_parsers(yara_hit, file_data, cape_config):
                         cape_config["cape_config"] = {}
                         cape_config["cape_config"] = convert(mwcp.metadata)
                     else:
-                        new = convert(mwcp.metadata)
-                        if new != cape_config["cape_config"]:
-                            for key in new.keys():
-                                cape_config["cape_config"][key] = list(set(cape_config["cape_config"][key] + new[key]))
+                        cape_config["cape_config"].update(convert(mwcp.metadata))
                 except Exception as e:
                     log.error("CAPE: DC3-MWCP config parsing error with %s: %s", cape_name, e)
             elif malwareconfig_loaded:
