@@ -16,7 +16,8 @@ class QakBot(Package):
         self.options = options
         self.pids = []
         self.options["dll"] = "QakBot.dll"
-        self.options["base-on-api"] = "NtWaitForSingleObject"
+        self.options["base-on-api"] = "GetComputerNameW"
+        self.options["dump-on-api"] = "GetComputerNameW"
 
     def start(self, path):
         args = self.options.get("arguments")

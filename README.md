@@ -1,3 +1,8 @@
+## CAPEv2 (Python3) has now been released
+* [CAPEv2](https://github.com/kevoreilly/CAPEv2)
+
+With the imminent end-of-life for Python 2 (January 1 2020), CAPEv1 will be phased out. Please upgrade to the Python 3 version as soon as possible.
+
 ## CAPE: Malware Configuration And Payload Extraction
 
 CAPE is a malware sandbox. It is derived from Cuckoo and is designed to automate the process of malware analysis with the goal of extracting payloads and configuration from malware. This allows CAPE to detect malware based on payload signatures, as well as automating many of the goals of malware reverse engineering and threat intelligence.

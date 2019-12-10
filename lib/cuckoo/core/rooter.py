@@ -15,7 +15,7 @@ from lib.cuckoo.common.config import Config
 try:
     from socks5man.manager import Manager
     HAVE_SOCKS5MANAGER = True
-except ImportError:
+except (ImportError, OSError):
     HAVE_SOCKS5MANAGER = False
 
 cfg = Config()
