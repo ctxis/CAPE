@@ -46,7 +46,7 @@ class NGram:
         tmp = [c[0][0] for c in self.buffer]
         if tmp[0:self.order] == tmp[self.order:]:
             for i in range(self.order):
-                self.buffer[i][1] += 1
+                self.buffer[i][1] += self.buffer[i+self.order][1]
             self.buffer = self.buffer[0:self.order]
 
 class Compressor:
