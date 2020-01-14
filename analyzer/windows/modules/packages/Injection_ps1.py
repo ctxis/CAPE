@@ -16,7 +16,8 @@ class Injection_PS1(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.options["dll"] = "Injection.dll"
+        self.options["injection"] = "1"
+        self.options["procdump"] = "0"
 
     def start(self, path):
         powershell = self.get_path_glob("PowerShell")
