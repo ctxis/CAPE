@@ -30,8 +30,8 @@ class Extraction_zip(Package):
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "Extraction.dll"
-        self.options["dll_64"] = "Extraction_x64.dll"
+        self.options["extraction"] = "1"
+        self.options["procdump"] = "0"
 
     def extract_zip(self, zip_path, extract_path, password, recursion_depth):
         """Extracts a nested ZIP file.

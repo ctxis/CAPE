@@ -21,12 +21,12 @@ class Shellcode(Package):
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "Extraction.dll"
+        self.options["extraction"] = "1"
+        self.options["procdump"] = "0"
         
         log.info("Timeout: " + str(self.config.timeout))
 
     def start(self, path):
-        self.options["dll"] = "Extraction.dll"
         loaderpath = "bin\\loader.exe"
         #arguments = path
         arguments = "shellcode " + path

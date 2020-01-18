@@ -15,14 +15,13 @@ class Compression(Package):
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "Compression.dll"
-        self.options["dll_64"] = "Compression_x64.dll"
+        self.options["compression"] = "1"
+        self.options["procdump"] = "0"
 
     def start(self, path):
         args = self.options.get("arguments")
         appdata = self.options.get("appdata")
         runasx86 = self.options.get("runasx86")
-        self.options["dll"] = "Compression.dll"
         
         # If the file doesn't have an extension, add .exe
         # See CWinApp::SetCurrentHandles(), it will throw

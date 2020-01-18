@@ -21,11 +21,10 @@ class Compression_doc(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.options["dll"] = "Compression.dll"
-        self.options["dll_64"] = "Compression_x64.dll"
+        self.options["compression"] = "1"
+        self.options["procdump"] = "0"
 
     def start(self, path):
-        self.options["dll"] = "Compression.dll"
         word = self.get_path_glob("Microsoft Office Word")
         if "." not in os.path.basename(path):
             new_path = path + ".doc"

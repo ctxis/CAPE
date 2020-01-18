@@ -18,8 +18,8 @@ class Extraction(Package):
         self.config = config
         self.options = options
         self.pids = []
-        self.options["dll"] = "Extraction.dll"
-        self.options["dll_64"] = "Extraction_x64.dll"
+        self.options["extraction"] = "1"
+        self.options["procdump"] = "0"
 
     def start(self, path):
         arguments = self.options.get("arguments")

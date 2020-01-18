@@ -17,8 +17,8 @@ class Extraction_Regsvr(Package):
         """@param options: options dict."""
         self.config = config
         self.options = options
-        self.options["dll"] = "Extraction.dll"
-        self.options["dll_64"] = "Extraction_x64.dll"
+        self.options["extraction"] = "1"
+        self.options["procdump"] = "0"
 
     def start(self, path):
         regsvr32 = self.get_path("regsvr32.exe")
