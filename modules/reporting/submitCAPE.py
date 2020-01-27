@@ -40,7 +40,7 @@ cape_package_list = [
     "Compression", "Compression_dll", "Compression_doc", "Compression_zip", "Compression_js", "Compression_pdf",
     "Debugger", "Debugger_dll", "Debugger_doc", "DumpOnAPI", "Doppelganging", "Emotet", "Emotet_doc", "EvilGrab", "Extraction", "Extraction_dll",
     "Extraction_regsvr", "Extraction_zip", "Extraction_ps1", "Extraction_jar", "Extraction_pdf", "Extraction_js",
-    "Hancitor", "Hancitor_doc", "IcedID", "Injection", "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip",
+    "Hancitor", "Hancitor_dll", "Hancitor_doc", "IcedID", "Injection", "Injection_dll", "Injection_doc", "Injection_pdf", "Injection_zip",
     "Injection_ps1", "Injection_js", "PlugX", "PlugXPayload", "PlugX_dll", "PlugX_doc", "PlugX_zip", "QakBot", "RegBinary",
     "Sedreco", "Sedreco_dll", "Shellcode-Extraction", "TrickBot", "TrickBot_doc", "UPX", "UPX_dll", "Ursnif"
 ]
@@ -99,6 +99,10 @@ class SubmitCAPE(Report):
             for option in yara_options:
                 name, value = option.split('=')
                 if value.startswith('$'):
+                    if '+' in value:
+                        value = value.split('+')[0]
+                    if '-' in value:
+                        value = value.split('-')[0]
                     address = cape_yara["addresses"].get(value.strip('$'))
                     if address:
                         self.task_options = self.task_options.replace(value, str(address), 1)
@@ -450,6 +454,8 @@ class SubmitCAPE(Report):
                 package = 'Hancitor_doc'
             elif parent_package in ('exe', 'Injection', 'Compression'):
                 package = 'Hancitor'
+            elif parent_package in ('dll', 'Injection_dll', 'Compression_dll'):
+                package = 'Hancitor_dll'
 
         # if 'RegBinary' in detections or 'CreatesLargeKey' in detections:
         elif 'RegBinary' in detections:
