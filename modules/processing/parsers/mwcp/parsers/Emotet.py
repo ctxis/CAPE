@@ -35,9 +35,10 @@ rule Emotet
         $snippet4 = {33 C0 C7 05 ?? ?? ?? ?? ?? ?? ?? ?? C7 05 ?? ?? ?? ?? ?? ?? ?? ?? A3 ?? ?? ?? ?? A3 ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? 00 40 A3 ?? ?? ?? ?? 83 3C C5 ?? ?? ?? ?? 00 75 F0 51 E8 ?? ?? ?? ?? 83 C4 04 C3}
         $snippet5 = {8B E5 5D C3 B8 ?? ?? ?? ?? A3 ?? ?? ?? ?? A3 ?? ?? ?? ?? 33 C0 21 05 ?? ?? ?? ?? A3 ?? ?? ?? ?? 39 05 ?? ?? ?? ?? 74 18 40 A3 ?? ?? ?? ?? 83 3C C5 ?? ?? ?? ?? 00 75 F0 51 E8 ?? ?? ?? ?? 59 C3}
         $snippet6 = {33 C0 21 05 ?? ?? ?? ?? A3 ?? ?? ?? ?? 39 05 ?? ?? ?? ?? 74 18 40 A3 ?? ?? ?? ?? 83 3C C5 ?? ?? ?? ?? 00 75 F0 51 E8 ?? ?? ?? ?? 59 C3}
+        $snippet7 = {8B 48 1C C7 40 20 ?? ?? ?? ?? C7 40 14 ?? ?? ?? ?? C7 00 00 00 00 00 83 3C CD ?? ?? ?? ?? 00 74 0E 41 89 48 1C 83 3C CD ?? ?? ?? ?? 00 75 F2}
     condition:
         //check for MZ Signature at offset 0
-        uint16(0) == 0x5A4D and (($snippet1) and ($snippet2)) or ($snippet3) or ($snippet4) or ($snippet5) or ($snippet6)
+        uint16(0) == 0x5A4D and (($snippet1) and ($snippet2)) or ($snippet3) or ($snippet4) or ($snippet5) or ($snippet6) or ($snippet7)
 }
 
 '''
@@ -211,3 +212,32 @@ class Emotet(Parser):
                             else:
                                 return
                             c2_list_offset += 8
+                    else:
+                        refc2list = yara_scan(filebuf, '$snippet7')
+                        if refc2list:
+                            c2list_va_offset = int(refc2list['$snippet7'])
+                            c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+6:c2list_va_offset+10])[0]
+                            if c2_list_va - image_base > 0x20000:
+                                c2_list_rva = c2_list_va & 0xffff
+                            else:
+                                c2_list_rva = c2_list_va - image_base
+                            try:
+                                c2_list_offset = pe.get_offset_from_rva(c2_list_rva)
+                            except PEFormatError as err:
+                                pass
+
+                            while 1:
+                                try:
+                                    ip = struct.unpack('<I', filebuf[c2_list_offset:c2_list_offset+4])[0]
+                                except:
+                                    return
+                                if ip == 0:
+                                    return
+                                c2_address = socket.inet_ntoa(struct.pack('!L', ip))
+                                port = str(struct.unpack('H', filebuf[c2_list_offset+4:c2_list_offset+6])[0])
+
+                                if c2_address and port:
+                                    self.reporter.add_metadata('address', c2_address+':' + port)
+                                else:
+                                    return
+                                c2_list_offset += 8
