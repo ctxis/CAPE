@@ -216,7 +216,7 @@ class Emotet(Parser):
                         refc2list = yara_scan(filebuf, '$snippet7')
                         if refc2list:
                             c2list_va_offset = int(refc2list['$snippet7'])
-                            c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+6:c2list_va_offset+10])[0]
+                            c2_list_va = struct.unpack('i', filebuf[c2list_va_offset+26:c2list_va_offset+30])[0]
                             if c2_list_va - image_base > 0x20000:
                                 c2_list_rva = c2_list_va & 0xffff
                             else:
