@@ -41,7 +41,7 @@ pydot>=1.2.4
 olefile==0.45.1
 mixbox
 matplotlib==2.2.2
-numpy==1.15.0
+numpy==1.22.0
 six==1.11.0
 statistics==1.0.3.5
 xmltodict
